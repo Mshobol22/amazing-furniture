@@ -1,4 +1,4 @@
-import { createClient } from "./server";
+import { createAdminClient } from "./admin";
 import type { Product } from "@/types";
 
 function mapRowToProduct(row: Record<string, unknown>): Product {
@@ -20,7 +20,7 @@ function mapRowToProduct(row: Record<string, unknown>): Product {
 }
 
 export async function getProducts(category?: string): Promise<Product[]> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   let query = supabase
     .from("products")
@@ -42,7 +42,7 @@ export async function getProducts(category?: string): Promise<Product[]> {
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("products")
@@ -58,7 +58,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const categories = ["bed", "chair", "sofa", "table"];
   const products: Product[] = [];
@@ -71,7 +71,12 @@ export async function getFeaturedProducts(): Promise<Product[]> {
       .order("created_at", { ascending: false })
       .limit(2);
 
-    if (!error && data) {
+    if (error) {
+      console.error("[getFeaturedProducts] Supabase error for category", category, ":", error.message, error.details);
+      continue;
+    }
+
+    if (data && data.length > 0) {
       products.push(...data.map(mapRowToProduct));
     }
   }
@@ -82,7 +87,7 @@ export async function getFeaturedProducts(): Promise<Product[]> {
 export async function searchProducts(query: string): Promise<Product[]> {
   if (!query.trim()) return [];
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("products")

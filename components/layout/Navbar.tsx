@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, Heart, User, ShoppingBag, Menu } from "lucide-react";
-import { useCartStore } from "@/store/cartStore";
+import { useCartStore, useCartItemCount } from "@/store/cartStore";
 import { useScrollPosition } from "@/hooks/useScrollPosition";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,8 +29,8 @@ const CATEGORIES = [
 export default function Navbar() {
   const pathname = usePathname();
   const isScrolled = useScrollPosition(50);
-  const items = useCartStore((state) => state.items);
-  const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const openCart = useCartStore((state) => state.openCart);
+  const cartCount = useCartItemCount();
 
   const isHomepage = pathname === "/";
   const isTransparent = isHomepage && !isScrolled;
@@ -109,10 +109,11 @@ export default function Navbar() {
               <User className="h-5 w-5" />
             </Button>
           </Link>
-          <Link href="/cart" className="relative inline-block">
+          <div className="relative inline-block">
             <Button
               variant="ghost"
               size="icon"
+              onClick={openCart}
               className={cn(
                 "h-9 w-9",
                 isTransparent ? "text-white hover:bg-white/10" : "text-charcoal"
@@ -122,18 +123,11 @@ export default function Navbar() {
               <ShoppingBag className="h-5 w-5" />
             </Button>
             {cartCount > 0 && (
-              <Badge
-                className={cn(
-                  "absolute -right-1 -top-1 h-5 min-w-5 px-1 text-xs",
-                  isTransparent
-                    ? "bg-white text-charcoal hover:bg-white"
-                    : "bg-walnut text-cream hover:bg-walnut/90"
-                )}
-              >
+              <Badge className="absolute -right-1 -top-1 h-5 min-w-5 px-1 text-xs bg-walnut text-cream hover:bg-walnut/90">
                 {cartCount}
               </Badge>
             )}
-          </Link>
+          </div>
 
           {/* Mobile menu */}
           <Sheet>
