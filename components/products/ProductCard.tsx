@@ -7,7 +7,7 @@ import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
-import { cn } from "@/lib/utils";
+import { cn, proxyImage } from "@/lib/utils";
 
 interface ProductCardProps {
   product: Product;
@@ -33,7 +33,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
       <div className="relative overflow-hidden rounded-lg bg-light-sand">
         <div className="aspect-square">
           <Image
-            src={product.images[0] ?? ""}
+            src={proxyImage(product.images[0] ?? "")}
             alt={product.name}
             width={600}
             height={600}

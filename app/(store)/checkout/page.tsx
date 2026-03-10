@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, Lock, CreditCard } from "lucide-react";
 import { useCartStore, useCartItemCount, useCartTotal } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
+import { proxyImage } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -336,7 +337,7 @@ function CheckoutForm() {
                     >
                       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded">
                         <Image
-                          src={item.product.images[0] ?? ""}
+                          src={proxyImage(item.product.images[0] ?? "")}
                           alt={item.product.name}
                           fill
                           className="object-cover"

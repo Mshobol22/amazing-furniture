@@ -1,0 +1,4 @@
+TODO: Add placeholder image at public/placeholder-furniture.jpg
+- Cream background
+- Furniture silhouette
+- For now, proxyImage() uses Unsplash fallback - see lib/utils.ts

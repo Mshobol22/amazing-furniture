@@ -6,6 +6,7 @@ import {
   getProductBySlug,
   getProducts,
 } from "@/lib/supabase/products";
+import { proxyImage } from "@/lib/utils";
 import ProductDetailClient from "@/components/products/ProductDetailClient";
 import ProductCard from "@/components/products/ProductCard";
 import type { Product } from "@/types";
@@ -56,7 +57,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <div className="space-y-4">
             <div className="relative aspect-square overflow-hidden rounded-lg bg-light-sand">
               <Image
-                src={product.images[0] ?? ""}
+                src={proxyImage(product.images[0] ?? "")}
                 alt={product.name}
                 fill
                 className="object-cover"
@@ -72,7 +73,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md border-2 border-transparent hover:border-walnut"
                   >
                     <Image
-                      src={img}
+                      src={proxyImage(img)}
                       alt={`${product.name} ${i + 1}`}
                       fill
                       className="object-cover"

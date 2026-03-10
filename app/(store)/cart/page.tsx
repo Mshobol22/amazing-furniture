@@ -9,6 +9,7 @@ import {
   useCartTotal,
 } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
+import { proxyImage } from "@/lib/utils";
 
 const SHIPPING_THRESHOLD = 299;
 const SHIPPING_COST = 29;
@@ -74,7 +75,7 @@ export default function CartPage() {
                 >
                   <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-light-sand">
                     <Image
-                      src={item.product.images[0] ?? ""}
+                      src={proxyImage(item.product.images[0] ?? "")}
                       alt={item.product.name}
                       fill
                       className="object-cover"
