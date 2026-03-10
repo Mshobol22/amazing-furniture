@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import { ProductImage } from "@/components/ui/ProductImage";
 import { ShoppingBag, Plus, Minus, X, Lock, CreditCard } from "lucide-react";
 import {
   useCartStore,
@@ -9,7 +9,6 @@ import {
   useCartTotal,
 } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
-import { proxyImage } from "@/lib/utils";
 
 const SHIPPING_THRESHOLD = 299;
 const SHIPPING_COST = 29;
@@ -74,8 +73,8 @@ export default function CartPage() {
                   className="flex gap-6 rounded-lg border border-light-sand bg-cream p-6"
                 >
                   <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-light-sand">
-                    <Image
-                      src={proxyImage(item.product.images[0] ?? "")}
+                    <ProductImage
+                      src={item.product.images[0]}
                       alt={item.product.name}
                       fill
                       className="object-cover"

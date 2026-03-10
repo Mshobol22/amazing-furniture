@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -18,7 +18,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, Lock, CreditCard } from "lucide-react";
 import { useCartStore, useCartItemCount, useCartTotal } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
-import { proxyImage } from "@/lib/utils";
+import { ProductImage } from "@/components/ui/ProductImage";
+import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -79,11 +80,33 @@ function CheckoutForm() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<ShippingFormData>({
     resolver: zodResolver(shippingSchema),
     defaultValues: { country: "US" },
   });
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        const name =
+          user.user_metadata?.full_name ??
+          user.user_metadata?.name ??
+          "";
+        reset({
+          fullName: name,
+          email: user.email ?? "",
+          address: "",
+          city: "",
+          state: "",
+          zipCode: "",
+          country: "US",
+        });
+      }
+    });
+  }, [reset]);
 
   const onShippingSubmit = (data: ShippingFormData) => {
     setShippingData(data);
@@ -336,8 +359,8 @@ function CheckoutForm() {
                       className="flex gap-3 text-sm"
                     >
                       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded">
-                        <Image
-                          src={proxyImage(item.product.images[0] ?? "")}
+                        <ProductImage
+                          src={item.product.images[0]}
                           alt={item.product.name}
                           fill
                           className="object-cover"

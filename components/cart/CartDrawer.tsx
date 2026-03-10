@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import { ProductImage } from "@/components/ui/ProductImage";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, Plus, Minus, X } from "lucide-react";
 import { useCartStore, useCartItemCount, useCartTotal } from "@/store/cartStore";
@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { proxyImage } from "@/lib/utils";
 
 const SHIPPING_THRESHOLD = 299;
 const SHIPPING_COST = 29;
@@ -86,8 +85,8 @@ export default function CartDrawer() {
                       className="flex gap-4 border-b border-light-sand py-4 last:border-0"
                     >
                       <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-light-sand">
-                        <Image
-                          src={proxyImage(item.product.images[0] ?? "")}
+                        <ProductImage
+                          src={item.product.images[0]}
                           alt={item.product.name}
                           fill
                           className="object-cover"

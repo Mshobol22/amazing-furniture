@@ -1,13 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ProductImage } from "@/components/ui/ProductImage";
 import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
-import { cn, proxyImage } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface ProductCardProps {
   product: Product;
@@ -32,8 +32,8 @@ export default function ProductCard({ product, className }: ProductCardProps) {
     >
       <div className="relative overflow-hidden rounded-lg bg-light-sand">
         <div className="aspect-square">
-          <Image
-            src={proxyImage(product.images[0] ?? "")}
+          <ProductImage
+            src={product.images[0]}
             alt={product.name}
             width={600}
             height={600}

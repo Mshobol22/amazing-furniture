@@ -25,7 +25,8 @@ export async function getProducts(category?: string): Promise<Product[]> {
   let query = supabase
     .from("products")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("name", { ascending: true })
+    .limit(300); // Covers 291 products; increase if catalog grows
 
   if (category) {
     query = query.eq("category", category);

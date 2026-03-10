@@ -1,12 +1,11 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { Star, ChevronRight } from "lucide-react";
 import {
   getProductBySlug,
   getProducts,
 } from "@/lib/supabase/products";
-import { proxyImage } from "@/lib/utils";
+import { ProductImage } from "@/components/ui/ProductImage";
 import ProductDetailClient from "@/components/products/ProductDetailClient";
 import ProductCard from "@/components/products/ProductCard";
 import type { Product } from "@/types";
@@ -56,8 +55,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
           {/* Image gallery */}
           <div className="space-y-4">
             <div className="relative aspect-square overflow-hidden rounded-lg bg-light-sand">
-              <Image
-                src={proxyImage(product.images[0] ?? "")}
+              <ProductImage
+                src={product.images[0]}
                 alt={product.name}
                 fill
                 className="object-cover"
@@ -72,8 +71,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     key={i}
                     className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md border-2 border-transparent hover:border-walnut"
                   >
-                    <Image
-                      src={proxyImage(img)}
+                    <ProductImage
+                      src={img}
                       alt={`${product.name} ${i + 1}`}
                       fill
                       className="object-cover"
