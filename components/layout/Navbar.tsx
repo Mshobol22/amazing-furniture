@@ -1,8 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, Heart, User, ShoppingBag, Menu } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useCartStore, useCartItemCount } from "@/store/cartStore";
 import { useScrollPosition } from "@/hooks/useScrollPosition";
 import { Button } from "@/components/ui/button";
@@ -31,6 +34,18 @@ export default function Navbar() {
   const isScrolled = useScrollPosition(50);
   const openCart = useCartStore((state) => state.openCart);
   const cartCount = useCartItemCount();
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const isHomepage = pathname === "/";
   const isTransparent = isHomepage && !isScrolled;
@@ -96,19 +111,27 @@ export default function Navbar() {
           >
             <Heart className="h-5 w-5" />
           </Button>
-          <Link href="/account">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-9 w-9",
-                isTransparent ? "text-white hover:bg-white/10" : "text-charcoal"
-              )}
-              aria-label="Account"
-            >
-              <User className="h-5 w-5" />
-            </Button>
-          </Link>
+          <div className="relative inline-block">
+            <Link href={user ? "/account" : "/login"}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-9 w-9",
+                  isTransparent ? "text-white hover:bg-white/10" : "text-charcoal"
+                )}
+                aria-label="Account"
+              >
+                <User className="h-5 w-5" />
+              </Button>
+            </Link>
+            {user && (
+              <span
+                className="absolute right-0 top-0 h-2 w-2 rounded-full bg-green-500"
+                aria-hidden
+              />
+            )}
+          </div>
           <div className="relative inline-block">
             <Button
               variant="ghost"

@@ -1,26 +1,15 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
-import { ShoppingBag, Package, Heart, LogOut } from "lucide-react";
-import AccountSidebar from "./AccountSidebar";
-import OrdersTab from "./OrdersTab";
+import AccountSidebar from "../AccountSidebar";
 
-export default async function AccountPage() {
+export default async function ProfilePage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
-  }
-
-  const { data: orders } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+  if (!user) redirect("/login");
 
   const displayName =
     user.user_metadata?.full_name ??
@@ -38,7 +27,6 @@ export default async function AccountPage() {
     <div className="min-h-screen bg-cream">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-8 lg:flex-row">
-          {/* Left sidebar */}
           <AccountSidebar
             user={{
               displayName,
@@ -47,10 +35,16 @@ export default async function AccountPage() {
               avatarUrl: user.user_metadata?.avatar_url,
             }}
           />
-
-          {/* Main content */}
           <main className="flex-1">
-            <OrdersTab orders={orders ?? []} />
+            <div className="rounded-lg border border-light-sand bg-white p-6">
+              <h2 className="mb-6 font-display text-2xl font-semibold text-charcoal">
+                Profile
+              </h2>
+              <p className="text-warm-gray">Profile settings coming soon.</p>
+              <Link href="/account" className="mt-4 inline-block text-walnut hover:underline">
+                Back to Orders
+              </Link>
+            </div>
           </main>
         </div>
       </div>
