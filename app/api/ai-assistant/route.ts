@@ -1,6 +1,5 @@
 import Groq from "groq-sdk";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { extractSku } from "@/lib/utils";
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -29,26 +28,23 @@ export async function POST(request: Request) {
     const supabase = createAdminClient();
     const { data: products } = await supabase
       .from("products")
-      .select("id, name, slug, price, category")
+      .select("name, slug, price, category")
       .order("name", { ascending: true })
       .limit(300);
 
-    const productList = (products ?? []).map((p) => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      price: Number(p.price),
-      category: p.category,
-      sku: extractSku(p.slug),
-    }));
+    const productList = (products ?? [])
+      .map(
+        (p) =>
+          `${p.name}|${Number(p.price)}|${p.category}|${p.slug}`
+      )
+      .join("\n");
 
-    const systemPrompt = `You are a helpful furniture shopping assistant for Amazing Furniture, a premium furniture store. You help customers find the perfect furniture for their home.
+    const systemPrompt = `You are a helpful furniture shopping assistant for Amazing Furniture.
+Help customers find furniture. When recommending products, format as:
+**[Name]** - $[price] → /products/[slug]
 
-Available products: ${JSON.stringify(productList)}
-
-When recommending products, always include the product slug so it can be linked.
-Keep responses concise and friendly. Format product recommendations as:
-**[Product Name]** - $[price] → /products/[slug]`;
+Available inventory (name|price|category|slug):
+${productList}`;
 
     const apiMessages = messages.map((m) => ({
       role: m.role as "user" | "assistant",
@@ -57,7 +53,7 @@ Keep responses concise and friendly. Format product recommendations as:
 
     const stream = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
-      max_tokens: 1024,
+      max_tokens: 500,
       messages: [
         { role: "system", content: systemPrompt },
         ...apiMessages,
