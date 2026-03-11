@@ -3,8 +3,8 @@ const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   sofa: "Sofas & Sectionals",
   table: "Dining & Tables",
   chair: "Chairs & Recliners",
-  cabinet: "Cabinets & Storage",
-  "tv-stand": "TV Stands & Media",
+  cabinet: "Dressers & Cabinets",
+  "tv-stand": "TV Stands & Entertainment",
 };
 
 export function getCategoryDisplayName(slug: string): string {

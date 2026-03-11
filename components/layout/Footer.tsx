@@ -1,18 +1,37 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIES = [
-  { name: "Bed", slug: "bed" },
-  { name: "Chair", slug: "chair" },
-  { name: "Sofa", slug: "sofa" },
-  { name: "Table", slug: "table" },
-  { name: "Cabinet", slug: "cabinet" },
-  { name: "TV Stands", slug: "tv-stand" },
+  { name: "Beds & Bedroom", slug: "bed" },
+  { name: "Chairs & Recliners", slug: "chair" },
+  { name: "Sofas & Sectionals", slug: "sofa" },
+  { name: "Dining & Tables", slug: "table" },
+  { name: "Dressers & Cabinets", slug: "cabinet" },
+  { name: "TV Stands & Entertainment", slug: "tv-stand" },
 ] as const;
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function Footer() {
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!EMAIL_REGEX.test(email.trim())) return;
+    toast({
+      title: "Thanks for subscribing!",
+      description: "You'll hear from us soon.",
+    });
+    setEmail("");
+  };
+
   return (
     <footer className="bg-charcoal text-cream">
       {/* Newsletter */}
@@ -27,10 +46,12 @@ export default function Footer() {
                 Get exclusive offers and design inspiration.
               </p>
             </div>
-            <form className="flex w-full max-w-md gap-2">
+            <form onSubmit={handleSubscribe} className="flex w-full max-w-md flex-col gap-2 sm:flex-row">
               <Input
                 type="email"
                 placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="flex-1 border-white/20 bg-white/5 text-cream placeholder:text-cream/50 focus-visible:ring-walnut"
               />
               <Button

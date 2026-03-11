@@ -6,6 +6,7 @@ export function mapRowToProduct(row: Record<string, unknown>): Product {
     id: row.id as string,
     name: row.name as string,
     slug: row.slug as string,
+    sku: row.sku != null ? (row.sku as string) : undefined,
     description: row.description as string,
     price: Number(row.price),
     compare_price: row.compare_price != null ? Number(row.compare_price) : undefined,

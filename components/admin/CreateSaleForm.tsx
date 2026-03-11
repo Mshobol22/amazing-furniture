@@ -25,12 +25,12 @@ const PRODUCT_COUNTS: Record<string, number> = {
 
 export default function CreateSaleForm() {
   const router = useRouter();
-  const [category, setCategory] = useState("all");
-  const [discount, setDiscount] = useState("");
+  const [formData, setFormData] = useState({ category: "all", discount: "" });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const { category, discount } = formData;
   const discountNum = parseFloat(discount);
   const isValidDiscount =
     !isNaN(discountNum) && discountNum >= 1 && discountNum <= 90;
@@ -58,7 +58,7 @@ export default function CreateSaleForm() {
       if (res.ok) {
         const count = typeof data.updated === "number" ? data.updated : 0;
         setSuccess(`Sale applied to ${count} products`);
-        setDiscount("");
+        setFormData((prev) => ({ ...prev, discount: "" }));
         router.refresh();
       } else {
         setError(data.error ?? "Failed to apply sale");
@@ -79,7 +79,9 @@ export default function CreateSaleForm() {
             <label className="block text-sm text-warm-gray">Category</label>
             <select
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, category: e.target.value }))
+              }
               className="mt-1 rounded-md border border-gray-200 px-3 py-2 text-sm"
             >
               {CATEGORY_OPTIONS.map((c) => (
@@ -99,7 +101,9 @@ export default function CreateSaleForm() {
               min={1}
               max={90}
               value={discount}
-              onChange={(e) => setDiscount(e.target.value)}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, discount: e.target.value }))
+              }
               placeholder="e.g. 20"
               className="mt-1 w-24 rounded-md border border-gray-200 px-3 py-2 text-sm"
             />

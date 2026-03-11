@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { useCartStore } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
 import type { Product } from "@/types";
 import { cn, extractSku } from "@/lib/utils";
 
@@ -15,11 +16,19 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, className }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
+  const toggleWishlist = useWishlistStore((state) => state.toggleItem);
+  const isInWishlist = useWishlistStore((state) => state.isInWishlist(product.id));
   const sku = extractSku(product.slug);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     addItem(product, 1);
+  };
+
+  const handleWishlistClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist(product.id);
   };
 
   return (
@@ -39,6 +48,18 @@ export default function ProductCard({ product, className }: ProductCardProps) {
             SALE
           </span>
         )}
+        <button
+          type="button"
+          onClick={handleWishlistClick}
+          className="absolute right-2 top-2 z-10 rounded-full bg-white/90 p-1.5 shadow-sm transition-colors hover:bg-white"
+          aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+        >
+          <Heart
+            className={`h-5 w-5 ${
+              isInWishlist ? "fill-red-500 text-red-500" : "text-gray-600"
+            }`}
+          />
+        </button>
         <div className="relative aspect-[4/3] p-2 md:p-3">
           <ProductImage
             src={product.images[0]}

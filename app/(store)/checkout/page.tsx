@@ -152,7 +152,7 @@ function CheckoutForm() {
         return;
       }
 
-      const { error } = await stripe.confirmCardPayment(data.clientSecret, {
+      const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
         payment_method: { card: cardElement },
       });
 
@@ -160,6 +160,27 @@ function CheckoutForm() {
         setPaymentError(error.message || "Payment failed");
         setIsProcessing(false);
         return;
+      }
+
+      const paymentIntentId = paymentIntent?.id ?? data.paymentIntentId;
+      if (paymentIntentId) {
+        await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items,
+            shippingAddress: {
+              name: shippingData.fullName,
+              email: shippingData.email,
+              address: shippingData.address,
+              city: shippingData.city,
+              state: shippingData.state,
+              zip: shippingData.zipCode,
+              country: shippingData.country,
+            },
+            stripePaymentIntentId: paymentIntentId,
+          }),
+        });
       }
 
       setStep(3);

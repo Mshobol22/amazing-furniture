@@ -54,6 +54,12 @@ export default function AccountSidebar({ user }: AccountSidebarProps) {
 
         <nav className="mt-6 space-y-1">
           <Link
+            href="/"
+            className="flex items-center gap-2 rounded-md px-3 py-2 text-walnut hover:bg-light-sand"
+          >
+            ← Back to Store
+          </Link>
+          <Link
             href="/account"
             className="flex items-center gap-2 rounded-md px-3 py-2 text-charcoal hover:bg-light-sand"
           >

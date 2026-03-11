@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import type { CartItem, ShippingAddress } from "@/types";
+import { getEffectivePrice } from "@/store/cartStore";
 
 const SHIPPING_THRESHOLD = 299;
 const SHIPPING_CENTS = 2900;
@@ -30,7 +31,8 @@ export async function POST(request: NextRequest) {
 
     const subtotalCents = Math.round(
       body.items.reduce(
-        (sum, item) => sum + item.product.price * item.quantity,
+        (sum, item) =>
+          sum + getEffectivePrice(item.product) * item.quantity,
         0
       ) * 100
     );
@@ -61,6 +63,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
     });
   } catch (err) {
     console.error("Checkout error:", err);

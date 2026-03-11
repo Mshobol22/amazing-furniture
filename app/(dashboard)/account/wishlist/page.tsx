@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import AccountSidebar from "../AccountSidebar";
-import { Heart } from "lucide-react";
+import WishlistContent from "@/components/account/WishlistContent";
 
 export default async function WishlistPage() {
   const supabase = await createClient();
@@ -41,18 +40,7 @@ export default async function WishlistPage() {
               <h2 className="mb-6 font-display text-2xl font-semibold text-charcoal">
                 Wishlist
               </h2>
-              <div className="flex flex-col items-center justify-center py-16">
-                <Heart className="mb-4 h-16 w-16 text-warm-gray" />
-                <p className="mb-2 font-medium text-charcoal">No items in wishlist</p>
-                <p className="mb-6 text-sm text-warm-gray">
-                  Save items you love for later.
-                </p>
-                <Link href="/products">
-                  <span className="inline-block rounded-md bg-walnut px-4 py-2 text-cream hover:bg-walnut/90">
-                    Browse Products
-                  </span>
-                </Link>
-              </div>
+              <WishlistContent />
             </div>
           </main>
         </div>

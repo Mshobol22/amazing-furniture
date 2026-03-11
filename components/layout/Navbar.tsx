@@ -6,6 +6,7 @@ import { Heart, User, ShoppingBag, Menu } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useCartStore, useCartItemCount } from "@/store/cartStore";
+import { useWishlistCount } from "@/store/wishlistStore";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,17 +20,18 @@ import {
 import NavbarSearch from "./NavbarSearch";
 
 const CATEGORIES = [
-  { name: "Bed", slug: "bed" },
-  { name: "Chair", slug: "chair" },
-  { name: "Sofa", slug: "sofa" },
-  { name: "Table", slug: "table" },
-  { name: "Cabinet", slug: "cabinet" },
-  { name: "TV Stands", slug: "tv-stand" },
+  { name: "Beds & Bedroom", slug: "bed" },
+  { name: "Chairs & Recliners", slug: "chair" },
+  { name: "Sofas & Sectionals", slug: "sofa" },
+  { name: "Dining & Tables", slug: "table" },
+  { name: "Dressers & Cabinets", slug: "cabinet" },
+  { name: "TV Stands & Entertainment", slug: "tv-stand" },
 ] as const;
 
 export default function Navbar() {
   const openCart = useCartStore((state) => state.openCart);
   const cartCount = useCartItemCount();
+  const wishlistCount = useWishlistCount();
   const [user, setUser] = useState<SupabaseUser | null>(null);
 
   useEffect(() => {
@@ -70,14 +72,23 @@ export default function Navbar() {
         {/* Right icons */}
         <div className="flex items-center gap-2 sm:gap-4">
           <NavbarSearch />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-charcoal"
-            aria-label="Wishlist"
-          >
-            <Heart className="h-5 w-5" />
-          </Button>
+          <div className="relative inline-block">
+            <Link href="/wishlist">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-charcoal"
+                aria-label="Wishlist"
+              >
+                <Heart className="h-5 w-5" />
+              </Button>
+            </Link>
+            {wishlistCount > 0 && (
+              <Badge className="absolute -right-1 -top-1 h-5 min-w-5 px-1 text-xs bg-walnut text-cream hover:bg-walnut/90">
+                {wishlistCount}
+              </Badge>
+            )}
+          </div>
           <div className="relative inline-block">
             <Link href={user ? "/account" : "/login"}>
               <Button

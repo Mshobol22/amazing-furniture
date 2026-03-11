@@ -21,9 +21,12 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
+const BLUR_DATA =
+  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AKwA//9k=";
+
 export default function HeroBanner() {
   return (
-    <section className="relative h-screen w-full overflow-hidden">
+    <section className="relative h-screen w-full overflow-hidden bg-[#FAF8F5]">
       <Image
         src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1800"
         alt="Luxury living room"
@@ -31,6 +34,8 @@ export default function HeroBanner() {
         className="object-cover"
         priority
         sizes="100vw"
+        placeholder="blur"
+        blurDataURL={BLUR_DATA}
       />
       <div
         className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60"
