@@ -23,34 +23,29 @@ export default function ShippingPage() {
               Free Shipping
             </h2>
             <p>
-              Enjoy free standard shipping on all orders over $299. Orders under
-              $299 have a flat $29 shipping fee.
+              Orders over $299 ship free (standard).
             </p>
           </section>
 
           <section>
             <h2 className="font-display text-lg font-semibold text-charcoal">
-              Shipping Times
+              Standard Shipping
             </h2>
-            <ul className="list-disc space-y-1 pl-6">
-              <li>
-                <strong>Standard shipping:</strong> 5–10 business days
-              </li>
-              <li>
-                <strong>Express shipping:</strong> 2–5 business days (additional
-                fee applies)
-              </li>
-            </ul>
+            <p>5–10 business days</p>
+          </section>
+
+          <section>
+            <h2 className="font-display text-lg font-semibold text-charcoal">
+              Express Shipping
+            </h2>
+            <p>2–5 business days (additional fee at checkout)</p>
           </section>
 
           <section>
             <h2 className="font-display text-lg font-semibold text-charcoal">
               Delivery Area
             </h2>
-            <p>
-              We ship to the contiguous United States. Alaska, Hawaii, and
-              international shipping may be available—contact us for details.
-            </p>
+            <p>Contiguous 48 United States only</p>
           </section>
 
           <section>
@@ -58,9 +53,8 @@ export default function ShippingPage() {
               Delivery Options
             </h2>
             <p>
-              Furniture is delivered curbside. White-glove delivery (in-home
-              delivery and assembly) is available for select items for an
-              additional fee.
+              Curbside delivery standard. White-glove (room of choice +
+              packaging removal) available.
             </p>
           </section>
 
@@ -69,12 +63,7 @@ export default function ShippingPage() {
               Tracking
             </h2>
             <p>
-              Once your order ships, you&apos;ll receive tracking information via
-              email. You can also track your order on our{" "}
-              <Link href="/track-order" className="text-walnut hover:underline">
-                Order Tracking
-              </Link>{" "}
-              page.
+              You&apos;ll receive tracking info via email once shipped.
             </p>
           </section>
         </div>

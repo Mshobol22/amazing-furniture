@@ -57,7 +57,7 @@ export default function AccountSidebar({ user }: AccountSidebarProps) {
             href="/"
             className="flex items-center gap-2 rounded-md px-3 py-2 text-walnut hover:bg-light-sand"
           >
-            ← Back to Store
+            ← Continue Shopping
           </Link>
           <Link
             href="/account"

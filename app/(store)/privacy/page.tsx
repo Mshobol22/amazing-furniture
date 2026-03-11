@@ -23,22 +23,16 @@ export default function PrivacyPage() {
               Information We Collect
             </h2>
             <p>
-              We collect information you provide when placing an order or
-              creating an account: your name, email address, shipping address,
-              and payment information. Payment details are processed securely by
-              Stripe—we do not store your full credit card number.
+              Name, email, address, payment via Stripe.
             </p>
           </section>
 
           <section>
             <h2 className="font-display text-lg font-semibold text-charcoal">
-              How We Use Your Information
+              How We Use It
             </h2>
             <p>
-              We use your information to fulfill orders, manage your account,
-              send order confirmations and shipping updates, and improve our
-              services. We may also send promotional emails if you&apos;ve opted
-              in.
+              Order fulfillment, account management, marketing with consent.
             </p>
           </section>
 
@@ -47,10 +41,7 @@ export default function PrivacyPage() {
               Third Parties
             </h2>
             <p>
-              We share information with trusted partners: Stripe for payment
-              processing and shipping carriers for delivery. These parties are
-              required to protect your information and use it only for the
-              purposes we specify.
+              Stripe, shipping carriers.
             </p>
           </section>
 
@@ -59,9 +50,16 @@ export default function PrivacyPage() {
               Cookies
             </h2>
             <p>
-              We use cookies for site preferences, cart persistence, and
-              analytics. You can disable cookies in your browser settings, though
-              some features may not work correctly.
+              Cart persistence, site preferences.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-display text-lg font-semibold text-charcoal">
+              Your Rights
+            </h2>
+            <p>
+              Contact us to delete data.
             </p>
           </section>
 

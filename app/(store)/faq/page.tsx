@@ -11,42 +11,52 @@ const FAQ_ITEMS = [
   {
     value: "payment",
     q: "What payment methods do you accept?",
-    a: "We accept Visa and Mastercard through our secure Stripe checkout. All payments are processed securely.",
+    a: "Visa, Mastercard, Amex via Stripe. Secure checkout.",
   },
   {
     value: "shipping",
     q: "Do you offer free shipping?",
-    a: "Yes! We offer free standard shipping on all orders over $299. Orders under $299 have a flat $29 shipping fee.",
+    a: "Yes, free standard shipping on all orders over $299.",
   },
   {
     value: "returns",
     q: "What is your return policy?",
-    a: "We offer a 30-day easy return policy. Items must be in original condition and packaging. Refunds are processed within 5-7 business days.",
+    a: "30-day returns from delivery date. Items must be unused and in original packaging.",
   },
   {
     value: "delivery",
     q: "How long does delivery take?",
-    a: "Standard shipping takes 5-10 business days. Express shipping (2-5 business days) is available for an additional fee.",
+    a: "Standard: 5-10 business days. Express: 2-5 business days.",
   },
   {
     value: "assembly",
     q: "Do you assemble furniture?",
-    a: "Assembly instructions are included with all furniture. White-glove assembly service is available for select items for an additional fee.",
+    a: "Assembly instructions included. White-glove service available for select items.",
   },
   {
     value: "cancel",
     q: "Can I cancel my order?",
-    a: "Yes, you may cancel your order within 24 hours of placing it. Contact us at support@amazinghomefurniture.com to request a cancellation.",
+    a: "Yes, within 24 hours of placing. Email support@amazinghomefurniture.com",
   },
   {
-    value: "financing",
-    q: "Do you offer financing?",
-    a: "We do not currently offer financing, but we're working on it. Check back soon!",
+    value: "international",
+    q: "Do you ship outside the US?",
+    a: "Currently we ship to the contiguous 48 states only.",
   },
   {
     value: "track",
     q: "How do I track my order?",
-    a: "Once your order ships, you'll receive a tracking number via email. You can also visit our Order Tracking page (see link below).",
+    a: "You'll receive a tracking email once shipped. You can also visit our Track Order page.",
+  },
+  {
+    value: "damaged",
+    q: "What if my item arrives damaged?",
+    a: "Contact us within 48 hours with photos. We'll replace or refund immediately.",
+  },
+  {
+    value: "financing",
+    q: "Do you offer financing?",
+    a: "Not currently. Coming soon.",
   },
 ];
 

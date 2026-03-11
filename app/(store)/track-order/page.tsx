@@ -8,12 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function TrackOrderPage() {
-  const [orderNumber, setOrderNumber] = useState("");
-  const [email, setEmail] = useState("");
+  const [search, setSearch] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
   const handleTrack = (e: React.FormEvent) => {
     e.preventDefault();
-    // Placeholder - no backend yet
+    setSubmitted(true);
   };
 
   return (
@@ -31,45 +31,37 @@ export default function TrackOrderPage() {
           Track Your Order
         </h1>
 
-        <form onSubmit={handleTrack} className="space-y-4">
-          <div>
-            <Label htmlFor="orderNumber">Order Number</Label>
+        <form onSubmit={handleTrack} className="flex flex-col items-center gap-4">
+          <div className="w-full">
+            <Label htmlFor="search">Order number or email</Label>
             <Input
-              id="orderNumber"
-              value={orderNumber}
-              onChange={(e) => setOrderNumber(e.target.value)}
-              placeholder="e.g. ORD-12345"
+              id="search"
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Order number or email"
               className="mt-1"
             />
           </div>
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email used for order"
-              className="mt-1"
-            />
-          </div>
-          <Button type="submit" className="bg-walnut text-cream hover:bg-walnut/90">
+          <Button type="submit" className="w-full sm:w-auto bg-walnut text-cream hover:bg-walnut/90">
             Track Order
           </Button>
         </form>
 
-        <div className="mt-8 rounded-lg border border-gray-200 bg-cream/50 p-6">
-          <p className="text-sm text-warm-gray">
-            Order tracking is being set up. Please contact{" "}
-            <a
-              href="mailto:support@amazinghomefurniture.com"
-              className="text-walnut hover:underline"
-            >
-              support@amazinghomefurniture.com
-            </a>{" "}
-            with your order number for status updates.
-          </p>
-        </div>
+        {submitted && (
+          <div className="mt-8 rounded-lg border border-gray-200 bg-cream/50 p-6 text-center">
+            <p className="text-sm text-warm-gray">
+              Order tracking is coming soon. For immediate help, email{" "}
+              <a
+                href="mailto:support@amazinghomefurniture.com"
+                className="text-walnut hover:underline"
+              >
+                support@amazinghomefurniture.com
+              </a>{" "}
+              with your order number.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

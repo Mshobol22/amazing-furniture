@@ -21,8 +21,8 @@ export default function ContactPage() {
 
   const onSubmit = () => {
     toast({
-      title: "Message sent!",
-      description: "We'll get back to you within 1-2 business days.",
+      title: "Thanks!",
+      description: "We'll get back to you within 1 business day.",
     });
     reset();
   };
@@ -43,7 +43,7 @@ export default function ContactPage() {
         </h1>
 
         <div className="grid gap-12 lg:grid-cols-2">
-          <div>
+          <div className="rounded-lg border border-gray-200 bg-white p-6">
             <h2 className="mb-4 font-display text-lg font-semibold text-charcoal">
               Amazing Home Furniture
             </h2>

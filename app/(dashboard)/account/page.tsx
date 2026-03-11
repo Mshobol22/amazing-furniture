@@ -50,6 +50,12 @@ export default async function AccountPage() {
 
           {/* Main content */}
           <main className="flex-1">
+            <Link
+              href="/"
+              className="mb-6 inline-flex items-center text-sm font-medium text-walnut hover:underline"
+            >
+              ← Continue Shopping
+            </Link>
             <OrdersTab orders={orders ?? []} />
           </main>
         </div>
