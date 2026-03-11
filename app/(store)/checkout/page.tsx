@@ -358,12 +358,12 @@ function CheckoutForm() {
                       key={item.product.id}
                       className="flex gap-3 text-sm"
                     >
-                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded">
+                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded bg-gray-50 p-0.5">
                         <ProductImage
                           src={item.product.images[0]}
                           alt={item.product.name}
                           fill
-                          className="object-cover"
+                          className="object-contain"
                           sizes="48px"
                         />
                       </div>

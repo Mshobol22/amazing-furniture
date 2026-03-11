@@ -72,12 +72,12 @@ export default function CartPage() {
                   key={item.product.id}
                   className="flex gap-6 rounded-lg border border-light-sand bg-cream p-6"
                 >
-                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-light-sand">
+                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-gray-50 p-1">
                     <ProductImage
                       src={item.product.images[0]}
                       alt={item.product.name}
                       fill
-                      className="object-cover"
+                      className="object-contain"
                       sizes="96px"
                     />
                   </div>

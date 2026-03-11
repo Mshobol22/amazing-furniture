@@ -54,12 +54,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <div className="mb-16 grid gap-12 lg:grid-cols-[55%_1fr]">
           {/* Image gallery */}
           <div className="space-y-4">
-            <div className="relative aspect-square overflow-hidden rounded-lg bg-light-sand">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-50 p-3">
               <ProductImage
                 src={product.images[0]}
                 alt={product.name}
                 fill
-                className="object-cover"
+                className="object-contain"
                 priority
                 sizes="(max-width: 1024px) 100vw, 55vw"
               />
@@ -69,13 +69,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 {product.images.map((img, i) => (
                   <div
                     key={i}
-                    className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md border-2 border-transparent hover:border-walnut"
+                    className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md border-2 border-transparent bg-gray-50 p-1 hover:border-walnut"
                   >
                     <ProductImage
                       src={img}
                       alt={`${product.name} ${i + 1}`}
                       fill
-                      className="object-cover"
+                      className="object-contain"
                       sizes="80px"
                     />
                   </div>
@@ -149,7 +149,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <h2 className="mb-8 font-display text-2xl font-semibold text-charcoal">
               You May Also Like
             </h2>
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
               {relatedProducts.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}

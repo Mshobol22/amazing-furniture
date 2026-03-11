@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { FALLBACK_IMAGE } from "@/lib/utils";
 
 const ALLOWED_ORIGIN = "https://nationwidefd.com";
 
@@ -33,20 +34,14 @@ export async function GET(request: NextRequest) {
     });
 
     if (!res.ok) {
-      return NextResponse.json(
-        { error: "Upstream fetch failed" },
-        { status: 502 }
-      );
+      return NextResponse.redirect(FALLBACK_IMAGE, 302);
     }
 
     const contentType = res.headers.get("content-type") ?? "image/jpeg";
     const body = res.body;
 
     if (!body) {
-      return NextResponse.json(
-        { error: "No response body" },
-        { status: 502 }
-      );
+      return NextResponse.redirect(FALLBACK_IMAGE, 302);
     }
 
     return new NextResponse(body, {
@@ -56,9 +51,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch {
-    return NextResponse.json(
-      { error: "Upstream fetch failed" },
-      { status: 502 }
-    );
+    return NextResponse.redirect(FALLBACK_IMAGE, 302);
   }
 }

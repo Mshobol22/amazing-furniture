@@ -84,12 +84,12 @@ export default function CartDrawer() {
                       exit={{ opacity: 0, x: -20 }}
                       className="flex gap-4 border-b border-light-sand py-4 last:border-0"
                     >
-                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-light-sand">
+                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-50 p-1">
                         <ProductImage
                           src={item.product.images[0]}
                           alt={item.product.name}
                           fill
-                          className="object-cover"
+                          className="object-contain"
                           sizes="80px"
                         />
                       </div>

@@ -27,7 +27,7 @@ export default function FeaturedProducts({ products }: FeaturedProductsProps) {
         <h2 className="mb-12 font-display text-3xl font-semibold text-charcoal">
           Featured Collection
         </h2>
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
