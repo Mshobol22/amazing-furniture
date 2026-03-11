@@ -1,5 +1,6 @@
 import { getProducts } from "@/lib/supabase/products";
-import ProductGrid from "@/components/products/ProductGrid";
+import { getCategoryDisplayName } from "@/lib/collection-utils";
+import CollectionWithSort from "@/components/products/CollectionWithSort";
 
 interface CollectionPageProps {
   params: Promise<{ category: string }>;
@@ -8,9 +9,7 @@ interface CollectionPageProps {
 export default async function CollectionPage({ params }: CollectionPageProps) {
   const { category } = await params;
   const products = await getProducts(category);
-
-  const categoryLabel =
-    category.charAt(0).toUpperCase() + category.slice(1).replace("-", " ");
+  const categoryLabel = getCategoryDisplayName(category);
 
   return (
     <div className="px-4 py-12 sm:px-6 lg:px-8">
@@ -21,7 +20,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
         <p className="mb-8 text-sm text-warm-gray">
           {products.length} products
         </p>
-        <ProductGrid products={products} />
+        <CollectionWithSort products={products} />
       </div>
     </div>
   );

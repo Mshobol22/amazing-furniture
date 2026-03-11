@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Search, Heart, User, ShoppingBag, Menu } from "lucide-react";
+import { Heart, User, ShoppingBag, Menu } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useCartStore, useCartItemCount } from "@/store/cartStore";
-import { useScrollPosition } from "@/hooks/useScrollPosition";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,7 +16,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
+import NavbarSearch from "./NavbarSearch";
 
 const CATEGORIES = [
   { name: "Bed", slug: "bed" },
@@ -30,8 +28,6 @@ const CATEGORIES = [
 ] as const;
 
 export default function Navbar() {
-  const pathname = usePathname();
-  const isScrolled = useScrollPosition(50);
   const openCart = useCartStore((state) => state.openCart);
   const cartCount = useCartItemCount();
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -47,26 +43,13 @@ export default function Navbar() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const isHomepage = pathname === "/";
-  const isTransparent = isHomepage && !isScrolled;
-
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-300",
-        isTransparent
-          ? "bg-gradient-to-b from-black/40 to-transparent text-white"
-          : "bg-cream text-charcoal shadow-sm"
-      )}
-    >
+    <header className="sticky top-0 z-50 w-full bg-[#FAF8F5] shadow-sm">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link
           href="/"
-          className={cn(
-            "font-display text-xl font-semibold tracking-tight",
-            isTransparent ? "text-white" : "text-charcoal"
-          )}
+          className="font-display text-xl font-semibold tracking-tight text-charcoal"
         >
           Amazing Furniture
         </Link>
@@ -77,10 +60,7 @@ export default function Navbar() {
             <Link
               key={cat.slug}
               href={`/collections/${cat.slug}`}
-              className={cn(
-                "text-sm font-medium transition-colors hover:opacity-80",
-                isTransparent ? "text-white" : "text-charcoal"
-              )}
+              className="text-sm font-medium text-charcoal transition-colors hover:opacity-80"
             >
               {cat.name}
             </Link>
@@ -89,24 +69,11 @@ export default function Navbar() {
 
         {/* Right icons */}
         <div className="flex items-center gap-2 sm:gap-4">
+          <NavbarSearch />
           <Button
             variant="ghost"
             size="icon"
-            className={cn(
-              "h-9 w-9",
-              isTransparent ? "text-white hover:bg-white/10" : "text-charcoal"
-            )}
-            aria-label="Search"
-          >
-            <Search className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "h-9 w-9",
-              isTransparent ? "text-white hover:bg-white/10" : "text-charcoal"
-            )}
+            className="h-9 w-9 text-charcoal"
             aria-label="Wishlist"
           >
             <Heart className="h-5 w-5" />
@@ -116,10 +83,7 @@ export default function Navbar() {
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn(
-                  "h-9 w-9",
-                  isTransparent ? "text-white hover:bg-white/10" : "text-charcoal"
-                )}
+                className="h-9 w-9 text-charcoal"
                 aria-label="Account"
               >
                 <User className="h-5 w-5" />
@@ -137,10 +101,7 @@ export default function Navbar() {
               variant="ghost"
               size="icon"
               onClick={openCart}
-              className={cn(
-                "h-9 w-9",
-                isTransparent ? "text-white hover:bg-white/10" : "text-charcoal"
-              )}
+              className="h-9 w-9 text-charcoal"
               aria-label="Cart"
             >
               <ShoppingBag className="h-5 w-5" />
@@ -158,10 +119,7 @@ export default function Navbar() {
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn(
-                  "h-9 w-9 md:hidden",
-                  isTransparent ? "text-white hover:bg-white/10" : "text-charcoal"
-                )}
+                className="h-9 w-9 md:hidden text-charcoal"
                 aria-label="Open menu"
               >
                 <Menu className="h-5 w-5" />
