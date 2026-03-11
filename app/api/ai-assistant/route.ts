@@ -50,7 +50,7 @@ Keep responses concise and friendly. Format product recommendations as:
     }));
 
     const stream = await anthropic.messages.create({
-      model: "claude-sonnet-4.6",
+      model: "claude-sonnet-3-5-sonnet-latest",
       max_tokens: 1024,
       system: systemPrompt,
       messages: apiMessages,
