@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const CATEGORY_OPTIONS = [
   { value: "all", label: "All Products" },
@@ -23,6 +24,7 @@ const PRODUCT_COUNTS: Record<string, number> = {
 };
 
 export default function CreateSaleForm() {
+  const router = useRouter();
   const [category, setCategory] = useState("all");
   const [discount, setDiscount] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,17 +43,23 @@ export default function CreateSaleForm() {
     setSuccess(null);
     setError(null);
     if (!isValidDiscount) return;
+
+    const payload = { category, discount: discountNum };
+    console.log("CreateSaleForm submit:", payload);
+
     setLoading(true);
     try {
       const res = await fetch("/api/admin/promotions/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category, discount: discountNum }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess(`Sale applied to ${data.updated} products`);
+        const count = typeof data.updated === "number" ? data.updated : 0;
+        setSuccess(`Sale applied to ${count} products`);
         setDiscount("");
+        router.refresh();
       } else {
         setError(data.error ?? "Failed to apply sale");
       }
@@ -65,7 +73,7 @@ export default function CreateSaleForm() {
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       <h2 className="mb-4 font-medium text-charcoal">Create New Sale</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
         <div className="flex flex-wrap gap-6">
           <div>
             <label className="block text-sm text-warm-gray">Category</label>
@@ -86,6 +94,7 @@ export default function CreateSaleForm() {
               Discount %
             </label>
             <input
+              name="discount"
               type="number"
               min={1}
               max={90}
