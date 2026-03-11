@@ -1,16 +1,22 @@
-import Anthropic from "@anthropic-ai/sdk";
+import Groq from "groq-sdk";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractSku } from "@/lib/utils";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
 });
 
 export async function POST(request: Request) {
   try {
-    const { messages, sessionId } = (await request.json()) as {
+    if (!process.env.GROQ_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: "GROQ_API_KEY is not configured" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const { messages } = (await request.json()) as {
       messages: Array<{ role: "user" | "assistant"; content: string }>;
-      sessionId?: string;
     };
 
     if (!messages?.length) {
@@ -49,11 +55,13 @@ Keep responses concise and friendly. Format product recommendations as:
       content: m.content,
     }));
 
-    const stream = await anthropic.messages.create({
-      model: "claude-sonnet-3-5-sonnet-latest",
+    const stream = await groq.chat.completions.create({
+      model: "llama-3.1-70b-versatile",
       max_tokens: 1024,
-      system: systemPrompt,
-      messages: apiMessages,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...apiMessages,
+      ],
       stream: true,
     });
 
@@ -61,12 +69,10 @@ Keep responses concise and friendly. Format product recommendations as:
       async start(controller) {
         const encoder = new TextEncoder();
         try {
-          for await (const event of stream) {
-            if (
-              event.type === "content_block_delta" &&
-              event.delta.type === "text_delta"
-            ) {
-              controller.enqueue(encoder.encode(event.delta.text));
+          for await (const chunk of stream) {
+            const text = chunk.choices[0]?.delta?.content || "";
+            if (text) {
+              controller.enqueue(encoder.encode(text));
             }
           }
           controller.close();

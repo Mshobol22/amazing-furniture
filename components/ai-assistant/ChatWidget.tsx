@@ -109,7 +109,15 @@ export default function ChatWidget() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to get response");
+        const errBody = await response.text();
+        let errMsg = `Error ${response.status}`;
+        try {
+          const parsed = JSON.parse(errBody);
+          if (parsed.error) errMsg = parsed.error;
+        } catch {
+          if (errBody) errMsg = errBody.slice(0, 200);
+        }
+        throw new Error(errMsg);
       }
 
       const reader = response.body?.getReader();
@@ -132,11 +140,13 @@ export default function ChatWidget() {
         }
       }
     } catch (err) {
+      const errorMsg =
+        err instanceof Error ? err.message : "Failed to process request";
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Sorry, I couldn't process your request. Please try again.",
+          content: `Sorry, I couldn't process your request. ${errorMsg}`,
         },
       ]);
     } finally {
