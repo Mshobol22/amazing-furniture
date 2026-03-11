@@ -2,6 +2,9 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CartItem, Product } from "@/types";
 
+export const getEffectivePrice = (p: Product) =>
+  p.on_sale && p.sale_price != null ? p.sale_price : p.price;
+
 interface CartStore {
   items: CartItem[];
   isOpen: boolean;
@@ -73,7 +76,7 @@ const useCartStoreBase = create<CartStore>()(
 export const useCartTotal = () =>
   useCartStoreBase((state) =>
     state.items.reduce(
-      (sum, item) => sum + item.product.price * item.quantity,
+      (sum, item) => sum + getEffectivePrice(item.product) * item.quantity,
       0
     )
   );

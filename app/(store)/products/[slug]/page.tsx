@@ -92,15 +92,28 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             {/* Price */}
             <div className="mt-4 flex items-center gap-2">
-              <span className="text-2xl font-semibold text-charcoal">
-                ${product.price.toLocaleString()}
-              </span>
-              {product.compare_price != null &&
-                product.compare_price > product.price && (
-                  <span className="text-lg text-warm-gray line-through">
-                    ${product.compare_price.toLocaleString()}
+              {product.on_sale && product.sale_price != null ? (
+                <>
+                  <span className="text-2xl font-semibold text-red-600">
+                    ${product.sale_price.toLocaleString()}
                   </span>
-                )}
+                  <span className="text-lg text-warm-gray line-through">
+                    ${product.price.toLocaleString()}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-2xl font-semibold text-charcoal">
+                    ${product.price.toLocaleString()}
+                  </span>
+                  {product.compare_price != null &&
+                    product.compare_price > product.price && (
+                      <span className="text-lg text-warm-gray line-through">
+                        ${product.compare_price.toLocaleString()}
+                      </span>
+                    )}
+                </>
+              )}
             </div>
 
             {/* In stock badge - default to In Stock unless explicitly out of stock */}

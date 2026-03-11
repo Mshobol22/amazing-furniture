@@ -11,6 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { getEffectivePrice } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -101,7 +102,7 @@ export default function CartDrawer() {
                           {categoryLabel(item.product.category)}
                         </p>
                         <p className="mt-1 text-sm text-warm-gray">
-                          ${item.product.price.toLocaleString()} each
+                          ${getEffectivePrice(item.product).toLocaleString()} each
                         </p>
                         <div className="mt-2 flex items-center gap-2">
                           <Button
@@ -146,7 +147,7 @@ export default function CartDrawer() {
                       <p className="shrink-0 font-medium text-charcoal">
                         $
                         {(
-                          item.product.price * item.quantity
+                          getEffectivePrice(item.product) * item.quantity
                         ).toLocaleString()}
                       </p>
                     </motion.div>

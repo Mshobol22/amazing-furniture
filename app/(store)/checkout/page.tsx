@@ -16,7 +16,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Lock, CreditCard } from "lucide-react";
-import { useCartStore, useCartItemCount, useCartTotal } from "@/store/cartStore";
+import { useCartStore, useCartItemCount, useCartTotal, getEffectivePrice } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { createClient } from "@/lib/supabase/client";
@@ -371,13 +371,13 @@ function CheckoutForm() {
                         <p className="font-medium">{item.product.name}</p>
                         <p className="text-warm-gray">
                           {item.quantity} × $
-                          {item.product.price.toLocaleString()}
+                          {getEffectivePrice(item.product).toLocaleString()}
                         </p>
                       </div>
                       <p className="font-medium">
                         $
                         {(
-                          item.product.price * item.quantity
+                          getEffectivePrice(item.product) * item.quantity
                         ).toLocaleString()}
                       </p>
                     </div>
@@ -465,7 +465,7 @@ function CheckoutForm() {
                     <span>
                       $
                       {(
-                        item.product.price * item.quantity
+                        getEffectivePrice(item.product) * item.quantity
                       ).toLocaleString()}
                     </span>
                   </div>

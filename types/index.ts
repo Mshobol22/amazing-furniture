@@ -5,6 +5,8 @@ export interface Product {
   description: string;
   price: number;
   compare_price?: number;
+  sale_price?: number;
+  on_sale?: boolean;
   images: string[];
   category: string;
   in_stock: boolean;

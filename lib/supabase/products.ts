@@ -1,7 +1,7 @@
 import { createAdminClient } from "./admin";
 import type { Product } from "@/types";
 
-function mapRowToProduct(row: Record<string, unknown>): Product {
+export function mapRowToProduct(row: Record<string, unknown>): Product {
   return {
     id: row.id as string,
     name: row.name as string,
@@ -9,6 +9,8 @@ function mapRowToProduct(row: Record<string, unknown>): Product {
     description: row.description as string,
     price: Number(row.price),
     compare_price: row.compare_price != null ? Number(row.compare_price) : undefined,
+    sale_price: row.sale_price != null ? Number(row.sale_price) : undefined,
+    on_sale: Boolean(row.on_sale),
     images: (row.images as string[]) ?? [],
     category: row.category as string,
     in_stock: row.in_stock === false ? false : true,

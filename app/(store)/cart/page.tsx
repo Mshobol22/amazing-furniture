@@ -7,6 +7,7 @@ import {
   useCartStore,
   useCartItemCount,
   useCartTotal,
+  getEffectivePrice,
 } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
 
@@ -132,7 +133,7 @@ export default function CartPage() {
                   </div>
                   <p className="shrink-0 text-lg font-semibold text-charcoal">
                     $
-                    {(item.product.price * item.quantity).toLocaleString()}
+                    {(getEffectivePrice(item.product) * item.quantity).toLocaleString()}
                   </p>
                 </div>
               ))}

@@ -51,13 +51,26 @@ export default function ProductCard({ product, className }: ProductCardProps) {
           {product.name}
         </h3>
         <p className="text-lg font-semibold text-gray-900">
-          ${product.price.toLocaleString()}
-          {product.compare_price != null &&
-            product.compare_price > product.price && (
-              <span className="ml-2 text-sm font-normal text-gray-500 line-through">
-                ${product.compare_price.toLocaleString()}
+          {product.on_sale && product.sale_price != null ? (
+            <>
+              <span className="text-red-600">
+                ${product.sale_price.toLocaleString()}
               </span>
-            )}
+              <span className="ml-2 text-sm font-normal text-gray-500 line-through">
+                ${product.price.toLocaleString()}
+              </span>
+            </>
+          ) : (
+            <>
+              ${product.price.toLocaleString()}
+              {product.compare_price != null &&
+                product.compare_price > product.price && (
+                  <span className="ml-2 text-sm font-normal text-gray-500 line-through">
+                    ${product.compare_price.toLocaleString()}
+                  </span>
+                )}
+            </>
+          )}
         </p>
         <Button
           onClick={handleAddToCart}
