@@ -11,7 +11,7 @@ function mapRowToProduct(row: Record<string, unknown>): Product {
     compare_price: row.compare_price != null ? Number(row.compare_price) : undefined,
     images: (row.images as string[]) ?? [],
     category: row.category as string,
-    in_stock: Boolean(row.in_stock),
+    in_stock: row.in_stock === false ? false : true,
     rating: Number(row.rating ?? 0),
     review_count: Number(row.review_count ?? 0),
     tags: (row.tags as string[]) ?? [],
@@ -61,7 +61,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 export async function getFeaturedProducts(): Promise<Product[]> {
   const supabase = createAdminClient();
 
-  const categories = ["bed", "chair", "sofa", "table"];
+  const categories = ["sofa", "bed", "table", "chair"];
   const products: Product[] = [];
 
   for (const category of categories) {
@@ -69,7 +69,7 @@ export async function getFeaturedProducts(): Promise<Product[]> {
       .from("products")
       .select("*")
       .eq("category", category)
-      .order("created_at", { ascending: false })
+      .order("price", { ascending: false })
       .limit(2);
 
     if (error) {
@@ -82,7 +82,7 @@ export async function getFeaturedProducts(): Promise<Product[]> {
     }
   }
 
-  return products;
+  return products.slice(0, 8);
 }
 
 export async function searchProducts(query: string): Promise<Product[]> {

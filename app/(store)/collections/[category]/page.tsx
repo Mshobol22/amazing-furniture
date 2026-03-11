@@ -15,9 +15,12 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
   return (
     <div className="px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <h1 className="mb-8 font-display text-3xl font-semibold text-charcoal">
+        <h1 className="mb-2 font-display text-3xl font-semibold text-charcoal">
           {categoryLabel}
         </h1>
+        <p className="mb-8 text-sm text-warm-gray">
+          {products.length} products
+        </p>
         <ProductGrid products={products} />
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Star, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import {
   getProductBySlug,
   getProducts,
@@ -90,25 +90,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {product.name}
             </h1>
 
-            {/* Star rating */}
-            <div className="mt-2 flex items-center gap-2">
-              <div className="flex">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    className={`h-5 w-5 ${
-                      star <= Math.round(product.rating)
-                        ? "fill-walnut text-walnut"
-                        : "text-light-sand"
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="text-sm text-warm-gray">
-                {product.rating} ({product.review_count} reviews)
-              </span>
-            </div>
-
             {/* Price */}
             <div className="mt-4 flex items-center gap-2">
               <span className="text-2xl font-semibold text-charcoal">
@@ -122,9 +103,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 )}
             </div>
 
-            {/* In stock badge */}
+            {/* In stock badge - default to In Stock unless explicitly out of stock */}
             <div className="mt-4">
-              {product.in_stock ? (
+              {product.in_stock !== false ? (
                 <span className="inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
                   In Stock
                 </span>
