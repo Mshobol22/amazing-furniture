@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
-    const isAdmin = user.user_metadata?.role === "admin";
+    const isAdmin = user.app_metadata?.role === "admin";
     if (!isAdmin) {
       return NextResponse.redirect(new URL("/", request.url));
     }

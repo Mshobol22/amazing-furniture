@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import type { User } from "@supabase/supabase-js";
 
 export function isAdmin(user: User | null): boolean {
-  return user?.user_metadata?.role === "admin";
+  return user?.app_metadata?.role === "admin";
 }
 
 export async function createClient() {
