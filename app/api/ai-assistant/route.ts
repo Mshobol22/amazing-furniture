@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       )
       .join("\n");
 
-    const systemPrompt = `You are a helpful furniture shopping assistant for Amazing Furniture.
+    const systemPrompt = `You are a helpful furniture shopping assistant for Amazing Home Furniture.
 Help customers find furniture. When recommending products, format as:
 **[Name]** - $[price] → /products/[slug]
 

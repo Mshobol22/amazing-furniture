@@ -51,7 +51,7 @@ export default function Navbar() {
           href="/"
           className="font-display text-xl font-semibold tracking-tight text-charcoal"
         >
-          Amazing Furniture
+          Amazing Home Furniture
         </Link>
 
         {/* Center nav - desktop only */}

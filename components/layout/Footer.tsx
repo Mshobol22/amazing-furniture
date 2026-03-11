@@ -51,7 +51,7 @@ export default function Footer() {
             {/* Brand */}
             <div>
               <Link href="/" className="font-display text-xl font-semibold">
-                Amazing Furniture
+                Amazing Home Furniture
               </Link>
               <p className="mt-3 text-sm text-cream/80">
                 Handcrafted furniture for the modern home. Elevate your living
@@ -154,7 +154,7 @@ export default function Footer() {
       <div className="border-t border-white/10 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
           <p className="text-sm text-cream/60">
-            © {new Date().getFullYear()} Amazing Furniture. All rights reserved.
+            © {new Date().getFullYear()} Amazing Home Furniture. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1 text-sm text-cream/60">

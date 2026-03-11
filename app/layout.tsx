@@ -16,8 +16,12 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Amazing Furniture",
+  title: "Amazing Home Furniture",
   description: "Modern luxury furniture store",
+  openGraph: {
+    title: "Amazing Home Furniture",
+    siteName: "Amazing Home Furniture",
+  },
 };
 
 export default function RootLayout({

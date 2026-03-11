@@ -7,7 +7,7 @@ export default function AuthNav() {
         href="/"
         className="font-display text-lg text-[#1C1C1C] hover:opacity-80"
       >
-        Amazing Furniture
+        Amazing Home Furniture
       </Link>
       <Link
         href="/"

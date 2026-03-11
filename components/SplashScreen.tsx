@@ -45,7 +45,7 @@ export default function SplashScreen() {
             className="font-display text-5xl font-bold"
             style={{ color: "#1C1C1C" }}
           >
-            Furniture
+            Home Furniture
           </p>
         </div>
         <div className="mx-auto mt-6 h-0.5 w-48 overflow-hidden rounded bg-gray-200">

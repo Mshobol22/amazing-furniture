@@ -114,7 +114,7 @@ export default function SignupPage() {
         <div className="w-full max-w-md">
           <div className="rounded-xl border border-light-sand bg-white p-8 shadow-sm text-center">
             <h1 className="mb-4 font-display text-2xl font-semibold text-charcoal">
-              Amazing Furniture
+              Amazing Home Furniture
             </h1>
             <p className="mb-6 text-warm-gray">
               Check your email to confirm your account.
@@ -138,7 +138,7 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
         <div className="rounded-xl border border-light-sand bg-white p-8 shadow-sm">
           <h1 className="mb-8 text-center font-display text-2xl font-semibold text-charcoal">
-            Amazing Furniture
+            Amazing Home Furniture
           </h1>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
