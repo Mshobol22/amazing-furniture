@@ -91,14 +91,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </h1>
 
             {/* Price */}
-            <div className="mt-4 flex items-center gap-2">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               {product.on_sale && product.sale_price != null ? (
                 <>
-                  <span className="text-2xl font-semibold text-red-600">
+                  <span
+                    className="text-2xl font-semibold"
+                    style={{ color: "#DC2626" }}
+                  >
                     ${product.sale_price.toLocaleString()}
                   </span>
                   <span className="text-lg text-warm-gray line-through">
                     ${product.price.toLocaleString()}
+                  </span>
+                  <span
+                    className="rounded px-2 py-0.5 text-sm font-semibold text-white"
+                    style={{ backgroundColor: "#DC2626" }}
+                  >
+                    {Math.round(
+                      (1 - product.sale_price / product.price) * 100
+                    )}
+                    % OFF
                   </span>
                 </>
               ) : (

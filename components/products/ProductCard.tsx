@@ -31,6 +31,14 @@ export default function ProductCard({ product, className }: ProductCardProps) {
       )}
     >
       <div className="relative overflow-hidden rounded-t-lg bg-gray-50">
+        {product.on_sale && product.sale_price != null && (
+          <span
+            className="absolute left-2 top-2 z-10 rounded px-2 py-0.5 text-xs font-semibold text-white"
+            style={{ backgroundColor: "#DC2626" }}
+          >
+            SALE
+          </span>
+        )}
         <div className="relative aspect-[4/3] p-2 md:p-3">
           <ProductImage
             src={product.images[0]}
@@ -53,7 +61,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         <p className="text-lg font-semibold text-gray-900">
           {product.on_sale && product.sale_price != null ? (
             <>
-              <span className="text-red-600">
+              <span style={{ color: "#DC2626" }}>
                 ${product.sale_price.toLocaleString()}
               </span>
               <span className="ml-2 text-sm font-normal text-gray-500 line-through">
