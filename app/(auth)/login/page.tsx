@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import AuthNav from "@/components/layout/AuthNav";
 
 const loginSchema = z.object({
   email: z.string().email("Valid email is required"),
@@ -96,7 +97,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-cream px-4 py-12">
+    <div className="flex min-h-screen flex-col bg-cream">
+      <AuthNav />
+      <div className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="rounded-xl border border-light-sand bg-white p-8 shadow-sm">
           <h1 className="mb-8 text-center font-display text-2xl font-semibold text-charcoal">
@@ -182,6 +185,7 @@ export default function LoginPage() {
             </p>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

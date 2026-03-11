@@ -1,7 +1,8 @@
-import Navbar from "@/components/layout/Navbar";
+import ConditionalStoreNav from "@/components/layout/ConditionalStoreNav";
 import Footer from "@/components/layout/Footer";
 import CartDrawer from "@/components/cart/CartDrawer";
 import ChatWidget from "@/components/ai-assistant/ChatWidget";
+import SplashScreen from "@/components/SplashScreen";
 
 export default function StoreLayout({
   children,
@@ -10,7 +11,8 @@ export default function StoreLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar />
+      <SplashScreen />
+      <ConditionalStoreNav />
       <main className="flex-1">{children}</main>
       <Footer />
       <CartDrawer />
