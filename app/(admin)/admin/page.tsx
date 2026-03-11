@@ -1,50 +1,41 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { Package, ShoppingCart, DollarSign, AlertTriangle } from "lucide-react";
+import { Package, CheckCircle, XCircle, Tag } from "lucide-react";
 
 async function getStats() {
   const supabase = createAdminClient();
 
-  const [productsRes, ordersRes, outOfStockRes] = await Promise.all([
+  const [totalRes, inStockRes, outOfStockRes, onSaleRes] = await Promise.all([
     supabase.from("products").select("id", { count: "exact", head: true }),
-    supabase.from("orders").select("total, status"),
-    supabase.from("products").select("id", { count: "exact", head: true }).eq("in_stock", false),
+    supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("in_stock", true),
+    supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("in_stock", false),
+    supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("on_sale", true),
   ]);
 
-  const totalProducts = productsRes.count ?? 0;
-  const orders = ordersRes.data ?? [];
-  const totalOrders = orders.length;
-  const totalRevenue = orders
-    .filter((o) => ["paid", "shipped", "delivered"].includes(o.status))
-    .reduce((sum, o) => sum + Number(o.total), 0);
-  const outOfStock = outOfStockRes.count ?? 0;
-
-  return { totalProducts, totalOrders, totalRevenue, outOfStock };
+  return {
+    totalProducts: totalRes.count ?? 0,
+    inStock: inStockRes.count ?? 0,
+    outOfStock: outOfStockRes.count ?? 0,
+    onSale: onSaleRes.count ?? 0,
+  };
 }
 
 export default async function AdminDashboardPage() {
   const stats = await getStats();
 
   const cards = [
-    {
-      label: "Total Products",
-      value: stats.totalProducts,
-      icon: Package,
-    },
-    {
-      label: "Total Orders",
-      value: stats.totalOrders,
-      icon: ShoppingCart,
-    },
-    {
-      label: "Total Revenue",
-      value: `$${stats.totalRevenue.toLocaleString()}`,
-      icon: DollarSign,
-    },
-    {
-      label: "Products Out of Stock",
-      value: stats.outOfStock,
-      icon: AlertTriangle,
-    },
+    { label: "Total Products", value: stats.totalProducts, icon: Package },
+    { label: "In Stock", value: stats.inStock, icon: CheckCircle },
+    { label: "Out of Stock", value: stats.outOfStock, icon: XCircle },
+    { label: "On Sale", value: stats.onSale, icon: Tag },
   ];
 
   return (

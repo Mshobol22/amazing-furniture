@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { mapRowToProduct } from "@/lib/supabase/products";
 import type { Product } from "@/types";
-import ProductsTable from "./ProductsTable";
+import ProductsTable from "@/components/admin/ProductsTable";
 
 export default async function AdminProductsPage() {
   const supabase = createAdminClient();

@@ -1,12 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient, isAdmin } from "@/lib/supabase/server";
-import {
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  Tag,
-} from "lucide-react";
+import { AdminNav } from "@/components/admin/AdminNav";
 
 export default async function AdminLayout({
   children,
@@ -22,39 +17,27 @@ export default async function AdminLayout({
     redirect("/");
   }
 
-  const navItems = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/products", label: "Products", icon: Package },
-    { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
-    { href: "/admin/products/promotions", label: "Promotions", icon: Tag },
-  ];
-
   return (
     <div className="flex min-h-screen bg-[#FAF8F5]">
-      <aside className="w-64 shrink-0 border-r border-gray-200 bg-white">
-        <div className="flex h-16 items-center border-b border-gray-200 px-4">
-          <Link href="/admin" className="font-display text-lg font-semibold text-charcoal">
+      <aside
+        className="w-[240px] shrink-0 flex flex-col"
+        style={{ backgroundColor: "#1C1C1C" }}
+      >
+        <div className="flex h-16 items-center px-4 border-b border-white/10">
+          <Link
+            href="/admin"
+            className="font-display text-lg font-semibold text-white"
+          >
             Admin
           </Link>
         </div>
-        <div className="border-b border-gray-200 px-4 py-4">
-          <p className="text-sm font-medium text-charcoal truncate">
+        <AdminNav />
+        <div className="border-t border-white/10 p-4">
+          <p className="text-sm font-medium text-white/90 truncate">
             {user.email}
           </p>
-          <p className="text-xs text-warm-gray">Store Admin</p>
+          <p className="text-xs text-white/60 mt-0.5">Store Admin</p>
         </div>
-        <nav className="p-4 space-y-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-charcoal hover:bg-gray-100"
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
       </aside>
       <main className="flex-1 overflow-auto p-8">{children}</main>
     </div>
