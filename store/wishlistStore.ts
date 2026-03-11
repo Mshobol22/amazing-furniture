@@ -7,6 +7,7 @@ interface WishlistStore {
   removeItem: (id: string) => void;
   toggleItem: (id: string) => void;
   isInWishlist: (id: string) => boolean;
+  clearWishlist: () => void;
 }
 
 const useWishlistStoreBase = create<WishlistStore>()(
@@ -34,9 +35,11 @@ const useWishlistStoreBase = create<WishlistStore>()(
         ),
 
       isInWishlist: (id) => get().items.includes(id),
+
+      clearWishlist: () => set({ items: [] }),
     }),
     {
-      name: "amazing-home-furniture-wishlist",
+      name: "wishlist-storage",
       partialize: (state) => ({ items: state.items }),
     }
   )

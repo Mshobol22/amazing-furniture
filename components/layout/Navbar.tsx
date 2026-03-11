@@ -73,7 +73,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2 sm:gap-4">
           <NavbarSearch />
           <div className="relative inline-block">
-            <Link href="/wishlist">
+            <Link href="/account/wishlist">
               <Button
                 variant="ghost"
                 size="icon"

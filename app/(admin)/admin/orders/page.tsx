@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import OrdersTable from "./OrdersTable";
+import OrdersTable from "@/components/admin/OrdersTable";
 
 export default async function AdminOrdersPage() {
   const supabase = createAdminClient();

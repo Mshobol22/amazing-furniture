@@ -5,7 +5,6 @@ import Link from "next/link";
 import { CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIES = [
   { name: "Beds & Bedroom", slug: "bed" },
@@ -19,17 +18,26 @@ const CATEGORIES = [
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Footer() {
-  const { toast } = useToast();
   const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!EMAIL_REGEX.test(email.trim())) return;
-    toast({
-      title: "Thanks for subscribing!",
-      description: "You'll hear from us soon.",
-    });
+    setError(null);
+    setSuccess(false);
+
+    if (!EMAIL_REGEX.test(email.trim())) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    setIsSubmitting(true);
+    await new Promise((r) => setTimeout(r, 800));
+    setSuccess(true);
     setEmail("");
+    setIsSubmitting(false);
   };
 
   return (
@@ -46,19 +54,36 @@ export default function Footer() {
                 Get exclusive offers and design inspiration.
               </p>
             </div>
-            <form onSubmit={handleSubscribe} className="flex w-full max-w-md flex-col gap-2 sm:flex-row">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 border-white/20 bg-white/5 text-cream placeholder:text-cream/50 focus-visible:ring-walnut"
-              />
+            <form
+              onSubmit={handleSubscribe}
+              className="flex w-full max-w-md flex-col gap-2 sm:flex-row sm:items-start"
+            >
+              <div className="flex-1">
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setError(null);
+                  }}
+                  className="border-white/20 bg-white/5 text-cream placeholder:text-cream/50 focus-visible:ring-walnut"
+                />
+                {error && (
+                  <p className="mt-1 text-sm text-red-400">{error}</p>
+                )}
+                {success && (
+                  <p className="mt-1 text-sm text-green-400">
+                    You&apos;re on the list! Expect exclusive deals soon.
+                  </p>
+                )}
+              </div>
               <Button
                 type="submit"
-                className="bg-walnut text-cream hover:bg-walnut/90"
+                disabled={isSubmitting}
+                className="bg-walnut text-cream hover:bg-walnut/90 disabled:opacity-50"
               >
-                Subscribe
+                {isSubmitting ? "Submitting..." : "Subscribe"}
               </Button>
             </form>
           </div>

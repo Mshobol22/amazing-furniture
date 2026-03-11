@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
         customer_name: body.shippingAddress.name,
         customer_email: body.shippingAddress.email,
         total,
-        status: "paid",
+        status: "pending",
         shipping_address: body.shippingAddress,
         items: body.items.map((i) => ({
           product_id: i.product.id,
