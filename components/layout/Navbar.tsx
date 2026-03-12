@@ -1,33 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { Heart, User, ShoppingBag, Menu } from "lucide-react";
+import { usePathname } from "next/navigation";
+import {
+  Heart,
+  User,
+  ShoppingBag,
+  Menu,
+  Search,
+  X,
+  ChevronRight,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useCartStore, useCartItemCount } from "@/store/cartStore";
-import { useWishlistCount } from "@/store/wishlistStore";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
-import NavbarSearch from "./NavbarSearch";
+import { useWishlistStore, useWishlistCount } from "@/store/wishlistStore";
+import type { Product } from "@/types";
 
-const CATEGORY_DROPDOWNS: Record<
+const CATEGORIES: Record<
   string,
   { name: string; slug: string; subcategories: { label: string; filter?: string }[] }
 > = {
@@ -81,214 +72,409 @@ const CATEGORY_DROPDOWNS: Record<
     ],
   },
   "tv-stand": {
-    name: "TV Stands & Entertainment",
+    name: "TV Stands",
     slug: "tv-stand",
     subcategories: [{ label: "All TV Stands" }],
   },
 };
 
-function SubcategoryLink({
-  href,
-  children,
-}: {
-  href: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link href={href} legacyBehavior passHref>
-      <NavigationMenuLink
-        className="block px-4 py-2 text-sm text-[#1C1C1C] hover:underline hover:decoration-[#8B6914] hover:decoration-2"
-      >
-        {children}
-      </NavigationMenuLink>
-    </Link>
-  );
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debouncedValue;
 }
 
 export default function Navbar() {
+  const pathname = usePathname();
   const openCart = useCartStore((state) => state.openCart);
   const cartCount = useCartItemCount();
   const wishlistCount = useWishlistCount();
+  const wishlistItems = useWishlistStore((state) => state.items);
+  const hasWishlistItems = wishlistItems.length > 0;
+
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [dropdownCloseTimer, setDropdownCloseTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
   const [user, setUser] = useState<SupabaseUser | null>(null);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  const debouncedQuery = useDebounce(searchQuery, 300);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  return (
-    <header className="sticky top-0 z-50 w-full bg-[#FAF8F5] shadow-sm">
-      <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link
-          href="/"
-          className="font-display text-xl font-semibold tracking-tight text-charcoal"
-        >
-          Amazing Home Furniture
-        </Link>
+  useEffect(() => {
+    if (!debouncedQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setIsSearching(true);
+    fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`)
+      .then((res) => res.json())
+      .then((data) => setSearchResults(Array.isArray(data) ? data : []))
+      .catch(() => setSearchResults([]))
+      .finally(() => setIsSearching(false));
+  }, [debouncedQuery]);
 
-        {/* Center nav - desktop only */}
-        <div className="hidden md:block">
-          <NavigationMenu>
-            <NavigationMenuList className="gap-1">
-              {Object.entries(CATEGORY_DROPDOWNS).map(([slug, cat]) => (
-                <NavigationMenuItem key={slug}>
-                  <NavigationMenuTrigger className="bg-transparent text-sm font-medium text-charcoal hover:bg-transparent hover:text-charcoal data-[state=open]:bg-transparent">
-                    {cat.name}
-                  </NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul
-                      className="w-[220px] p-2"
-                      style={{
-                        backgroundColor: "#FAF8F5",
-                        border: "1px solid #e8e0d5",
-                        boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
-                      }}
-                    >
-                      <li className="mb-2 px-4 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#8B6914]">
-                        {cat.name}
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSearchOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  const handleDropdownEnter = (key: string) => {
+    if (dropdownCloseTimer) {
+      clearTimeout(dropdownCloseTimer);
+      setDropdownCloseTimer(null);
+    }
+    setActiveDropdown(key);
+  };
+
+  const handleDropdownLeave = () => {
+    const timer = setTimeout(() => setActiveDropdown(null), 150);
+    setDropdownCloseTimer(timer);
+  };
+
+  const categoryLabel = (cat: string) =>
+    cat.charAt(0).toUpperCase() + cat.slice(1).replace("-", " ");
+
+  const isCollectionActive = (slug: string) =>
+    pathname.startsWith(`/collections/${slug}`);
+
+  return (
+    <>
+      <header className="sticky top-0 z-50 w-full bg-[#FAF8F5] border-b border-[#ede8e3]">
+        {/* Row 1 */}
+        <div className="relative flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex w-10 items-center lg:w-0">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden flex h-10 w-10 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded"
+              aria-label="Open menu"
+            >
+              <Menu className="h-5 w-5" strokeWidth={2} />
+            </button>
+          </div>
+          <Link
+            href="/"
+            className="absolute left-1/2 -translate-x-1/2 font-display font-semibold text-[#1C1C1C]"
+            style={{ fontSize: "clamp(14px, 3vw, 20px)" }}
+          >
+            Amazing Home Furniture
+          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="flex h-10 w-10 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded"
+              aria-label="Search"
+            >
+              <Search className="h-5 w-5" />
+            </button>
+            <Link
+              href="/account/wishlist"
+              className="relative flex h-10 w-10 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded"
+              aria-label="Wishlist"
+            >
+              <Heart
+                className={`h-5 w-5 ${hasWishlistItems ? "fill-red-500 text-red-500" : ""}`}
+              />
+              {wishlistCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#8B6914] text-[10px] font-medium text-white">
+                  {wishlistCount}
+                </span>
+              )}
+            </Link>
+            <Link
+              href={user ? "/account" : "/login"}
+              className="relative flex h-10 w-10 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded"
+              aria-label="Account"
+            >
+              <User className="h-5 w-5" />
+              {user && (
+                <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-green-500" aria-hidden />
+              )}
+            </Link>
+            <button
+              onClick={openCart}
+              className="relative flex h-10 w-10 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded"
+              aria-label="Cart"
+            >
+              <ShoppingBag className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#8B6914] text-[10px] font-medium text-white">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Search bar */}
+        {searchOpen && (
+          <div
+            ref={searchContainerRef}
+            className="border-b border-[#ede8e3] bg-[#FAF8F5] px-4 py-3"
+          >
+            <div className="relative mx-auto max-w-2xl">
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && searchQuery.trim()) {
+                    setSearchOpen(false);
+                    window.location.href = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
+                  }
+                }}
+                placeholder="Search products..."
+                className="w-full border-0 bg-transparent py-2 pr-10 text-[#1C1C1C] placeholder:text-[#6B6560] outline-none"
+              />
+              {(searchQuery || searchResults.length > 0) && (
+                <div className="absolute left-0 top-full z-50 mt-1 w-full max-h-80 overflow-y-auto rounded-lg border border-[#ede8e3] bg-white shadow-lg">
+                  {isSearching ? (
+                    <div className="p-4 text-sm text-[#6B6560]">Searching...</div>
+                  ) : searchResults.length > 0 ? (
+                    <ul className="py-2">
+                      {searchResults.map((p) => (
+                        <li key={p.id}>
+                          <Link
+                            href={`/products/${p.slug}`}
+                            onClick={() => setSearchOpen(false)}
+                            className="flex items-center justify-between gap-4 px-4 py-2 hover:bg-gray-50"
+                          >
+                            <span className="font-medium text-[#1C1C1C]">{p.name}</span>
+                            <span className="text-sm text-[#6B6560]">
+                              ${p.price.toLocaleString()} · {categoryLabel(p.category)}
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                      <li>
+                        <Link
+                          href={`/search?q=${encodeURIComponent(searchQuery.trim())}`}
+                          onClick={() => setSearchOpen(false)}
+                          className="block px-4 py-2 text-sm font-medium text-[#8B6914] hover:bg-gray-50"
+                        >
+                          View all results →
+                        </Link>
                       </li>
+                    </ul>
+                  ) : (
+                    debouncedQuery && (
+                      <div className="p-4">
+                        <p className="text-sm text-[#6B6560]">No products found</p>
+                        <Link
+                          href={`/search?q=${encodeURIComponent(debouncedQuery)}`}
+                          onClick={() => setSearchOpen(false)}
+                          className="mt-2 inline-block text-sm text-[#8B6914] hover:underline"
+                        >
+                          Search &quot;{debouncedQuery}&quot; →
+                        </Link>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Row 2 - Desktop only */}
+        <div className="hidden lg:block bg-white border-b border-[#ede8e3]">
+          <div className="mx-auto flex h-10 max-w-7xl items-center justify-center gap-0 px-4">
+            {Object.entries(CATEGORIES).map(([key, cat]) => (
+              <div
+                key={key}
+                className="relative"
+                onMouseEnter={() => handleDropdownEnter(key)}
+                onMouseLeave={handleDropdownLeave}
+              >
+                <Link
+                  href={`/collections/${cat.slug}`}
+                  className={`block px-4 py-2 text-sm font-medium text-[#1C1C1C] cursor-pointer whitespace-nowrap ${
+                    isCollectionActive(cat.slug)
+                      ? "border-b-2 border-[#8B6914]"
+                      : "hover:border-b-2 hover:border-[#8B6914]"
+                  }`}
+                >
+                  {cat.name}
+                </Link>
+                {activeDropdown === key && (
+                  <div
+                    className="absolute left-0 top-full min-w-[200px] rounded-b-lg border border-[#ede8e3] bg-white p-5 shadow-lg z-50 animate-in fade-in-0 slide-in-from-top-1 duration-150"
+                    style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.10)" }}
+                    onMouseEnter={() => handleDropdownEnter(key)}
+                    onMouseLeave={handleDropdownLeave}
+                  >
+                    {cat.subcategories.map((sub) => {
+                      const href = sub.filter
+                        ? `/collections/${cat.slug}?filter=${encodeURIComponent(sub.filter)}`
+                        : `/collections/${cat.slug}`;
+                      return (
+                        <Link
+                          key={sub.label}
+                          href={href}
+                          className="block py-1.5 text-sm text-[#1C1C1C] hover:text-[#8B6914] hover:underline"
+                          onClick={() => setActiveDropdown(null)}
+                        >
+                          {sub.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile slide-out drawer */}
+      {mobileMenuOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/50"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden
+          />
+          <div
+            className="fixed top-0 left-0 z-50 h-full w-[280px] bg-white shadow-xl"
+            style={{
+              animation: "slideIn 0.3s ease-out forwards",
+            }}
+          >
+            <style>{`
+              @keyframes slideIn {
+                from { transform: translateX(-100%); }
+                to { transform: translateX(0); }
+              }
+              @keyframes slideOut {
+                from { transform: translateX(0); }
+                to { transform: translateX(-100%); }
+              }
+            `}</style>
+            <div className="flex h-14 items-center justify-between border-b border-[#ede8e3] px-4">
+              <Link
+                href="/"
+                className="font-display font-semibold text-[#1C1C1C]"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Amazing Home Furniture
+              </Link>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex h-10 w-10 items-center justify-center text-[#1C1C1C]"
+                aria-label="Close menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto py-4">
+              {Object.entries(CATEGORIES).map(([key, cat]) => (
+                <div key={key} className="border-b border-[#ede8e3]/50">
+                  <button
+                    onClick={() =>
+                      setExpandedMobileCategory(expandedMobileCategory === key ? null : key)
+                    }
+                    className="flex w-full items-center justify-between px-4 py-3 text-left font-medium text-[#1C1C1C] hover:bg-gray-50"
+                  >
+                    {cat.name}
+                    <ChevronRight
+                      className={`h-4 w-4 transition-transform ${
+                        expandedMobileCategory === key ? "rotate-90" : ""
+                      }`}
+                    />
+                  </button>
+                  {expandedMobileCategory === key && (
+                    <div className="bg-gray-50/50 pb-2 pl-4">
                       {cat.subcategories.map((sub) => {
                         const href = sub.filter
                           ? `/collections/${cat.slug}?filter=${encodeURIComponent(sub.filter)}`
                           : `/collections/${cat.slug}`;
                         return (
-                          <li key={sub.label}>
-                            <SubcategoryLink href={href}>
-                              {sub.label}
-                            </SubcategoryLink>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
-              ))}
-            </NavigationMenuList>
-          </NavigationMenu>
-        </div>
-
-        {/* Right icons */}
-        <div className="flex items-center gap-2 sm:gap-4">
-          <NavbarSearch />
-          <div className="relative inline-block">
-            <Link href="/account/wishlist">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-charcoal"
-                aria-label="Wishlist"
-              >
-                <Heart className="h-5 w-5" />
-              </Button>
-            </Link>
-            {wishlistCount > 0 && (
-              <Badge className="absolute -right-1 -top-1 h-5 min-w-5 px-1 text-xs bg-walnut text-cream hover:bg-walnut/90">
-                {wishlistCount}
-              </Badge>
-            )}
-          </div>
-          <div className="relative inline-block">
-            <Link href={user ? "/account" : "/login"}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-charcoal"
-                aria-label="Account"
-              >
-                <User className="h-5 w-5" />
-              </Button>
-            </Link>
-            {user && (
-              <span
-                className="absolute right-0 top-0 h-2 w-2 rounded-full bg-green-500"
-                aria-hidden
-              />
-            )}
-          </div>
-          <div className="relative inline-block">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={openCart}
-              className="h-9 w-9 text-charcoal"
-              aria-label="Cart"
-            >
-              <ShoppingBag className="h-5 w-5" />
-            </Button>
-            {cartCount > 0 && (
-              <Badge className="absolute -right-1 -top-1 h-5 min-w-5 px-1 text-xs bg-walnut text-cream hover:bg-walnut/90">
-                {cartCount}
-              </Badge>
-            )}
-          </div>
-
-          {/* Mobile menu */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 md:hidden text-charcoal"
-                aria-label="Open menu"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 bg-cream">
-              <SheetHeader>
-                <SheetTitle className="font-display text-charcoal">
-                  Menu
-                </SheetTitle>
-              </SheetHeader>
-              <div className="mt-8 flex flex-col gap-4">
-                <SheetClose asChild>
-                  <Link
-                    href="/"
-                    className="font-display text-lg font-medium text-charcoal hover:text-walnut"
-                  >
-                    Home
-                  </Link>
-                </SheetClose>
-                {Object.entries(CATEGORY_DROPDOWNS).map(([slug, cat]) => (
-                  <div key={slug}>
-                    <SheetClose asChild>
-                      <Link
-                        href={`/collections/${slug}`}
-                        className="font-medium text-charcoal hover:text-walnut"
-                      >
-                        {cat.name}
-                      </Link>
-                    </SheetClose>
-                    <div className="ml-4 mt-1 flex flex-col gap-1">
-                      {cat.subcategories.map((sub) => {
-                        const href = sub.filter
-                          ? `/collections/${slug}?filter=${encodeURIComponent(sub.filter)}`
-                          : `/collections/${slug}`;
-                        return (
-                          <SheetClose asChild key={sub.label}>
-                            <Link
-                              href={href}
-                              className="text-sm text-warm-gray hover:text-walnut"
-                            >
-                              {sub.label}
-                            </Link>
-                          </SheetClose>
+                          <Link
+                            key={sub.label}
+                            href={href}
+                            onClick={() => {
+                              setMobileMenuOpen(false);
+                              setExpandedMobileCategory(null);
+                            }}
+                            className="block py-2 text-sm text-[#6B6560] hover:text-[#8B6914]"
+                          >
+                            {sub.label}
+                          </Link>
                         );
                       })}
                     </div>
-                  </div>
-                ))}
+                  )}
+                </div>
+              ))}
+              <div className="mt-4 border-t border-[#ede8e3] pt-4">
+                <Link
+                  href="/account"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-2 text-sm font-medium text-[#1C1C1C] hover:bg-gray-50"
+                >
+                  My Account
+                </Link>
+                <Link
+                  href="/account/wishlist"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-2 text-sm font-medium text-[#1C1C1C] hover:bg-gray-50"
+                >
+                  Wishlist
+                </Link>
+                <Link
+                  href="/track-order"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-2 text-sm font-medium text-[#1C1C1C] hover:bg-gray-50"
+                >
+                  Track Order
+                </Link>
+                <Link
+                  href="/contact"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-2 text-sm font-medium text-[#1C1C1C] hover:bg-gray-50"
+                >
+                  Contact
+                </Link>
               </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </nav>
-    </header>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }

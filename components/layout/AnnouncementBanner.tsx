@@ -48,13 +48,13 @@ export default function AnnouncementBanner() {
 
   return (
     <div
-      className="relative flex w-full items-center justify-center px-4 py-2.5 text-center text-[13px]"
+      className="relative flex w-full min-w-0 items-center justify-center overflow-hidden px-8 py-2.5 text-sm"
       style={{
         backgroundColor: banner.bg_color,
         color: banner.text_color,
       }}
     >
-      <span className="flex-1">
+      <span className="min-w-0 flex-1 truncate text-center">
         {banner.message}
         {banner.link_url && banner.link_text && (
           <>
@@ -71,7 +71,7 @@ export default function AnnouncementBanner() {
       </span>
       <button
         onClick={handleDismiss}
-        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 opacity-80 hover:opacity-100"
+        className="absolute right-2 top-1/2 -translate-y-1/2 shrink-0 p-1 opacity-80 hover:opacity-100"
         aria-label="Dismiss banner"
         style={{ color: banner.text_color }}
       >

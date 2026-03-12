@@ -77,8 +77,8 @@ function CollectionWithSortInner({ products }: CollectionWithSortProps) {
   return (
     <div>
       {filter && (
-        <div className="mb-4 flex items-center gap-2">
-          <span className="text-sm text-warm-gray">
+        <div className="mb-4 flex min-w-0 items-center gap-2 overflow-hidden">
+          <span className="truncate text-sm text-warm-gray">
             Showing: {filter} {categoryLabel}
           </span>
           <button

@@ -17,7 +17,7 @@ export default function StoreLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col overflow-x-hidden">
       <SplashScreen />
       <AnnouncementBanner />
       <ExitIntentPopup />
