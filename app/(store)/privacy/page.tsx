@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
+export const metadata = {
+  title: "Privacy Policy",
+  description:
+    "Privacy policy for Amazing Home Furniture — how we collect, use and protect your data.",
+};
+
 export default function PrivacyPage() {
   return (
     <div className="px-4 py-12 sm:px-6 lg:px-8">

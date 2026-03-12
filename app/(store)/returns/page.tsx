@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
+export const metadata = {
+  title: "Returns Policy",
+  description:
+    "30-day hassle-free returns at Amazing Home Furniture. Full policy details.",
+};
+
 export default function ReturnsPage() {
   return (
     <div className="px-4 py-12 sm:px-6 lg:px-8">

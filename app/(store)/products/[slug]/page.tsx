@@ -9,9 +9,33 @@ import { ProductImage } from "@/components/ui/ProductImage";
 import ProductDetailClient from "@/components/products/ProductDetailClient";
 import ProductCard from "@/components/products/ProductCard";
 import type { Product } from "@/types";
+import type { Metadata } from "next";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: ProductPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getProductBySlug(slug);
+  if (!product) return { title: "Product Not Found" };
+  return {
+    title: product.name,
+    description:
+      product.description?.slice(0, 155) ??
+      `${product.name} — Shop at Amazing Home Furniture`,
+    openGraph: {
+      title: `${product.name} | Amazing Home Furniture`,
+      description: product.description?.slice(0, 155),
+      images: product.images?.[0] ? [{ url: product.images[0] }] : [],
+      url: `https://amazinghomefurniturestore.com/products/${slug}`,
+    },
+    alternates: {
+      canonical: `https://amazinghomefurniturestore.com/products/${slug}`,
+    },
+  };
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
@@ -162,6 +186,34 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
           </section>
         )}
+
+        {/* JSON-LD structured data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Product",
+              name: product.name,
+              description: product.description,
+              sku: product.sku,
+              image: product.images,
+              offers: {
+                "@type": "Offer",
+                price: product.sale_price ?? product.price,
+                priceCurrency: "USD",
+                availability: product.in_stock
+                  ? "https://schema.org/InStock"
+                  : "https://schema.org/OutOfStock",
+                url: `https://amazinghomefurniturestore.com/products/${product.slug}`,
+                seller: {
+                  "@type": "Organization",
+                  name: "Amazing Home Furniture",
+                },
+              },
+            }),
+          }}
+        />
       </div>
     </div>
   );

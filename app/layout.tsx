@@ -16,12 +16,36 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Amazing Home Furniture",
-  description: "Modern luxury furniture store",
-  openGraph: {
-    title: "Amazing Home Furniture",
-    siteName: "Amazing Home Furniture",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://amazinghomefurniturestore.com"
+  ),
+  title: {
+    default: "Amazing Home Furniture — Premium Furniture for Every Room",
+    template: "%s | Amazing Home Furniture",
   },
+  description:
+    "Shop 291 premium furniture pieces — sofas, beds, dining tables, chairs, cabinets and TV stands. Free shipping over $299.",
+  keywords: [
+    "furniture",
+    "sofas",
+    "sectionals",
+    "beds",
+    "dining tables",
+    "home furniture",
+    "recliners",
+    "cabinets",
+    "TV stands",
+  ],
+  openGraph: {
+    type: "website",
+    siteName: "Amazing Home Furniture",
+    title: "Amazing Home Furniture — Premium Furniture for Every Room",
+    description:
+      "Shop 291 premium furniture pieces with free shipping over $299.",
+    url: "https://amazinghomefurniturestore.com",
+  },
+  twitter: { card: "summary_large_image" },
+  alternates: { canonical: "https://amazinghomefurniturestore.com" },
 };
 
 export default function RootLayout({

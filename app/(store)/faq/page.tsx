@@ -7,6 +7,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+export const metadata = {
+  title: "FAQ",
+  description:
+    "Frequently asked questions about Amazing Home Furniture — shipping, returns, delivery, assembly and more.",
+};
+
 const FAQ_ITEMS = [
   {
     value: "payment",

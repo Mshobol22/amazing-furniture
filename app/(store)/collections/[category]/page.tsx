@@ -1,9 +1,36 @@
 import { getProducts } from "@/lib/supabase/products";
 import { getCategoryDisplayName } from "@/lib/collection-utils";
 import CollectionWithSort from "@/components/products/CollectionWithSort";
+import type { Metadata } from "next";
 
 interface CollectionPageProps {
   params: Promise<{ category: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: CollectionPageProps): Promise<Metadata> {
+  const { category } = await params;
+  const displayNames: Record<string, string> = {
+    sofa: "Sofas & Sectionals",
+    bed: "Beds & Bedroom",
+    table: "Dining & Tables",
+    chair: "Chairs & Recliners",
+    cabinet: "Dressers & Cabinets",
+    "tv-stand": "TV Stands & Entertainment",
+  };
+  const name = displayNames[category] || category;
+  return {
+    title: name,
+    description: `Shop our ${name} collection at Amazing Home Furniture. Premium pieces with free shipping over $299.`,
+    openGraph: {
+      title: `${name} | Amazing Home Furniture`,
+      url: `https://amazinghomefurniturestore.com/collections/${category}`,
+    },
+    alternates: {
+      canonical: `https://amazinghomefurniturestore.com/collections/${category}`,
+    },
+  };
 }
 
 export default async function CollectionPage({ params }: CollectionPageProps) {

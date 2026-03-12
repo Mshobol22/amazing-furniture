@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
+export const metadata = {
+  title: "Shipping Policy",
+  description:
+    "Free shipping on orders over $299. Standard 5–10 business days. Ships to the contiguous United States.",
+};
+
 export default function ShippingPage() {
   return (
     <div className="px-4 py-12 sm:px-6 lg:px-8">
