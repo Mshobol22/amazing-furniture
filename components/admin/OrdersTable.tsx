@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo, Fragment, Suspense } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -57,9 +58,24 @@ function formatDate(iso: string) {
   });
 }
 
-export default function OrdersTable({ orders }: { orders: OrderRow[] }) {
+function OrdersTableInner({ orders }: { orders: OrderRow[] }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const statusFilter = searchParams.get("status") || "all";
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const handleStatusChange = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === "all") {
+      params.delete("status");
+    } else {
+      params.set("status", value);
+    }
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
 
   const filteredOrders = useMemo(() => {
     if (statusFilter === "all") return orders;
@@ -82,7 +98,7 @@ export default function OrdersTable({ orders }: { orders: OrderRow[] }) {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <span className="text-sm text-warm-gray">Filter:</span>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={handleStatusChange}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
@@ -124,7 +140,6 @@ export default function OrdersTable({ orders }: { orders: OrderRow[] }) {
             {filteredOrders.map((order) => (
               <Fragment key={order.id}>
                 <tr
-                  key={order.id}
                   onClick={() =>
                     setSelectedId(selectedId === order.id ? null : order.id)
                   }
@@ -214,5 +229,13 @@ export default function OrdersTable({ orders }: { orders: OrderRow[] }) {
         </table>
       </div>
     </div>
+  );
+}
+
+export default function OrdersTable({ orders }: { orders: OrderRow[] }) {
+  return (
+    <Suspense fallback={<div className="h-32 animate-pulse rounded bg-gray-100" />}>
+      <OrdersTableInner orders={orders} />
+    </Suspense>
   );
 }

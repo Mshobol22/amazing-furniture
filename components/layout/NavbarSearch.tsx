@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import type { Product } from "@/types";
 
@@ -15,6 +16,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function NavbarSearch() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Product[]>([]);
@@ -74,6 +76,13 @@ export default function NavbarSearch() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && query.trim()) {
+                  e.preventDefault();
+                  setIsOpen(false);
+                  router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+                }
+              }}
               placeholder="Search products..."
               className="h-9 w-48 rounded-md border border-gray-200 bg-white pl-9 pr-3 text-sm text-charcoal outline-none placeholder:text-warm-gray focus:ring-2 focus:ring-walnut/50 sm:w-64"
             />
@@ -109,11 +118,27 @@ export default function NavbarSearch() {
                       </Link>
                     </li>
                   ))}
+                  <li>
+                    <Link
+                      href={`/search?q=${encodeURIComponent(query.trim())}`}
+                      onClick={() => setIsOpen(false)}
+                      className="block px-4 py-2 text-sm text-walnut hover:bg-gray-50 font-medium"
+                    >
+                      View all results →
+                    </Link>
+                  </li>
                 </ul>
               ) : (
                 debouncedQuery && (
-                  <div className="p-4 text-sm text-warm-gray">
-                    No products found
+                  <div className="p-4">
+                    <p className="text-sm text-warm-gray">No products found</p>
+                    <Link
+                      href={`/search?q=${encodeURIComponent(debouncedQuery)}`}
+                      onClick={() => setIsOpen(false)}
+                      className="mt-2 inline-block text-sm text-walnut hover:underline"
+                    >
+                      Search &quot;{debouncedQuery}&quot; →
+                    </Link>
                   </div>
                 )
               )}

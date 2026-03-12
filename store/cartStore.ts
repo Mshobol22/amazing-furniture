@@ -66,7 +66,7 @@ const useCartStoreBase = create<CartStore>()(
       closeCart: () => set({ isOpen: false }),
     }),
     {
-      name: "amazing-furniture-cart",
+      name: "cart-storage",
       partialize: (state) => ({ items: state.items }),
     }
   )
