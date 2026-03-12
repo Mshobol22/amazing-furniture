@@ -7,12 +7,14 @@ import {
   Package,
   Tag,
   ShoppingBag,
+  MessageSquare,
 } from "lucide-react";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/promotions", label: "Promotions", icon: Tag },
+  { href: "/admin/banners", label: "Banners", icon: MessageSquare },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
 ];
 

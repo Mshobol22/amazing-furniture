@@ -17,6 +17,7 @@ function CollectionWithSortInner({ products }: CollectionWithSortProps) {
   const router = useRouter();
   const pathname = usePathname();
   const sort = (searchParams.get("sort") as SortOption) || "default";
+  const filter = searchParams.get("filter") ?? "";
 
   const handleSortChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -29,8 +30,19 @@ function CollectionWithSortInner({ products }: CollectionWithSortProps) {
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
 
-  const sortedProducts = useMemo(() => {
-    const arr = [...products];
+  const clearFilter = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("filter");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
+
+  const filteredAndSortedProducts = useMemo(() => {
+    let arr = [...products];
+    if (filter) {
+      const f = filter.toLowerCase();
+      arr = arr.filter((p) => p.name.toLowerCase().includes(f));
+    }
     switch (sort) {
       case "price-asc":
         return arr.sort(
@@ -43,12 +55,41 @@ function CollectionWithSortInner({ products }: CollectionWithSortProps) {
       case "name-asc":
         return arr.sort((a, b) => a.name.localeCompare(b.name));
       default:
-        return arr;
+        break;
     }
-  }, [products, sort]);
+    return arr;
+  }, [products, sort, filter]);
+
+  const categoryLabel = pathname.includes("/bed")
+    ? "beds"
+    : pathname.includes("/sofa")
+      ? "sofas"
+      : pathname.includes("/chair")
+        ? "chairs"
+        : pathname.includes("/table")
+          ? "tables"
+          : pathname.includes("/cabinet")
+            ? "storage"
+            : pathname.includes("/tv-stand")
+              ? "TV stands"
+              : "products";
 
   return (
     <div>
+      {filter && (
+        <div className="mb-4 flex items-center gap-2">
+          <span className="text-sm text-warm-gray">
+            Showing: {filter} {categoryLabel}
+          </span>
+          <button
+            onClick={clearFilter}
+            className="rounded-full p-1 text-warm-gray hover:bg-gray-200 hover:text-charcoal"
+            aria-label="Clear filter"
+          >
+            <span className="text-sm font-medium">×</span>
+          </button>
+        </div>
+      )}
       <div className="mb-4 flex items-center gap-2">
         <span className="text-sm text-warm-gray">Sort:</span>
         <select
@@ -62,7 +103,7 @@ function CollectionWithSortInner({ products }: CollectionWithSortProps) {
           <option value="name-asc">Name: A to Z</option>
         </select>
       </div>
-      <ProductGrid products={sortedProducts} />
+      <ProductGrid products={filteredAndSortedProducts} />
     </div>
   );
 }

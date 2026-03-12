@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Suspense } from "react";
+import { Pencil, Check, X } from "lucide-react";
 import { extractSku } from "@/lib/utils";
 import { ProductImage } from "@/components/ui/ProductImage";
 import type { Product } from "@/types";
@@ -30,6 +31,8 @@ function ProductsTableInner({ products }: ProductsTableProps) {
 
   const qFromUrl = searchParams.get("q") ?? "";
   const categoryFromUrl = searchParams.get("category") ?? "all";
+  const statusFromUrl = searchParams.get("status") ?? "";
+  const promotionsFromUrl = searchParams.get("promotions") ?? "";
 
   const [searchInput, setSearchInput] = useState(qFromUrl);
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -64,21 +67,72 @@ function ProductsTableInner({ products }: ProductsTableProps) {
 
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [editingPriceValue, setEditingPriceValue] = useState("");
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState("");
+  const [savedNameId, setSavedNameId] = useState<string | null>(null);
+  const [nameOverrides, setNameOverrides] = useState<Record<string, string>>({});
+
+  const getDisplayName = (p: Product) => nameOverrides[p.id] ?? p.name;
 
   const filtered = products.filter((p) => {
     const sku = extractSku(p.slug) ?? "";
+    const displayName = getDisplayName(p);
     const matchSearch =
       !qFromUrl ||
-      p.name.toLowerCase().includes(qFromUrl.toLowerCase()) ||
+      displayName.toLowerCase().includes(qFromUrl.toLowerCase()) ||
       sku.toLowerCase().includes(qFromUrl.toLowerCase());
     const matchCategory =
       categoryFromUrl === "all" || p.category === categoryFromUrl;
-    return matchSearch && matchCategory;
+    const matchStatus =
+      !statusFromUrl ||
+      (statusFromUrl === "in-stock" && p.in_stock) ||
+      (statusFromUrl === "out-of-stock" && !p.in_stock);
+    const matchPromotions =
+      !promotionsFromUrl ||
+      (promotionsFromUrl === "active" && p.on_sale);
+    return matchSearch && matchCategory && matchStatus && matchPromotions;
   });
 
   const handleClearFilters = () => {
     setSearchInput("");
-    updateUrl({ q: "", category: "all" });
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("q");
+    params.delete("category");
+    params.delete("status");
+    params.delete("promotions");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
+
+  const handleNameSave = async (product: Product) => {
+    const trimmed = editingNameValue.trim();
+    if (!trimmed) return;
+    const currentName = nameOverrides[product.id] ?? product.name;
+    if (trimmed === currentName) {
+      setEditingNameId(null);
+      return;
+    }
+    const res = await fetch(`/api/admin/products/${product.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: trimmed }),
+    });
+    if (res.ok) {
+      setNameOverrides((prev) => ({ ...prev, [product.id]: trimmed }));
+      setEditingNameId(null);
+      setSavedNameId(product.id);
+      setTimeout(() => setSavedNameId(null), 2000);
+    }
+  };
+
+  const handleNameCancel = (product: Product) => {
+    const currentName = nameOverrides[product.id] ?? product.name;
+    if (editingNameValue.trim() === currentName) {
+      setEditingNameId(null);
+      return;
+    }
+    setEditingNameValue(currentName);
+    setEditingNameId(null);
   };
 
   const handleToggleStock = async (product: Product) => {
@@ -187,7 +241,54 @@ function ProductsTableInner({ products }: ProductsTableProps) {
                   {extractSku(product.slug) ?? "—"}
                 </td>
                 <td className="px-4 py-2 font-medium text-charcoal">
-                  {product.name}
+                  {editingNameId === product.id ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={editingNameValue}
+                        onChange={(e) => setEditingNameValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleNameSave(product);
+                          if (e.key === "Escape") handleNameCancel(product);
+                        }}
+                        autoFocus
+                        className="min-w-[120px] rounded border px-2 py-1 text-sm"
+                      />
+                      <button
+                        onClick={() => handleNameSave(product)}
+                        className="text-green-600 hover:text-green-700"
+                        aria-label="Save"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleNameCancel(product)}
+                        className="text-red-600 hover:text-red-700"
+                        aria-label="Cancel"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className={savedNameId === product.id ? "text-green-600" : ""}>
+                        {getDisplayName(product)}
+                      </span>
+                      {savedNameId === product.id && (
+                        <span className="text-xs text-green-600 animate-pulse">Saved</span>
+                      )}
+                      <button
+                        onClick={() => {
+                          setEditingNameId(product.id);
+                          setEditingNameValue(getDisplayName(product));
+                        }}
+                        className="text-warm-gray hover:text-charcoal"
+                        aria-label="Edit name"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </td>
                 <td className="px-4 py-2 text-warm-gray">{product.category}</td>
                 <td className="px-4 py-2">

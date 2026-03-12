@@ -17,16 +17,93 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 import NavbarSearch from "./NavbarSearch";
 
-const CATEGORIES = [
-  { name: "Beds & Bedroom", slug: "bed" },
-  { name: "Chairs & Recliners", slug: "chair" },
-  { name: "Sofas & Sectionals", slug: "sofa" },
-  { name: "Dining & Tables", slug: "table" },
-  { name: "Dressers & Cabinets", slug: "cabinet" },
-  { name: "TV Stands & Entertainment", slug: "tv-stand" },
-] as const;
+const CATEGORY_DROPDOWNS: Record<
+  string,
+  { name: string; slug: string; subcategories: { label: string; filter?: string }[] }
+> = {
+  bed: {
+    name: "Beds & Bedroom",
+    slug: "bed",
+    subcategories: [
+      { label: "All Beds" },
+      { label: "Twin Beds", filter: "twin" },
+      { label: "Full Beds", filter: "full" },
+      { label: "Queen Beds", filter: "queen" },
+      { label: "King Beds", filter: "king" },
+      { label: "Bunk Beds", filter: "bunk" },
+      { label: "Daybeds", filter: "daybed" },
+    ],
+  },
+  sofa: {
+    name: "Sofas & Sectionals",
+    slug: "sofa",
+    subcategories: [
+      { label: "All Sofas" },
+      { label: "Sectionals", filter: "sectional" },
+      { label: "Reclining Sofas", filter: "reclining" },
+      { label: "Sleeper Sofas", filter: "sleeper" },
+      { label: "Sofa Chaise", filter: "chaise" },
+    ],
+  },
+  chair: {
+    name: "Chairs & Recliners",
+    slug: "chair",
+    subcategories: [
+      { label: "All Chairs" },
+      { label: "Recliners", filter: "recliner" },
+      { label: "Accent Chairs", filter: "accent" },
+      { label: "Lift Chairs", filter: "lift" },
+      { label: "Power Recliners", filter: "power" },
+    ],
+  },
+  table: {
+    name: "Dining & Tables",
+    slug: "table",
+    subcategories: [{ label: "All Tables" }],
+  },
+  cabinet: {
+    name: "Dressers & Cabinets",
+    slug: "cabinet",
+    subcategories: [
+      { label: "All Storage" },
+      { label: "Dressers", filter: "dresser" },
+      { label: "Chest of Drawers", filter: "drawer" },
+    ],
+  },
+  "tv-stand": {
+    name: "TV Stands & Entertainment",
+    slug: "tv-stand",
+    subcategories: [{ label: "All TV Stands" }],
+  },
+};
+
+function SubcategoryLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link href={href} legacyBehavior passHref>
+      <NavigationMenuLink
+        className="block px-4 py-2 text-sm text-[#1C1C1C] hover:underline hover:decoration-[#8B6914] hover:decoration-2"
+      >
+        {children}
+      </NavigationMenuLink>
+    </Link>
+  );
+}
 
 export default function Navbar() {
   const openCart = useCartStore((state) => state.openCart);
@@ -48,7 +125,6 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full bg-[#FAF8F5] shadow-sm">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Logo */}
         <Link
           href="/"
           className="font-display text-xl font-semibold tracking-tight text-charcoal"
@@ -57,16 +133,44 @@ export default function Navbar() {
         </Link>
 
         {/* Center nav - desktop only */}
-        <div className="hidden md:flex md:items-center md:gap-8">
-          {CATEGORIES.map((cat) => (
-            <Link
-              key={cat.slug}
-              href={`/collections/${cat.slug}`}
-              className="text-sm font-medium text-charcoal transition-colors hover:opacity-80"
-            >
-              {cat.name}
-            </Link>
-          ))}
+        <div className="hidden md:block">
+          <NavigationMenu>
+            <NavigationMenuList className="gap-1">
+              {Object.entries(CATEGORY_DROPDOWNS).map(([slug, cat]) => (
+                <NavigationMenuItem key={slug}>
+                  <NavigationMenuTrigger className="bg-transparent text-sm font-medium text-charcoal hover:bg-transparent hover:text-charcoal data-[state=open]:bg-transparent">
+                    {cat.name}
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul
+                      className="w-[220px] p-2"
+                      style={{
+                        backgroundColor: "#FAF8F5",
+                        border: "1px solid #e8e0d5",
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+                      }}
+                    >
+                      <li className="mb-2 px-4 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#8B6914]">
+                        {cat.name}
+                      </li>
+                      {cat.subcategories.map((sub) => {
+                        const href = sub.filter
+                          ? `/collections/${cat.slug}?filter=${encodeURIComponent(sub.filter)}`
+                          : `/collections/${cat.slug}`;
+                        return (
+                          <li key={sub.label}>
+                            <SubcategoryLink href={href}>
+                              {sub.label}
+                            </SubcategoryLink>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              ))}
+            </NavigationMenuList>
+          </NavigationMenu>
         </div>
 
         {/* Right icons */}
@@ -151,15 +255,34 @@ export default function Navbar() {
                     Home
                   </Link>
                 </SheetClose>
-                {CATEGORIES.map((cat) => (
-                  <SheetClose asChild key={cat.slug}>
-                    <Link
-                      href={`/collections/${cat.slug}`}
-                      className="text-charcoal hover:text-walnut"
-                    >
-                      {cat.name}
-                    </Link>
-                  </SheetClose>
+                {Object.entries(CATEGORY_DROPDOWNS).map(([slug, cat]) => (
+                  <div key={slug}>
+                    <SheetClose asChild>
+                      <Link
+                        href={`/collections/${slug}`}
+                        className="font-medium text-charcoal hover:text-walnut"
+                      >
+                        {cat.name}
+                      </Link>
+                    </SheetClose>
+                    <div className="ml-4 mt-1 flex flex-col gap-1">
+                      {cat.subcategories.map((sub) => {
+                        const href = sub.filter
+                          ? `/collections/${slug}?filter=${encodeURIComponent(sub.filter)}`
+                          : `/collections/${slug}`;
+                        return (
+                          <SheetClose asChild key={sub.label}>
+                            <Link
+                              href={href}
+                              className="text-sm text-warm-gray hover:text-walnut"
+                            >
+                              {sub.label}
+                            </Link>
+                          </SheetClose>
+                        );
+                      })}
+                    </div>
+                  </div>
                 ))}
               </div>
             </SheetContent>

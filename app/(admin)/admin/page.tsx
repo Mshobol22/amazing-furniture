@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Package, CheckCircle, XCircle, Tag } from "lucide-react";
 
@@ -32,10 +33,10 @@ export default async function AdminDashboardPage() {
   const stats = await getStats();
 
   const cards = [
-    { label: "Total Products", value: stats.totalProducts, icon: Package },
-    { label: "In Stock", value: stats.inStock, icon: CheckCircle },
-    { label: "Out of Stock", value: stats.outOfStock, icon: XCircle },
-    { label: "On Sale", value: stats.onSale, icon: Tag },
+    { label: "Total Products", value: stats.totalProducts, icon: Package, href: "/admin/products" },
+    { label: "In Stock", value: stats.inStock, icon: CheckCircle, href: "/admin/products?status=in-stock" },
+    { label: "Out of Stock", value: stats.outOfStock, icon: XCircle, href: "/admin/products?status=out-of-stock" },
+    { label: "On Sale", value: stats.onSale, icon: Tag, href: "/admin/products?promotions=active" },
   ];
 
   return (
@@ -45,9 +46,10 @@ export default async function AdminDashboardPage() {
       </h1>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
-          <div
+          <Link
             key={card.label}
-            className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
+            href={card.href}
+            className="block rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-transform hover:scale-[1.02] hover:shadow-md cursor-pointer"
           >
             <div className="flex items-center justify-between">
               <p className="text-sm text-warm-gray">{card.label}</p>
@@ -56,7 +58,7 @@ export default async function AdminDashboardPage() {
             <p className="mt-2 text-2xl font-semibold text-charcoal">
               {card.value}
             </p>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

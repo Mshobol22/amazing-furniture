@@ -24,6 +24,10 @@ export async function PATCH(
     if (typeof body.in_stock === "boolean") updates.in_stock = body.in_stock;
     if (body.sale_price !== undefined) updates.sale_price = body.sale_price;
     if (typeof body.on_sale === "boolean") updates.on_sale = body.on_sale;
+    if (typeof body.name === "string") {
+      const trimmed = body.name.trim();
+      if (trimmed) updates.name = trimmed;
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
