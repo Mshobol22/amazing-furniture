@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "audit-slugs": "tsx scripts/audit-slugs.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
@@ -39,6 +40,8 @@
     "zustand": "^5.0.1"
   },
   "devDependencies": {
+    "dotenv": "^16.4.5",
+    "tsx": "^4.19.2",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

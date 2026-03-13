@@ -17,7 +17,7 @@ function CollectionWithSortInner({ products }: CollectionWithSortProps) {
   const router = useRouter();
   const pathname = usePathname();
   const sort = (searchParams.get("sort") as SortOption) || "default";
-  const filter = searchParams.get("filter") ?? "";
+  const filter = searchParams.get("filter") ?? searchParams.get("search") ?? "";
 
   const handleSortChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -33,6 +33,7 @@ function CollectionWithSortInner({ products }: CollectionWithSortProps) {
   const clearFilter = () => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("filter");
+    params.delete("search");
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };

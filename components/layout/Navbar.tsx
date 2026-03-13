@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Heart,
   User,
@@ -16,7 +16,17 @@ import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useCartStore, useCartItemCount } from "@/store/cartStore";
 import { useWishlistStore, useWishlistCount } from "@/store/wishlistStore";
-import type { Product } from "@/types";
+
+interface SearchResult {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  originalPrice?: number;
+  onSale?: boolean;
+  image: string | null;
+  category: string;
+}
 
 const CATEGORIES: Record<
   string,
@@ -100,8 +110,9 @@ export default function Navbar() {
   const [dropdownCloseTimer, setDropdownCloseTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const router = useRouter();
   const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
   const [user, setUser] = useState<SupabaseUser | null>(null);
 
@@ -120,12 +131,12 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    if (!debouncedQuery.trim()) {
+    if (!debouncedQuery.trim() || debouncedQuery.length < 2) {
       setSearchResults([]);
       return;
     }
     setIsSearching(true);
-    fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`)
+    fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}&limit=8`)
       .then((res) => res.json())
       .then((data) => setSearchResults(Array.isArray(data) ? data : []))
       .catch(() => setSearchResults([]))
@@ -290,45 +301,70 @@ export default function Navbar() {
                   {isSearching ? (
                     <div className="p-4 text-sm text-[#6B6560]">Searching...</div>
                   ) : searchResults.length > 0 ? (
-                    <ul className="py-2">
-                      {searchResults.map((p) => (
-                        <li key={p.id}>
-                          <Link
-                            href={`/products/${p.slug}`}
-                            onClick={() => setSearchOpen(false)}
-                            className="flex items-center justify-between gap-4 px-4 py-2 hover:bg-gray-50"
+                    <>
+                      <div className="py-2">
+                        {searchResults.map((result) => (
+                          <button
+                            key={result.id}
+                            onClick={() => {
+                              setSearchOpen(false);
+                              router.push(`/products/${result.slug}`);
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-[#FAF8F5] transition-colors text-left group"
                           >
-                            <span className="font-medium text-[#1C1C1C]">{p.name}</span>
-                            <span className="text-sm text-[#6B6560]">
-                              ${p.price.toLocaleString()} · {categoryLabel(p.category)}
-                            </span>
-                          </Link>
-                        </li>
-                      ))}
-                      <li>
-                        <Link
-                          href={`/search?q=${encodeURIComponent(searchQuery.trim())}`}
-                          onClick={() => setSearchOpen(false)}
-                          className="block px-4 py-2 text-sm font-medium text-[#8B6914] hover:bg-gray-50"
-                        >
-                          View all results →
-                        </Link>
-                      </li>
-                    </ul>
-                  ) : (
-                    debouncedQuery && (
-                      <div className="p-4">
-                        <p className="text-sm text-[#6B6560]">No products found</p>
-                        <Link
-                          href={`/search?q=${encodeURIComponent(debouncedQuery)}`}
-                          onClick={() => setSearchOpen(false)}
-                          className="mt-2 inline-block text-sm text-[#8B6914] hover:underline"
-                        >
-                          Search &quot;{debouncedQuery}&quot; →
-                        </Link>
+                            {result.image ? (
+                              <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-gray-100">
+                                <img
+                                  src={result.image}
+                                  alt={result.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-10 h-10 rounded-lg bg-gray-100 shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-[#1C1C1C] line-clamp-1 group-hover:text-[#8B6914] transition-colors">
+                                {result.name}
+                              </p>
+                              <p className="text-xs text-gray-400 capitalize">
+                                {result.category.replace("-", " ")}
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-sm font-semibold text-[#1C1C1C]">
+                                ${result.price.toLocaleString()}
+                              </p>
+                              {result.onSale && result.originalPrice != null && (
+                                <p className="text-xs text-red-500 line-through">
+                                  ${result.originalPrice.toLocaleString()}
+                                </p>
+                              )}
+                            </div>
+                          </button>
+                        ))}
                       </div>
-                    )
-                  )}
+                      {searchResults.length >= 5 && (
+                        <div className="border-t border-gray-100 px-4 py-2">
+                          <button
+                            onClick={() => {
+                              setSearchOpen(false);
+                              router.push(
+                                `/collections/all?search=${encodeURIComponent(searchQuery.trim())}`
+                              );
+                            }}
+                            className="text-xs text-[#8B6914] font-medium hover:underline w-full text-center py-1"
+                          >
+                            View all results for &quot;{searchQuery}&quot; →
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : searchQuery.length >= 2 && !isSearching ? (
+                    <div className="px-4 py-6 text-center text-sm text-gray-400">
+                      No products found for &quot;{searchQuery}&quot;
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>

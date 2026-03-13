@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tag, X } from "lucide-react";
 
 interface Banner {
   id: string;
@@ -132,24 +133,35 @@ export default function BannersPage() {
           {editingId ? "Edit Banner" : "Create Banner"}
         </h2>
 
-        {/* Live preview */}
-        <div
-          className="mb-6 flex w-full items-center justify-between rounded px-4 py-2.5 text-[13px]"
-          style={{
-            backgroundColor: form.bg_color,
-            color: form.text_color,
-          }}
-        >
-          <span>{form.message || "Preview message..."}</span>
-          {form.link_text && (
-            <a
-              href={form.link_url || "#"}
-              className="ml-2 font-medium underline"
-              style={{ color: form.text_color }}
+        {/* Live Preview Widget */}
+        <div className="mb-6">
+          <p className="text-sm font-medium text-gray-500 mb-3">Live Preview</p>
+          <div className="flex justify-center bg-gray-100 rounded-xl p-8">
+            <div
+              className="relative flex items-start gap-3 p-4 rounded-2xl shadow-xl max-w-[280px] w-full border border-white/10"
+              style={{ backgroundColor: form.bg_color, color: form.text_color }}
             >
-              {form.link_text}
-            </a>
-          )}
+              <div
+                className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: `${form.text_color}20` }}
+              >
+                <Tag className="w-4 h-4" style={{ color: form.text_color }} />
+              </div>
+              <div className="flex-1 pr-4">
+                <p className="text-sm font-semibold leading-snug" style={{ color: form.text_color }}>
+                  {form.message || "Your message will appear here..."}
+                </p>
+                {form.link_text && (
+                  <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold" style={{ color: form.text_color, opacity: 0.85 }}>
+                    {form.link_text} →
+                  </span>
+                )}
+              </div>
+              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-black/10 flex items-center justify-center">
+                <X className="w-3 h-3" style={{ color: form.text_color }} />
+              </div>
+            </div>
+          </div>
         </div>
 
         <form
@@ -167,6 +179,34 @@ export default function BannersPage() {
               placeholder="Free shipping on all orders this weekend!"
               required
             />
+          </div>
+          {/* Color presets */}
+          <div className="mb-4">
+            <p className="text-sm font-medium text-gray-600 mb-2">Color Presets</p>
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { label: "Walnut", bg: "#8B6914", text: "#FAF8F5" },
+                { label: "Charcoal", bg: "#1C1C1C", text: "#FAF8F5" },
+                { label: "Forest", bg: "#0D2818", text: "#FAF8F5" },
+                { label: "Cream", bg: "#FAF8F5", text: "#1C1C1C" },
+                { label: "Sale Red", bg: "#B91C1C", text: "#FAF8F5" },
+                { label: "Navy", bg: "#1E3A5F", text: "#FAF8F5" },
+              ].map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, bg_color: preset.bg, text_color: preset.text }))}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all hover:scale-105"
+                  style={{
+                    backgroundColor: preset.bg,
+                    color: preset.text,
+                    borderColor: form.bg_color === preset.bg ? preset.text : "transparent",
+                  }}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

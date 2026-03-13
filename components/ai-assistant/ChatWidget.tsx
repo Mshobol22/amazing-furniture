@@ -165,6 +165,15 @@ export default function ChatWidget() {
 
   return (
     <>
+      {/* Mobile tap-outside overlay — only when open, only on mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 md:hidden bg-transparent"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       <AnimatePresence>
         {isOpen ? (
           <motion.div

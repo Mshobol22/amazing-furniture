@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://amazinghomefurniturestore.com/og-image.png",
+        url: "https://amazinghomefurniturestore.com/og-image.png?v=2",
         width: 1200,
         height: 630,
         alt: "Amazing Home Furniture — Premium Furniture for Every Room",
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     title: "Amazing Home Furniture — Premium Furniture for Every Room",
     description:
       "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. Easy 30-day returns.",
-    images: ["https://amazinghomefurniturestore.com/og-image.png"],
+    images: ["https://amazinghomefurniturestore.com/og-image.png?v=2"],
   },
   alternates: { canonical: "https://amazinghomefurniturestore.com" },
 };

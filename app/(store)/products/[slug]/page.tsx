@@ -8,8 +8,23 @@ import {
 import { ProductImage } from "@/components/ui/ProductImage";
 import ProductDetailClient from "@/components/products/ProductDetailClient";
 import ProductCard from "@/components/products/ProductCard";
-import type { Product } from "@/types";
 import type { Metadata } from "next";
+
+function enrichProductTitle(name: string, category: string): string {
+  const categoryKeywords: Record<string, string> = {
+    sofa: "Sofa",
+    bed: "Bed Frame",
+    chair: "Chair",
+    table: "Dining Table",
+    cabinet: "Cabinet",
+    "tv-stand": "TV Stand",
+  };
+  const keyword = categoryKeywords[category] ?? "";
+  if (keyword && !name.toLowerCase().includes(keyword.toLowerCase())) {
+    return `${name} ${keyword}`;
+  }
+  return name;
+}
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -20,20 +35,27 @@ export async function generateMetadata({
 }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
-  if (!product) return { title: "Product Not Found" };
+  if (!product)
+    return { title: "Product Not Found | Amazing Home Furniture" };
+
+  const enrichedTitle = enrichProductTitle(product.name, product.category);
+
   return {
-    title: `${product.name} | Amazing Home Furniture`,
-    description:
-      product.description?.slice(0, 155) ??
-      `${product.name} — Shop at Amazing Home Furniture`,
+    title: `${enrichedTitle} | Amazing Home Furniture`,
+    description: product.description
+      ? `${product.description.slice(0, 150)}. Shop ${product.category} furniture with free shipping over $299.`
+      : `Shop ${product.category} furniture with free shipping over $299.`,
     openGraph: {
-      title: `${product.name} | Amazing Home Furniture`,
-      description: product.description?.slice(0, 155),
-      images: product.images?.[0] ? [{ url: product.images[0] }] : [],
-      url: `https://amazinghomefurniturestore.com/products/${slug}`,
+      title: `${enrichedTitle} | Amazing Home Furniture`,
+      description: product.description?.slice(0, 150) ?? "",
+      images: product.images?.[0]
+        ? [{ url: product.images[0], width: 800, height: 600 }]
+        : [],
+      url: `https://amazinghomefurniturestore.com/products/${product.slug}`,
+      type: "website",
     },
     alternates: {
-      canonical: `https://amazinghomefurniturestore.com/products/${slug}`,
+      canonical: `https://amazinghomefurniturestore.com/products/${product.slug}`,
     },
   };
 }
@@ -110,7 +132,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
           {/* Product info */}
           <div>
-            <h1 className="font-display text-3xl font-semibold text-charcoal">
+            <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#1C1C1C]">
               {product.name}
             </h1>
 
