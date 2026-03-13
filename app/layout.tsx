@@ -16,12 +16,12 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  verification: {
-    google: 'google3e1f48c9fa816d15.html',
-  },
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL || "https://amazinghomefurniturestore.com"
   ),
+  verification: {
+    google: "NlYP1pgeE7j5CzP4tZPsV5rUP6tNeVUIZUZ6If_x8CE",
+  },
   title: {
     default: "Amazing Home Furniture — Premium Furniture for Every Room",
     template: "%s | Amazing Home Furniture",
