@@ -10,7 +10,7 @@ export default async function StorePage() {
   const products = await getFeaturedProducts();
 
   return (
-    <div className="min-h-screen noise-overlay page-home">
+    <div className="min-h-screen bg-[#FAF8F5]">
       <HeroBanner />
       <TrustSignalStrip />
       <CategoryGrid />

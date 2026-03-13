@@ -7,44 +7,6 @@ html, body {
 @tailwind components;
 @tailwind utilities;
 
-/* Noise texture overlay — applied per-page via .page-[name] classes */
-.noise-overlay {
-  position: relative;
-}
-.noise-overlay::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1000;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 128px 128px;
-}
-
-/* Page-specific background colors */
-.page-home        { background-color: #FAF8F5; }  /* warm cream — welcoming */
-.page-collection  { background-color: #F5F0EA; }  /* linen — browsing/calm */
-.page-product     { background-color: #F9F6F1; }  /* ivory — focus on product */
-.page-cart        { background-color: #F2EDE6; }  /* sand — warm urgency */
-.page-checkout    { background-color: #FFFFFF; }  /* pure white — trust/clarity */
-.page-account-customer { background-color: #0D2818; } /* deep forest green */
-.page-account-admin    { background-color: #1C1C1C; } /* charcoal — authority */
-.page-auth        { background-color: #1A1A2E; }  /* deep navy — premium login */
-.page-about       { background-color: #2C1810; }  /* deep mahogany — story */
-.page-contact     { background-color: #E8F4F0; }  /* soft mint — approachable */
-.page-faq         { background-color: #EEF2F7; }  /* cool blue-grey — clarity */
-.page-financing   { background-color: #1C2C1C; }  /* deep forest — money/trust */
-.page-policy      { background-color: #F4F4F4; }  /* neutral grey — legal/calm */
-
-/* On dark backgrounds, the noise opacity should be higher for visibility */
-.page-account-customer::before,
-.page-account-admin::before,
-.page-auth::before,
-.page-about::before,
-.page-financing::before { opacity: 0.07; }
-
 @layer base {
   :root {
     --radius: 0.625rem;
@@ -122,7 +84,7 @@ html, body {
     border-color: var(--border);
   }
   body {
-    background-color: var(--background);
+    background-color: #FAF8F5;
     color: var(--foreground);
   }
 }

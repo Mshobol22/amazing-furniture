@@ -44,7 +44,7 @@ const CATEGORIES = [
 
 export default function CategoryGrid() {
   return (
-    <section className="px-4 py-16 sm:px-6 lg:px-8">
+    <section className="bg-[#FAF8F5] px-4 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <h2 className="mb-12 text-center font-display text-3xl font-semibold text-charcoal">
           Shop By Category

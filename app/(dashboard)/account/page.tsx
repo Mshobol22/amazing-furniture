@@ -37,7 +37,7 @@ export default async function AccountPage() {
 
   if (isAdmin) {
     return (
-      <div className="min-h-screen noise-overlay page-account-admin">
+      <div className="min-h-screen bg-[#FAF8F5]">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="mb-6 flex items-center justify-between rounded-lg bg-[#1C1C1C] p-4">
             <div>

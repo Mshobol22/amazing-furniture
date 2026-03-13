@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CreditCard, Instagram, Facebook } from "lucide-react";
+import { NoiseOverlay } from "@/components/ui/NoiseOverlay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -41,7 +42,9 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-charcoal text-cream">
+    <footer className="relative border-t border-white/10 bg-charcoal text-cream">
+      <NoiseOverlay opacity={0.04} />
+      <div className="relative z-10">
       {/* Newsletter */}
       <div className="border-b border-white/10 px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
@@ -243,7 +246,7 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/10 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <p className="text-sm text-cream/60">
+          <p className="text-xs text-white/30">
             © {new Date().getFullYear()} Amazing Home Furniture. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
@@ -256,6 +259,7 @@ export default function Footer() {
             </span>
           </div>
         </div>
+      </div>
       </div>
     </footer>
   );

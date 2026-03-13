@@ -28,7 +28,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen noise-overlay page-contact px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#FAF8F5] px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-2xl">
         <nav className="mb-8 flex items-center gap-2 text-sm text-warm-gray">
           <Link href="/" className="hover:text-charcoal">

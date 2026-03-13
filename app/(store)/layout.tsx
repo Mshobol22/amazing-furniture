@@ -18,12 +18,12 @@ export default function StoreLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col overflow-x-hidden">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-[#FAF8F5]">
       <SplashScreen />
       <AnnouncementBanner />
       <ExitIntentPopup />
       <ConditionalStoreNav />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pt-14 lg:pt-24">{children}</main>
       <Footer />
       <CartDrawer />
       <BackToTop />

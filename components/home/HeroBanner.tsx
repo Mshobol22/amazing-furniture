@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { NoiseOverlay } from "@/components/ui/NoiseOverlay";
 
 const container = {
   hidden: { opacity: 0 },
@@ -26,21 +27,24 @@ const BLUR_DATA =
 
 export default function HeroBanner() {
   return (
-    <section className="relative h-screen w-full overflow-hidden bg-[#FAF8F5]">
-      <Image
-        src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1800"
-        alt="Luxury living room"
-        fill
-        className="object-cover"
-        priority
-        sizes="100vw"
-        placeholder="blur"
-        blurDataURL={BLUR_DATA}
-      />
-      <div
-        className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60"
-        aria-hidden
-      />
+    <section className="relative flex min-h-[85vh] w-full items-center justify-center overflow-hidden">
+      <div className="absolute inset-0">
+        <Image
+          src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1800"
+          alt="Luxury living room"
+          fill
+          className="object-cover"
+          priority
+          sizes="100vw"
+          placeholder="blur"
+          blurDataURL={BLUR_DATA}
+        />
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50"
+          aria-hidden
+        />
+        <NoiseOverlay opacity={0.04} />
+      </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
         <motion.div
           variants={container}

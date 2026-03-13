@@ -520,7 +520,7 @@ export default function CheckoutPage() {
 
   if (user === "loading") {
     return (
-      <div className="min-h-screen noise-overlay page-checkout flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-walnut border-t-transparent" />
       </div>
     );
@@ -528,7 +528,7 @@ export default function CheckoutPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen noise-overlay page-checkout">
+      <div className="min-h-screen bg-[#FAF8F5]">
       <div className="mx-auto mt-20 max-w-md px-4">
         <div className="flex flex-col items-center text-center">
           <Lock className="mb-4 h-12 w-12 text-[#8B6914]" />
@@ -560,7 +560,7 @@ export default function CheckoutPage() {
 
   if (itemCount === 0) {
     return (
-      <div className="min-h-screen noise-overlay page-checkout flex flex-col items-center justify-center gap-6 px-4 py-16">
+      <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center gap-6 px-4 py-16">
         <p className="text-charcoal">Your cart is empty.</p>
         <Button asChild className="bg-walnut text-cream hover:bg-walnut/90">
           <Link href="/collections/all">Shop All</Link>
@@ -570,7 +570,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen noise-overlay page-checkout">
+    <div className="min-h-screen bg-[#FAF8F5]">
     <Elements
       stripe={stripePromise}
       options={{

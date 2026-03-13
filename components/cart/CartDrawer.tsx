@@ -95,7 +95,7 @@ export default function CartDrawer() {
                         />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-display font-medium text-charcoal">
+                        <p className="font-display font-medium text-charcoal line-clamp-2">
                           {item.product.name}
                         </p>
                         <p className="text-sm text-warm-gray">

@@ -3,26 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ShoppingBag,
   Heart,
-  CreditCard,
   Settings,
   Package,
-  LogOut,
+  MessageSquare,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { useWishlistCount } from "@/store/wishlistStore";
-import { Button } from "@/components/ui/button";
+import { NoiseOverlay } from "@/components/ui/NoiseOverlay";
 import type { User } from "@supabase/supabase-js";
-
-const STATUS_STYLES: Record<string, string> = {
-  pending: "bg-yellow-500/30 text-yellow-200",
-  paid: "bg-green-500/30 text-green-200",
-  shipped: "bg-blue-500/30 text-blue-200",
-  delivered: "bg-green-500/30 text-green-200",
-  cancelled: "bg-red-500/30 text-red-200",
-  processing: "bg-blue-500/30 text-blue-200",
-};
 
 interface OrderRow {
   id: string;
@@ -37,27 +25,23 @@ interface CustomerProfileProps {
   orders: OrderRow[];
 }
 
-function getItemCount(items: unknown): number {
-  if (Array.isArray(items)) return items.length;
-  return 0;
-}
-
 export default function CustomerProfile({ user, orders }: CustomerProfileProps) {
   const router = useRouter();
-  const wishlistCount = useWishlistCount();
 
   const displayName =
     user.user_metadata?.full_name ??
     user.user_metadata?.name ??
     user.email?.split("@")[0] ??
-    "User";
-  const initial = displayName.charAt(0).toUpperCase();
+    "Welcome";
+  const initial = (user?.email?.charAt(0) ?? "U").toUpperCase();
   const memberSince = user.created_at
     ? new Date(user.created_at).toLocaleDateString("en-US", {
         month: "long",
         year: "numeric",
       })
     : "";
+
+  const isAdmin = user.app_metadata?.role === "admin";
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -66,124 +50,117 @@ export default function CustomerProfile({ user, orders }: CustomerProfileProps) 
     router.refresh();
   };
 
-  const cards = [
-    {
-      icon: ShoppingBag,
-      title: "My Orders",
-      subtitle: "Track your purchases",
-      href: "/account/orders",
-    },
-    {
-      icon: Heart,
-      title: "Wishlist",
-      subtitle: "Your saved items",
-      href: "/account/wishlist",
-    },
-    {
-      icon: CreditCard,
-      title: "Financing",
-      subtitle: "Payment options",
-      href: "/financing",
-    },
-    {
-      icon: Settings,
-      title: "Settings",
-      subtitle: "Account preferences",
-      href: "/account/settings",
-    },
-  ];
+  const quickActionCards = [
+    { label: "My Orders", icon: Package, href: "/account/orders", desc: "Track & manage" },
+    { label: "Wishlist", icon: Heart, href: "/account/wishlist", desc: "Saved items" },
+    { label: "Admin Panel", icon: Settings, href: "/admin", desc: "Store controls", adminOnly: true },
+    { label: "Contact Us", icon: MessageSquare, href: "/contact", desc: "Get support" },
+  ].filter((card) => !card.adminOnly || isAdmin);
+
+  const recentOrders = orders.slice(0, 3);
 
   return (
-    <div className="min-h-screen noise-overlay page-account-customer pb-24">
-      {/* Section 1 — Hero profile header */}
-      <div className="pt-16 pb-10 px-6 text-center">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#8B6914] text-2xl font-medium text-white">
-          {initial}
+    <div className="min-h-screen bg-[#FAF8F5] pb-24">
+      {/* Hero panel — dark green */}
+      <div className="relative bg-[#0D2818] pt-16 pb-20 overflow-hidden">
+        <NoiseOverlay opacity={0.04} />
+        <div className="relative z-10 max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center sm:items-end gap-6">
+          <div className="w-20 h-20 rounded-full bg-[#8B6914] flex items-center justify-center text-white text-3xl font-bold border-4 border-white/20 shrink-0">
+            {initial}
+          </div>
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl font-serif font-bold text-white">
+              {displayName}
+            </h1>
+            <p className="text-white/60 text-sm mt-1">{user?.email}</p>
+            <p className="text-white/40 text-xs mt-1">
+              Member since {memberSince}
+            </p>
+          </div>
         </div>
-        <h1 className="mt-4 font-display text-3xl text-white">{displayName}</h1>
-        <p className="mt-1 text-sm text-[#a0c4a8]">{user.email}</p>
-        {memberSince && (
-          <p className="mt-2 text-xs text-[#6b9b75]">Member since {memberSince}</p>
-        )}
-        {wishlistCount > 0 && (
-          <span className="mt-3 inline-block rounded-full border border-[#8B6914]/40 bg-[#8B6914]/20 px-3 py-1 text-xs text-[#8B6914]">
-            ♥ {wishlistCount} {wishlistCount === 1 ? "item" : "items"} saved
-          </span>
-        )}
       </div>
 
-      {/* Section 2 — Quick action cards */}
-      <div className="mx-auto max-w-2xl px-4 mt-8 grid grid-cols-2 gap-4 sm:flex sm:flex-row sm:flex-wrap sm:justify-center">
-        {cards.map(({ icon: Icon, title, subtitle, href }) => (
-          <Link
-            key={href}
-            href={href}
-            className="cursor-pointer rounded-xl border border-white/10 bg-white/5 p-5 transition-colors hover:bg-white/10"
-          >
-            <Icon className="h-7 w-7 text-[#8B6914]" />
-            <p className="mt-3 text-sm font-medium text-white">{title}</p>
-            <p className="text-xs text-[#6b9b75]">{subtitle}</p>
-          </Link>
-        ))}
-      </div>
-
-      {/* Section 3 — Recent Orders */}
-      <div className="mx-auto max-w-2xl px-4 mt-8 pb-16">
-        <h2 className="mb-4 font-display text-xl text-white">Recent Orders</h2>
-
-        {orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-white/10 bg-white/5 py-16">
-            <Package className="h-10 w-10 text-[#6b9b75]" />
-            <p className="mt-2 text-sm text-[#a0c4a8]">No orders yet</p>
-            <Button asChild className="mt-4 rounded-lg bg-[#8B6914] px-6 py-2 text-white hover:bg-[#6d5210]">
-              <Link href="/collections/all">Start Shopping</Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {orders.slice(0, 5).map((order) => (
-              <div
-                key={order.id}
-                className="rounded-lg border border-white/10 bg-white/5 p-4"
-              >
-                <p className="font-mono text-xs text-[#8B6914]">
-                  {order.id.slice(0, 12)}...
-                </p>
-                <p className="mt-1 text-xs text-[#a0c4a8]">
-                  {new Date(order.created_at).toLocaleDateString()}
-                </p>
-                <span
-                  className={`mt-2 inline-block rounded px-2 py-0.5 text-xs ${
-                    STATUS_STYLES[order.status] ?? "bg-gray-500/30 text-gray-200"
-                  }`}
-                >
-                  {order.status}
-                </span>
-                <p className="mt-2 font-medium text-white">
-                  ${Number(order.total).toLocaleString()}
-                </p>
-                <Link
-                  href="#"
-                  className="mt-2 inline-block text-xs text-[#8B6914] hover:underline"
-                >
-                  View Details
-                </Link>
+      {/* Pull-up cards — cream area */}
+      <div className="max-w-4xl mx-auto px-4 -mt-10 relative z-10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+          {quickActionCards.map((card) => (
+            <Link
+              key={card.label}
+              href={card.href}
+              className="bg-white rounded-xl border border-gray-200 p-4 text-center hover:border-[#8B6914]/40 hover:shadow-md transition-all group"
+            >
+              <div className="w-10 h-10 bg-[#FAF8F5] rounded-full flex items-center justify-center mx-auto mb-2 group-hover:bg-[#8B6914]/10 transition-colors">
+                <card.icon className="w-5 h-5 text-[#8B6914]" />
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <div className="font-semibold text-sm text-[#1C1C1C]">{card.label}</div>
+              <div className="text-xs text-gray-400 mt-0.5">{card.desc}</div>
+            </Link>
+          ))}
+        </div>
 
-      {/* Sign Out */}
-      <div className="fixed bottom-0 left-0 right-0 flex justify-center border-t border-white/10 bg-[#0D2818]/95 p-4 backdrop-blur-sm">
-        <button
-          type="button"
-          onClick={handleSignOut}
-          className="flex items-center gap-2 rounded-lg border border-white/20 px-6 py-2 text-white/60 transition-colors hover:border-white hover:text-white"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </button>
+        {/* Recent orders preview */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-[#1C1C1C]">Recent Orders</h2>
+            <Link href="/account/orders" className="text-sm text-[#8B6914] hover:underline">
+              View all
+            </Link>
+          </div>
+          {recentOrders.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              <Package className="w-10 h-10 mx-auto mb-3 text-gray-200" />
+              <p className="text-sm">No orders yet</p>
+              <Link
+                href="/collections/all"
+                className="mt-3 inline-block text-sm text-[#8B6914] hover:underline"
+              >
+                Start shopping →
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentOrders.map((order) => (
+                <Link
+                  key={order.id}
+                  href="/account/orders"
+                  className="block rounded-lg border border-gray-100 p-4 hover:border-[#8B6914]/30 transition-colors"
+                >
+                  <p className="font-mono text-xs text-[#8B6914]">
+                    {order.id.slice(0, 12)}...
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {new Date(order.created_at).toLocaleDateString()}
+                  </p>
+                  <span
+                    className={`mt-2 inline-block rounded px-2 py-0.5 text-xs ${
+                      order.status === "delivered" || order.status === "paid"
+                        ? "bg-green-100 text-green-700"
+                        : order.status === "cancelled"
+                        ? "bg-red-100 text-red-600"
+                        : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    {order.status}
+                  </span>
+                  <p className="mt-2 font-medium text-[#1C1C1C]">
+                    ${Number(order.total).toLocaleString()}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Sign out */}
+        <div className="text-center pb-12">
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="text-sm text-gray-400 hover:text-red-500 transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
     </div>
   );

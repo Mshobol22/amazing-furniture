@@ -110,7 +110,7 @@ export default function SignupForm() {
 
   if (success) {
     return (
-      <div className="min-h-screen noise-overlay page-auth flex flex-col">
+      <div className="min-h-screen flex flex-col bg-[#1C1C1C]">
         <AuthNav />
         <div className="flex flex-1 items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
@@ -134,7 +134,7 @@ export default function SignupForm() {
   }
 
   return (
-    <div className="min-h-screen noise-overlay page-auth flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#1C1C1C]">
       <AuthNav />
       <div className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">

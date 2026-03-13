@@ -22,7 +22,7 @@ export async function generateMetadata({
   const product = await getProductBySlug(slug);
   if (!product) return { title: "Product Not Found" };
   return {
-    title: product.name,
+    title: `${product.name} | Amazing Home Furniture`,
     description:
       product.description?.slice(0, 155) ??
       `${product.name} — Shop at Amazing Home Furniture`,
@@ -56,7 +56,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     product.category.slice(1).replace("-", " ");
 
   return (
-    <div className="min-h-screen noise-overlay page-product px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#FAF8F5] px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         {/* Breadcrumb */}
         <nav className="mb-8 flex items-center gap-2 text-sm text-warm-gray">
@@ -78,7 +78,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <div className="mb-16 grid gap-12 lg:grid-cols-[55%_1fr]">
           {/* Image gallery */}
           <div className="space-y-4">
-            <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-50 p-3">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-50 p-3 shadow-lg">
               <ProductImage
                 src={product.images[0]}
                 alt={product.name}
@@ -176,7 +176,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {/* You May Also Like */}
         {relatedProducts.length > 0 && (
           <section>
-            <h2 className="mb-8 font-display text-2xl font-semibold text-charcoal">
+            <h2 className="mb-8 font-serif text-2xl font-semibold text-charcoal text-center border-b border-[#8B6914]/30 pb-2 w-fit mx-auto">
               You May Also Like
             </h2>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">

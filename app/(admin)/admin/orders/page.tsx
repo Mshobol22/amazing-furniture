@@ -10,7 +10,7 @@ export default async function AdminOrdersPage() {
     .limit(200);
 
   return (
-    <div>
+    <div className="rounded-xl border border-gray-200 bg-white p-8">
       <h1 className="mb-8 font-display text-2xl font-semibold text-charcoal">
         Orders
       </h1>

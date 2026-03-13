@@ -176,22 +176,43 @@ export default function Navbar() {
   const isCollectionActive = (slug: string) =>
     pathname.startsWith(`/collections/${slug}`);
 
+  const isHomepage = pathname === "/";
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const navTransparent = isHomepage && !scrolled;
+  const iconColor = navTransparent ? "text-white" : "text-[#1C1C1C]";
+  const logoColor = navTransparent ? "text-white" : "text-[#1C1C1C]";
+  const iconHover = navTransparent ? "hover:bg-white/10" : "hover:bg-black/5";
+
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-[#ede8e3] bg-[#FAF8F5]/90 backdrop-blur-md">
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
+          navTransparent
+            ? "bg-transparent"
+            : "border-b border-[#1C1C1C]/10 bg-[#FAF8F5]/95 shadow-sm backdrop-blur-md"
+        }`}
+      >
         {/* Row 1 */}
         <div className="flex h-14 w-full items-center justify-between px-4">
           <div className="flex flex-shrink-0 items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden flex h-10 w-10 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded"
+              className={`lg:hidden flex h-10 w-10 items-center justify-center rounded ${iconColor} ${iconHover}`}
               aria-label="Open menu"
             >
               <Menu className="h-5 w-5" strokeWidth={2} />
             </button>
             <Link
               href="/"
-              className="font-display text-lg font-semibold whitespace-nowrap flex-shrink-0 text-[#1C1C1C]"
+              className={`font-display text-lg font-semibold whitespace-nowrap flex-shrink-0 ${logoColor}`}
             >
               Amazing Home
             </Link>
@@ -199,14 +220,14 @@ export default function Navbar() {
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setSearchOpen(!searchOpen)}
-              className="flex p-1.5 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded sm:p-2"
+              className={`flex p-1.5 items-center justify-center rounded sm:p-2 ${iconColor} ${iconHover}`}
               aria-label="Search"
             >
               <Search className="h-5 w-5" />
             </button>
             <Link
               href="/account/wishlist"
-              className="relative flex p-1.5 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded sm:p-2"
+              className={`relative flex p-1.5 items-center justify-center rounded sm:p-2 ${iconColor} ${iconHover}`}
               aria-label="Wishlist"
             >
               <Heart
@@ -220,7 +241,7 @@ export default function Navbar() {
             </Link>
             <Link
               href={user ? "/account" : "/login"}
-              className="relative flex p-1.5 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded sm:p-2"
+              className={`relative flex p-1.5 items-center justify-center rounded sm:p-2 ${iconColor} ${iconHover}`}
               aria-label="Account"
             >
               <User className="h-5 w-5" />
@@ -230,7 +251,7 @@ export default function Navbar() {
             </Link>
             <button
               onClick={openCart}
-              className="relative flex p-1.5 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded sm:p-2"
+              className={`relative flex p-1.5 items-center justify-center rounded sm:p-2 ${iconColor} ${iconHover}`}
               aria-label="Cart"
             >
               <ShoppingBag className="h-5 w-5" />
@@ -247,7 +268,7 @@ export default function Navbar() {
         {searchOpen && (
           <div
             ref={searchContainerRef}
-            className="border-b border-[#ede8e3] bg-[#FAF8F5] px-4 py-3"
+            className="border-b border-[#1C1C1C]/20 bg-white/95 px-4 py-3 backdrop-blur-sm"
           >
             <div className="relative mx-auto max-w-2xl">
               <input
@@ -315,7 +336,11 @@ export default function Navbar() {
         )}
 
         {/* Row 2 - Desktop only, hidden on mobile */}
-        <div className="hidden lg:flex overflow-hidden bg-white border-b border-[#ede8e3]">
+        <div
+          className={`hidden overflow-hidden border-b lg:flex ${
+            navTransparent ? "border-white/20 bg-transparent" : "border-[#ede8e3] bg-white"
+          }`}
+        >
           <div className="mx-auto flex h-10 max-w-7xl items-center justify-center gap-0 overflow-hidden px-4">
             {Object.entries(CATEGORIES).map(([key, cat]) => (
               <div
@@ -326,7 +351,9 @@ export default function Navbar() {
               >
                 <Link
                   href={`/collections/${cat.slug}`}
-                  className={`block px-3 py-2 text-sm font-medium text-[#1C1C1C] cursor-pointer whitespace-nowrap ${
+                  className={`block px-3 py-2 text-sm font-medium cursor-pointer whitespace-nowrap ${
+                    navTransparent ? "text-white/90 hover:text-white" : "text-[#1C1C1C]"
+                  } ${
                     isCollectionActive(cat.slug)
                       ? "border-b-2 border-[#8B6914]"
                       : "hover:border-b-2 hover:border-[#8B6914]"

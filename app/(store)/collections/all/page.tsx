@@ -25,12 +25,15 @@ export default async function ShopAllPage() {
   ]);
 
   return (
-    <div className="min-h-screen noise-overlay page-collection bg-cream">
+    <div className="min-h-screen bg-[#FAF8F5]">
+      {/* Slim hero bar */}
+      <div className="h-20 bg-[#1C1C1C] flex items-center justify-center">
+        <h1 className="font-serif text-xl md:text-2xl font-semibold text-white">
+          Shop All Furniture
+        </h1>
+      </div>
       <div className="px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <h1 className="mb-2 font-display text-3xl font-semibold text-charcoal">
-            Shop All Furniture
-          </h1>
           <p className="mb-8 text-sm text-warm-gray">
             {totalCount} products across {CATEGORY_COUNT} categories
           </p>

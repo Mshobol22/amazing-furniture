@@ -225,37 +225,37 @@ function ProductsTableInner({ products }: ProductsTableProps) {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[700px] text-sm">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50">
-              <th className="px-4 py-3 text-left font-medium text-charcoal">
+              <th className="w-16 px-4 py-3 text-left font-medium text-charcoal">
                 Thumbnail
               </th>
-              <th className="px-4 py-3 text-left font-medium text-charcoal">
+              <th className="w-20 px-4 py-3 text-left font-medium text-charcoal">
                 SKU
               </th>
-              <th className="px-4 py-3 text-left font-medium text-charcoal">
+              <th className="min-w-0 flex-1 px-4 py-3 text-left font-medium text-charcoal">
                 Name
               </th>
-              <th className="px-4 py-3 text-left font-medium text-charcoal">
+              <th className="w-24 px-4 py-3 text-left font-medium text-charcoal">
                 Category
               </th>
-              <th className="px-4 py-3 text-left font-medium text-charcoal">
+              <th className="w-[90px] px-4 py-3 text-left font-medium text-charcoal">
                 Price
               </th>
-              <th className="px-4 py-3 text-left font-medium text-charcoal">
-                In Stock
+              <th className="w-20 px-4 py-3 text-left font-medium text-charcoal">
+                Stock
               </th>
-              <th className="px-4 py-3 text-left font-medium text-charcoal">
+              <th className="w-20 px-4 py-3 text-left font-medium text-charcoal">
                 Actions
               </th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((product) => (
+            {filtered.map((product, index) => (
               <React.Fragment key={product.id}>
               <tr
-                className="border-b border-gray-100 hover:bg-gray-50"
+                className={`border-b border-gray-100 hover:bg-gray-50 ${index % 2 === 1 ? "bg-gray-50/50" : "bg-white"}`}
               >
                 <td className="px-4 py-2">
                   <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded bg-gray-100">
@@ -349,16 +349,19 @@ function ProductsTableInner({ products }: ProductsTableProps) {
                   )}
                 </td>
                 <td className="px-4 py-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span
-                      className="inline-block h-2 w-2 shrink-0 rounded-full"
-                      style={{
-                        backgroundColor: product.in_stock
-                          ? "#22c55e"
-                          : "#ef4444",
-                      }}
-                      aria-hidden
-                    />
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        product.in_stock ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {product.in_stock ? "In Stock" : "Out"}
+                    </span>
+                    {product.on_sale && (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                        On Sale
+                      </span>
+                    )}
                     <button
                       type="button"
                       role="switch"

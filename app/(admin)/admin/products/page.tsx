@@ -16,7 +16,7 @@ export default async function AdminProductsPage() {
   ) as Product[];
 
   return (
-    <div>
+    <div className="rounded-xl border border-gray-200 bg-white p-6">
       <h1 className="mb-8 font-display text-2xl font-semibold text-charcoal">
         Products
       </h1>
