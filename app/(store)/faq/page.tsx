@@ -68,7 +68,7 @@ const FAQ_ITEMS = [
 
 export default function FAQPage() {
   return (
-    <div className="px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen noise-overlay page-faq px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
         <nav className="mb-8 flex items-center gap-2 text-sm text-warm-gray">
           <Link href="/" className="hover:text-charcoal">

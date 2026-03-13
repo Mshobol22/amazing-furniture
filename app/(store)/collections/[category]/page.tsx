@@ -39,7 +39,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
   const categoryLabel = getCategoryDisplayName(category);
 
   return (
-    <div className="px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen noise-overlay page-collection px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <h1 className="mb-2 font-display text-3xl font-semibold text-charcoal">
           {categoryLabel}

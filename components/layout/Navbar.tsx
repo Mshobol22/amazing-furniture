@@ -178,7 +178,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-[#FAF8F5] border-b border-[#ede8e3]">
+      <header className="sticky top-0 z-50 w-full border-b border-[#ede8e3] bg-[#FAF8F5]/90 backdrop-blur-md">
         {/* Row 1 */}
         <div className="flex h-14 w-full items-center justify-between px-4">
           <div className="flex flex-shrink-0 items-center gap-3">

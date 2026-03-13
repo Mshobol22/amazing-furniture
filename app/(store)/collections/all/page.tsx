@@ -25,7 +25,7 @@ export default async function ShopAllPage() {
   ]);
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen noise-overlay page-collection bg-cream">
       <div className="px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <h1 className="mb-2 font-display text-3xl font-semibold text-charcoal">

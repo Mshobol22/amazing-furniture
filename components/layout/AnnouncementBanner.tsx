@@ -48,7 +48,7 @@ export default function AnnouncementBanner() {
 
   return (
     <div
-      className="relative flex w-full items-center overflow-hidden px-10 py-2.5 text-sm"
+      className="relative flex w-full items-center overflow-hidden px-10 py-2.5 text-sm backdrop-blur-md"
       style={{
         backgroundColor: banner.bg_color,
         color: banner.text_color,

@@ -99,7 +99,7 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-cream">
+    <div className="min-h-screen noise-overlay page-auth flex flex-col">
       <AuthNav />
       <div className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">

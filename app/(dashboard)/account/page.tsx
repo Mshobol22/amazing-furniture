@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
-import { ShoppingBag, Package, Heart, LogOut } from "lucide-react";
 import AccountSidebar from "./AccountSidebar";
 import OrdersTab from "./OrdersTab";
+import CustomerProfile from "./CustomerProfile";
 
 export default async function AccountPage() {
   const supabase = await createClient();
@@ -36,10 +35,10 @@ export default async function AccountPage() {
 
   const isAdmin = user.app_metadata?.role === "admin";
 
-  return (
-    <div className="min-h-screen bg-cream">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        {isAdmin && (
+  if (isAdmin) {
+    return (
+      <div className="min-h-screen noise-overlay page-account-admin">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="mb-6 flex items-center justify-between rounded-lg bg-[#1C1C1C] p-4">
             <div>
               <p className="text-sm font-semibold text-[#FAF8F5]">Administrator Account</p>
@@ -52,30 +51,29 @@ export default async function AccountPage() {
               Open Dashboard →
             </Link>
           </div>
-        )}
-        <div className="flex flex-col gap-8 lg:flex-row">
-          {/* Left sidebar */}
-          <AccountSidebar
-            user={{
-              displayName,
-              email: user.email ?? "",
-              initials,
-              avatarUrl: user.user_metadata?.avatar_url,
-            }}
-          />
-
-          {/* Main content */}
-          <main className="flex-1">
-            <Link
-              href="/"
-              className="mb-6 inline-flex items-center text-sm font-medium text-walnut hover:underline"
-            >
-              ← Continue Shopping
-            </Link>
-            <OrdersTab orders={orders ?? []} />
-          </main>
+          <div className="flex flex-col gap-8 lg:flex-row">
+            <AccountSidebar
+              user={{
+                displayName,
+                email: user.email ?? "",
+                initials,
+                avatarUrl: user.user_metadata?.avatar_url,
+              }}
+            />
+            <main className="flex-1">
+              <Link
+                href="/"
+                className="mb-6 inline-flex items-center text-sm font-medium text-walnut hover:underline"
+              >
+                ← Continue Shopping
+              </Link>
+              <OrdersTab orders={orders ?? []} />
+            </main>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return <CustomerProfile user={user} orders={orders ?? []} />;
 }

@@ -35,7 +35,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
     <Link
       href={`/products/${product.slug}`}
       className={cn(
-        "group block rounded-lg border border-gray-200 bg-white transition-shadow hover:shadow-md",
+        "group block rounded-lg border border-gray-200 bg-white transition-transform duration-200 hover:-translate-y-1 hover:shadow-xl",
         className
       )}
     >

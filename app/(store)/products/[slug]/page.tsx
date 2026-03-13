@@ -56,7 +56,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     product.category.slice(1).replace("-", " ");
 
   return (
-    <div className="px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen noise-overlay page-product px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         {/* Breadcrumb */}
         <nav className="mb-8 flex items-center gap-2 text-sm text-warm-gray">
