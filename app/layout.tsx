@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     template: "%s | Amazing Home Furniture",
   },
   description:
-    "Shop 291 premium furniture pieces — sofas, beds, dining tables, chairs, cabinets and TV stands. Free shipping over $299.",
+    "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. Easy 30-day returns.",
   keywords: [
     "furniture",
     "sofas",
@@ -40,15 +40,44 @@ export const metadata: Metadata = {
     "TV stands",
   ],
   openGraph: {
-    type: "website",
-    siteName: "Amazing Home Furniture",
     title: "Amazing Home Furniture — Premium Furniture for Every Room",
     description:
-      "Shop 291 premium furniture pieces with free shipping over $299.",
+      "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. Easy 30-day returns.",
     url: "https://amazinghomefurniturestore.com",
+    siteName: "Amazing Home Furniture",
+    type: "website",
+    images: [
+      {
+        url: "https://amazinghomefurniturestore.com/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Amazing Home Furniture — Premium Furniture for Every Room",
+      },
+    ],
   },
-  twitter: { card: "summary_large_image" },
+  twitter: {
+    card: "summary_large_image",
+    title: "Amazing Home Furniture — Premium Furniture for Every Room",
+    description:
+      "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. Easy 30-day returns.",
+    images: ["https://amazinghomefurniturestore.com/og-image.png"],
+  },
   alternates: { canonical: "https://amazinghomefurniturestore.com" },
+};
+
+const orgJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FurnitureStore",
+  name: "Amazing Home Furniture",
+  url: "https://amazinghomefurniturestore.com",
+  logo: "https://amazinghomefurniturestore.com/logo.png",
+  image: "https://amazinghomefurniturestore.com/og-image.png",
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "customer service",
+    email: "orders@amazinghomefurniturestore.com",
+  },
+  sameAs: [],
 };
 
 export default function RootLayout({
@@ -58,6 +87,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable}`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+        />
+      </head>
       <body className="font-body bg-cream text-charcoal antialiased">
         <Providers>{children}</Providers>
       </body>
