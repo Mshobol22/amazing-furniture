@@ -5,6 +5,7 @@ import CartDrawer from "@/components/cart/CartDrawer";
 import ChatWidget from "@/components/ai-assistant/ChatWidget";
 import SplashScreen from "@/components/SplashScreen";
 import AnnouncementBanner from "@/components/layout/AnnouncementBanner";
+import BackToTop from "@/components/layout/BackToTop";
 
 const ExitIntentPopup = dynamic(
   () => import("@/components/ExitIntentPopup"),
@@ -25,6 +26,7 @@ export default function StoreLayout({
       <main className="flex-1">{children}</main>
       <Footer />
       <CartDrawer />
+      <BackToTop />
       <ChatWidget />
     </div>
   );

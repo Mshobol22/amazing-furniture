@@ -38,7 +38,7 @@ export default function CartPage() {
           Add some furniture to get started.
         </p>
         <Button asChild className="bg-walnut text-cream hover:bg-walnut/90">
-          <Link href="/products">Shop Products</Link>
+          <Link href="/collections/all">Shop All</Link>
         </Button>
       </div>
     );
@@ -57,7 +57,7 @@ export default function CartPage() {
             </p>
           </div>
           <Link
-            href="/products"
+            href="/collections/all"
             className="text-walnut hover:underline"
           >
             Continue Shopping

@@ -29,7 +29,7 @@ export default function LifestyleSplit() {
             asChild
             className="mt-8 w-fit bg-walnut text-cream hover:bg-walnut/90"
           >
-            <Link href="/products">Explore Collection</Link>
+            <Link href="/collections/all">Explore Collection</Link>
           </Button>
         </div>
       </div>

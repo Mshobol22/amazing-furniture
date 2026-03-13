@@ -28,6 +28,7 @@ export async function PATCH(
       const trimmed = body.name.trim();
       if (trimmed) updates.name = trimmed;
     }
+    if (typeof body.description === "string") updates.description = body.description;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(

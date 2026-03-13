@@ -42,7 +42,7 @@ export default function OrdersTab({ orders }: { orders: OrderRow[] }) {
             Start shopping to see your orders here.
           </p>
           <Button asChild className="bg-walnut text-cream hover:bg-walnut/90">
-            <Link href="/products">Start Shopping</Link>
+            <Link href="/collections/all">Start Shopping</Link>
           </Button>
         </div>
       ) : (

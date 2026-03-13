@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -48,6 +48,7 @@ function GoogleIcon() {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -74,7 +75,8 @@ export default function LoginPage() {
         setIsLoading(false);
         return;
       }
-      router.push("/account");
+      const redirect = searchParams.get("redirect") || "/account";
+      router.push(redirect);
       router.refresh();
     } catch {
       setError("An unexpected error occurred");

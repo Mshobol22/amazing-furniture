@@ -43,7 +43,7 @@ export default function WishlistContent() {
         <p className="mb-6 text-sm text-warm-gray">
           Save items you love for later.
         </p>
-        <Link href="/products">
+        <Link href="/collections/all">
           <span className="inline-block rounded-md bg-walnut px-4 py-2 text-cream hover:bg-walnut/90">
             Browse Products
           </span>

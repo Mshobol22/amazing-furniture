@@ -16,6 +16,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Lock, CreditCard } from "lucide-react";
+import type { User } from "@supabase/supabase-js";
 import { useCartStore, useCartItemCount, useCartTotal, getEffectivePrice } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
 import { ProductImage } from "@/components/ui/ProductImage";
@@ -192,7 +193,7 @@ function CheckoutForm() {
 
   const onContinueShopping = () => {
     clearCart();
-    router.push("/products");
+    router.push("/collections/all");
   };
 
   if (items.length === 0 && step < 3) {
@@ -200,7 +201,7 @@ function CheckoutForm() {
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-6 px-4 py-16">
         <p className="text-charcoal">Your cart is empty.</p>
         <Button asChild className="bg-walnut text-cream hover:bg-walnut/90">
-          <Link href="/products">Shop Products</Link>
+          <Link href="/collections/all">Shop All</Link>
         </Button>
       </div>
     );
@@ -511,13 +512,56 @@ function CheckoutForm() {
 
 export default function CheckoutPage() {
   const itemCount = useCartItemCount();
+  const [user, setUser] = useState<User | null | "loading">("loading");
+
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data: { user } }) => setUser(user ?? null));
+  }, []);
+
+  if (user === "loading") {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-walnut border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="mx-auto mt-20 max-w-md px-4">
+        <div className="flex flex-col items-center text-center">
+          <Lock className="mb-4 h-12 w-12 text-[#8B6914]" />
+          <h1 className="mb-2 font-display text-[28px] font-semibold text-charcoal">
+            Sign In to Complete Your Order
+          </h1>
+          <p className="mb-8 text-warm-gray">
+            Create a free account to checkout and track your orders. Your cart will be saved.
+          </p>
+          <div className="flex w-full flex-col gap-3">
+            <Button asChild className="w-full bg-[#8B6914] text-[#FAF8F5] hover:bg-[#6d5210]">
+              <Link href="/login?redirect=/checkout">Sign In</Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full border-[#1C1C1C]">
+              <Link href="/signup?redirect=/checkout">Create Account</Link>
+            </Button>
+          </div>
+          <Link
+            href="/"
+            className="mt-6 text-sm text-warm-gray hover:text-charcoal hover:underline"
+          >
+            ← Continue Shopping
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (itemCount === 0) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-6 px-4 py-16">
         <p className="text-charcoal">Your cart is empty.</p>
         <Button asChild className="bg-walnut text-cream hover:bg-walnut/90">
-          <Link href="/products">Shop Products</Link>
+          <Link href="/collections/all">Shop All</Link>
         </Button>
       </div>
     );

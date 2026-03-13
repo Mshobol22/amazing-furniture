@@ -140,10 +140,14 @@ export default function Navbar() {
     const handleClickOutside = (e: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
         setSearchOpen(false);
+        setSearchQuery("");
       }
     };
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSearchOpen(false);
+      if (e.key === "Escape") {
+        setSearchOpen(false);
+        setSearchQuery("");
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEscape);
@@ -176,8 +180,8 @@ export default function Navbar() {
     <>
       <header className="sticky top-0 z-50 w-full bg-[#FAF8F5] border-b border-[#ede8e3]">
         {/* Row 1 */}
-        <div className="relative flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex w-10 items-center lg:w-0">
+        <div className="flex h-14 w-full items-center justify-between px-4">
+          <div className="flex flex-shrink-0 items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="lg:hidden flex h-10 w-10 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded"
@@ -185,39 +189,38 @@ export default function Navbar() {
             >
               <Menu className="h-5 w-5" strokeWidth={2} />
             </button>
+            <Link
+              href="/"
+              className="font-display text-lg font-semibold whitespace-nowrap flex-shrink-0 text-[#1C1C1C]"
+            >
+              Amazing Home
+            </Link>
           </div>
-          <Link
-            href="/"
-            className="absolute left-1/2 -translate-x-1/2 font-display font-semibold text-[#1C1C1C]"
-            style={{ fontSize: "clamp(14px, 3vw, 20px)" }}
-          >
-            Amazing Home Furniture
-          </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setSearchOpen(!searchOpen)}
-              className="flex h-10 w-10 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded"
+              className="flex p-1.5 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded sm:p-2"
               aria-label="Search"
             >
               <Search className="h-5 w-5" />
             </button>
             <Link
               href="/account/wishlist"
-              className="relative flex h-10 w-10 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded"
+              className="relative flex p-1.5 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded sm:p-2"
               aria-label="Wishlist"
             >
               <Heart
                 className={`h-5 w-5 ${hasWishlistItems ? "fill-red-500 text-red-500" : ""}`}
               />
               {wishlistCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#8B6914] text-[10px] font-medium text-white">
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 min-w-[16px] items-center justify-center rounded-full bg-[#8B6914] text-[10px] font-medium text-white">
                   {wishlistCount}
                 </span>
               )}
             </Link>
             <Link
               href={user ? "/account" : "/login"}
-              className="relative flex h-10 w-10 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded"
+              className="relative flex p-1.5 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded sm:p-2"
               aria-label="Account"
             >
               <User className="h-5 w-5" />
@@ -227,12 +230,12 @@ export default function Navbar() {
             </Link>
             <button
               onClick={openCart}
-              className="relative flex h-10 w-10 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded"
+              className="relative flex p-1.5 items-center justify-center text-[#1C1C1C] hover:bg-black/5 rounded sm:p-2"
               aria-label="Cart"
             >
               <ShoppingBag className="h-5 w-5" />
               {cartCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#8B6914] text-[10px] font-medium text-white">
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 min-w-[16px] items-center justify-center rounded-full bg-[#8B6914] text-[10px] font-medium text-white">
                   {cartCount}
                 </span>
               )}
@@ -311,9 +314,9 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Row 2 - Desktop only */}
-        <div className="hidden lg:block bg-white border-b border-[#ede8e3]">
-          <div className="mx-auto flex h-10 max-w-7xl items-center justify-center gap-0 px-4">
+        {/* Row 2 - Desktop only, hidden on mobile */}
+        <div className="hidden lg:flex overflow-hidden bg-white border-b border-[#ede8e3]">
+          <div className="mx-auto flex h-10 max-w-7xl items-center justify-center gap-0 overflow-hidden px-4">
             {Object.entries(CATEGORIES).map(([key, cat]) => (
               <div
                 key={key}
@@ -323,7 +326,7 @@ export default function Navbar() {
               >
                 <Link
                   href={`/collections/${cat.slug}`}
-                  className={`block px-4 py-2 text-sm font-medium text-[#1C1C1C] cursor-pointer whitespace-nowrap ${
+                  className={`block px-3 py-2 text-sm font-medium text-[#1C1C1C] cursor-pointer whitespace-nowrap ${
                     isCollectionActive(cat.slug)
                       ? "border-b-2 border-[#8B6914]"
                       : "hover:border-b-2 hover:border-[#8B6914]"
@@ -391,7 +394,7 @@ export default function Navbar() {
                 className="font-display font-semibold text-[#1C1C1C]"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Amazing Home Furniture
+                Amazing Home
               </Link>
               <button
                 onClick={() => setMobileMenuOpen(false)}
@@ -402,13 +405,24 @@ export default function Navbar() {
               </button>
             </div>
             <div className="overflow-y-auto py-4">
+              <Link
+                href="/collections/all"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-4 py-3 font-medium hover:bg-gray-50 ${
+                  pathname === "/collections/all" ? "text-[#8B6914] font-semibold" : "text-[#1C1C1C]"
+                }`}
+              >
+                Shop All
+              </Link>
               {Object.entries(CATEGORIES).map(([key, cat]) => (
                 <div key={key} className="border-b border-[#ede8e3]/50">
                   <button
                     onClick={() =>
                       setExpandedMobileCategory(expandedMobileCategory === key ? null : key)
                     }
-                    className="flex w-full items-center justify-between px-4 py-3 text-left font-medium text-[#1C1C1C] hover:bg-gray-50"
+                    className={`flex w-full items-center justify-between px-4 py-3 text-left font-medium hover:bg-gray-50 ${
+                      isCollectionActive(cat.slug) ? "text-[#8B6914] font-semibold" : "text-[#1C1C1C]"
+                    }`}
                   >
                     {cat.name}
                     <ChevronRight

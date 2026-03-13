@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Suspense } from "react";
@@ -71,6 +71,9 @@ function ProductsTableInner({ products }: ProductsTableProps) {
   const [editingNameValue, setEditingNameValue] = useState("");
   const [savedNameId, setSavedNameId] = useState<string | null>(null);
   const [nameOverrides, setNameOverrides] = useState<Record<string, string>>({});
+  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
+  const [editingDescription, setEditingDescription] = useState("");
+  const [savingDescriptionId, setSavingDescriptionId] = useState<string | null>(null);
 
   const getDisplayName = (p: Product) => nameOverrides[p.id] ?? p.name;
 
@@ -133,6 +136,34 @@ function ProductsTableInner({ products }: ProductsTableProps) {
     }
     setEditingNameValue(currentName);
     setEditingNameId(null);
+  };
+
+  const handleExpandDetails = (product: Product) => {
+    if (expandedProductId === product.id) {
+      setExpandedProductId(null);
+      return;
+    }
+    setExpandedProductId(product.id);
+    setEditingDescription(product.description ?? "");
+  };
+
+  const handleDescriptionSave = async (product: Product) => {
+    const currentDesc = product.description ?? "";
+    if (editingDescription === currentDesc) {
+      setExpandedProductId(null);
+      return;
+    }
+    setSavingDescriptionId(product.id);
+    const res = await fetch(`/api/admin/products/${product.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: editingDescription }),
+    });
+    setSavingDescriptionId(null);
+    if (res.ok) {
+      setExpandedProductId(null);
+      window.location.reload();
+    }
   };
 
   const handleToggleStock = async (product: Product) => {
@@ -222,8 +253,8 @@ function ProductsTableInner({ products }: ProductsTableProps) {
           </thead>
           <tbody>
             {filtered.map((product) => (
+              <React.Fragment key={product.id}>
               <tr
-                key={product.id}
                 className="border-b border-gray-100 hover:bg-gray-50"
               >
                 <td className="px-4 py-2">
@@ -348,14 +379,59 @@ function ProductsTableInner({ products }: ProductsTableProps) {
                   </div>
                 </td>
                 <td className="px-4 py-2">
-                  <Link
-                    href={`/products/${product.slug}`}
-                    className="text-walnut hover:underline"
-                  >
-                    View
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleExpandDetails(product)}
+                      className="text-sm text-walnut hover:underline"
+                    >
+                      {expandedProductId === product.id ? "Hide Details" : "Edit Details"}
+                    </button>
+                    <Link
+                      href={`/products/${product.slug}`}
+                      className="text-walnut hover:underline"
+                    >
+                      View
+                    </Link>
+                  </div>
                 </td>
               </tr>
+              {expandedProductId === product.id && (
+                <tr className="bg-gray-50">
+                  <td colSpan={7} className="px-4 py-4">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-warm-gray">Description</label>
+                      <textarea
+                        rows={4}
+                        value={editingDescription}
+                        onChange={(e) => setEditingDescription(e.target.value)}
+                        className="w-full rounded border border-gray-200 bg-cream px-3 py-2 text-sm focus:border-walnut focus:outline-none focus:ring-1 focus:ring-walnut"
+                      />
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleDescriptionSave(product)}
+                          disabled={savingDescriptionId === product.id}
+                          className="rounded bg-walnut px-3 py-1.5 text-sm font-medium text-cream hover:bg-walnut/90 disabled:opacity-50"
+                        >
+                          {savingDescriptionId === product.id ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingDescription(product.description ?? "");
+                            setExpandedProductId(null);
+                          }}
+                          className="text-sm text-warm-gray hover:text-charcoal"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>

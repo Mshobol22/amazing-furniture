@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,6 +54,7 @@ function GoogleIcon() {
 }
 
 export default function SignupPage() {
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -119,7 +121,7 @@ export default function SignupPage() {
             <p className="mb-6 text-warm-gray">
               Check your email to confirm your account.
             </p>
-            <Link href="/login">
+            <Link href={searchParams.get("redirect") ? `/login?redirect=${encodeURIComponent(searchParams.get("redirect")!)}` : "/login"}>
               <Button className="bg-walnut text-cream hover:bg-walnut/90">
                 Back to Sign In
               </Button>

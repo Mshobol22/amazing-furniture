@@ -42,7 +42,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               Try different keywords or browse our full collection.
             </p>
             <Link
-              href="/products"
+              href="/collections/all"
               className="inline-block rounded-md bg-walnut px-4 py-2 text-cream hover:bg-walnut/90"
             >
               Browse all products

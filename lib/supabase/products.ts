@@ -31,7 +31,7 @@ export async function getProducts(category?: string): Promise<Product[]> {
     .order("name", { ascending: true })
     .limit(300); // Covers 291 products; increase if catalog grows
 
-  if (category) {
+  if (category && category !== "all") {
     query = query.eq("category", category);
   }
 
@@ -43,6 +43,54 @@ export async function getProducts(category?: string): Promise<Product[]> {
   }
 
   return (data ?? []).map(mapRowToProduct);
+}
+
+export async function getProductsInCategory(
+  category: string,
+  limit: number
+): Promise<Product[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("category", category)
+    .order("name", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    console.error("getProductsInCategory error:", error);
+    return [];
+  }
+  return (data ?? []).map(mapRowToProduct);
+}
+
+export async function getProductCountByCategory(
+  category: string
+): Promise<number> {
+  const supabase = createAdminClient();
+  const { count, error } = await supabase
+    .from("products")
+    .select("*", { count: "exact", head: true })
+    .eq("category", category);
+
+  if (error) {
+    console.error("getProductCountByCategory error:", error);
+    return 0;
+  }
+  return count ?? 0;
+}
+
+export async function getTotalProductCount(): Promise<number> {
+  const supabase = createAdminClient();
+  const { count, error } = await supabase
+    .from("products")
+    .select("*", { count: "exact", head: true });
+
+  if (error) {
+    console.error("getTotalProductCount error:", error);
+    return 0;
+  }
+  return count ?? 0;
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
@@ -93,11 +141,23 @@ export async function searchProducts(query: string): Promise<Product[]> {
 
   const supabase = createAdminClient();
 
+  // Use full-text + fuzzy search via RPC if available, else fallback to ilike
+  const { data: rpcData, error: rpcError } = await supabase.rpc(
+    "search_products",
+    { query_text: query.trim() }
+  );
+
+  if (!rpcError && Array.isArray(rpcData)) {
+    return (rpcData as Record<string, unknown>[]).map(mapRowToProduct);
+  }
+
+  // Fallback: ilike on name (when search_vector/RPC not yet deployed)
   const { data, error } = await supabase
     .from("products")
     .select("*")
     .ilike("name", `%${query.trim()}%`)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(12);
 
   if (error) {
     console.error("searchProducts error:", error);

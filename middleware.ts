@@ -35,8 +35,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  if (pathname === "/checkout" && !user) {
+    return NextResponse.redirect(new URL("/login?redirect=/checkout", request.url));
+  }
+
   if ((pathname === "/login" || pathname === "/signup") && user) {
-    return NextResponse.redirect(new URL("/account", request.url));
+    const redirectTo = request.nextUrl.searchParams.get("redirect") || "/account";
+    return NextResponse.redirect(new URL(redirectTo, request.url));
   }
 
   if (pathname.startsWith("/admin")) {

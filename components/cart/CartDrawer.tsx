@@ -67,7 +67,7 @@ export default function CartDrawer() {
                 Your cart is empty
               </p>
               <Button asChild variant="outline" className="border-charcoal">
-                <Link href="/products" onClick={() => closeCart()}>
+                <Link href="/collections/all" onClick={() => closeCart()}>
                   Start Shopping
                 </Link>
               </Button>
