@@ -16,6 +16,9 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
+  verification: {
+    google: 'google3e1f48c9fa816d15.html',
+  },
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL || "https://amazinghomefurniturestore.com"
   ),
