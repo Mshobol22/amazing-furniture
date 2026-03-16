@@ -5,12 +5,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-// Service-role client — inline, not imported from shared module
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(request: NextRequest) {
   // ── 1. Verify Stripe webhook signature BEFORE processing anything ──────
   const buf = await request.arrayBuffer();
@@ -33,6 +27,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  // ── Service-role client initialized here (request time, not cold-start) ──
+  // Module-level init can capture undefined env vars on Vercel cold-start.
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   // ── 2. Handle events ─────────────────────────────────────────────────────
   try {
     if (event.type === "payment_intent.succeeded") {
@@ -42,6 +43,8 @@ export async function POST(request: NextRequest) {
       console.log("Event type:", event.type);
       console.log("PI metadata:", JSON.stringify(paymentIntent.metadata));
       console.log("order_id from metadata:", paymentIntent.metadata?.order_id);
+      console.log("SUPABASE_URL present:", !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+      console.log("SERVICE_ROLE_KEY present:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
       console.log("RESEND_API_KEY present:", !!process.env.RESEND_API_KEY);
 
       const orderId = paymentIntent.metadata?.order_id;
