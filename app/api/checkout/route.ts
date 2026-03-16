@@ -68,6 +68,16 @@ export async function POST(request: NextRequest) {
     }
 
     // ── 5. Create PENDING order in Supabase (service role — server only) ──
+    console.log("ORDER INSERT PAYLOAD:", JSON.stringify({
+      subtotal,
+      shipping: shippingCost,
+      total,
+      user_id: user.id,
+      items: orderItems?.length,
+      customer_name: body.shippingAddress.name,
+      customer_email: body.shippingAddress.email || user.email,
+    }, null, 2));
+
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -76,7 +86,7 @@ export async function POST(request: NextRequest) {
         customer_email: body.shippingAddress.email || user.email,
         items: orderItems,
         subtotal,
-        shipping_cost: shippingCost,
+        shipping: shippingCost,
         total,
         status: "pending",
         shipping_address: body.shippingAddress,
