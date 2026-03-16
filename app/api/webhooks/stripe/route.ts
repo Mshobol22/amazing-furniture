@@ -3,11 +3,18 @@ import { supabaseAdmin } from "@/lib/supabase/service";
 import { sendOrderConfirmation } from "@/lib/email";
 import { NextRequest, NextResponse } from "next/server";
 
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(request: NextRequest) {
   // ── 1. Verify Stripe webhook signature BEFORE processing anything ──────
-  const rawBody = await request.text();
+  const buf = await request.arrayBuffer();
+  const rawBody = Buffer.from(buf);
   const signature = request.headers.get("stripe-signature");
 
   if (!signature) {
