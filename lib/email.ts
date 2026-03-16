@@ -150,3 +150,76 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<void
     html,
   });
 }
+
+export async function sendWelcomeEmail(email: string): Promise<void> {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f0ece6;font-family:Georgia,'Times New Roman',serif">
+
+  <div style="max-width:600px;margin:40px auto;background:#faf8f5;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.10)">
+
+    <!-- Header -->
+    <div style="background:#1c1c1c;padding:32px;text-align:center">
+      <p style="margin:0 0 6px;color:#8b6914;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-family:Arial,sans-serif">Welcome</p>
+      <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:normal;letter-spacing:1px">Amazing Home Furniture</h1>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:40px 36px">
+
+      <p style="margin:0 0 16px;color:#1c1c1c;font-size:20px;font-family:Georgia,serif">You&rsquo;re on the list.</p>
+      <p style="margin:0 0 24px;color:#555;font-size:14px;font-family:Arial,sans-serif;line-height:1.7">
+        Thank you for subscribing to Amazing Home Furniture. We&rsquo;re glad to have you.
+        Here&rsquo;s what you can look forward to:
+      </p>
+
+      <div style="background:#f0ece6;border-radius:6px;padding:24px;margin-bottom:28px">
+        <p style="margin:0 0 12px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8b6914;font-weight:bold;font-family:Arial,sans-serif">What to expect</p>
+        <ul style="margin:0;padding:0 0 0 18px;color:#1c1c1c;font-size:14px;font-family:Arial,sans-serif;line-height:2">
+          <li>Exclusive subscriber-only deals and early sale access</li>
+          <li>New arrival announcements before they sell out</li>
+          <li>Design inspiration and room styling ideas</li>
+          <li>Seasonal collections and curated picks</li>
+        </ul>
+      </div>
+
+      <div style="border-left:3px solid #8b6914;padding:12px 20px;margin-bottom:32px;background:#fffdf8">
+        <p style="margin:0;color:#555;font-size:14px;font-family:Arial,sans-serif;line-height:1.6">
+          We keep our emails infrequent and genuinely useful &mdash; no noise, just the good stuff.
+        </p>
+      </div>
+
+      <p style="margin:0 0 8px;color:#555;font-size:14px;font-family:Arial,sans-serif;line-height:1.6">
+        In the meantime, browse our latest collection:
+      </p>
+      <a href="https://www.amazinghomefurniturestore.com/collections/all"
+         style="display:inline-block;background:#8b6914;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:4px;font-size:14px;font-family:Arial,sans-serif;font-weight:500;margin-bottom:32px">
+        Shop Now
+      </a>
+
+      <p style="margin:0;color:#999;font-size:12px;font-family:Arial,sans-serif;line-height:1.6">
+        You received this because you subscribed at amazinghomefurniturestore.com.
+        To unsubscribe, reply to this email with &ldquo;unsubscribe&rdquo; in the subject line.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#1c1c1c;padding:24px 36px;text-align:center">
+      <p style="margin:0 0 6px;color:#888;font-size:12px;font-family:Arial,sans-serif">Free shipping on orders over $299</p>
+      <p style="margin:0">
+        <a href="https://www.amazinghomefurniturestore.com" style="color:#8b6914;font-size:12px;text-decoration:none;font-family:Arial,sans-serif">amazinghomefurniturestore.com</a>
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>`;
+
+  await resend.emails.send({
+    from: "Amazing Home Furniture <orders@amazinghomefurniturestore.com>",
+    to: email,
+    subject: "Welcome to Amazing Furniture \u2014 you're on the list \u2728",
+    html,
+  });
+}

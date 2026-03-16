@@ -16,6 +16,7 @@ import {
   Tag,
   ShoppingBag,
   MessageSquare,
+  Mail,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/admin/promotions", label: "Promotions", icon: Tag },
   { href: "/admin/banners", label: "Banners", icon: MessageSquare },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
+  { href: "/admin/newsletter", label: "Newsletter", icon: Mail },
 ];
 
 interface AdminShellProps {

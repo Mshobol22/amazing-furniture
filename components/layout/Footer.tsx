@@ -35,10 +35,20 @@ export default function Footer() {
     }
 
     setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSuccess(true);
-    setEmail("");
-    setIsSubmitting(false);
+    try {
+      await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), source: "footer" }),
+      });
+      // Always show success — never reveal whether email was already subscribed
+      setSuccess(true);
+      setEmail("");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
