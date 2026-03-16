@@ -3,28 +3,40 @@ import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+interface OrderItem {
+  product_id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
 interface OrderRow {
   id: string;
   user_id: string;
-  items: unknown;
+  customer_name: string | null;
+  customer_email: string | null;
+  items: OrderItem[];
   subtotal: number;
   shipping: number;
   total: number;
   status: string;
+  shipping_address: Record<string, string> | null;
   created_at: string;
 }
 
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
   paid: "bg-green-100 text-green-800",
+  processing: "bg-blue-100 text-blue-800",
   shipped: "bg-blue-100 text-blue-800",
   delivered: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-800",
 };
 
-function getItemCount(items: unknown): number {
-  if (Array.isArray(items)) return items.length;
-  return 0;
+function formatItems(items: OrderItem[]): string {
+  if (!Array.isArray(items) || items.length === 0) return "—";
+  if (items.length === 1) return `${items[0].name} × ${items[0].quantity}`;
+  return `${items[0].name} × ${items[0].quantity} + ${items.length - 1} more`;
 }
 
 export default function OrdersTab({ orders }: { orders: OrderRow[] }) {
@@ -61,26 +73,28 @@ export default function OrdersTab({ orders }: { orders: OrderRow[] }) {
               {orders.map((order) => (
                 <tr
                   key={order.id}
-                  className="cursor-pointer border-b border-light-sand transition-colors hover:bg-light-sand/50"
-                  onClick={() => {
-                    /* Placeholder for order detail page */
-                  }}
+                  className="border-b border-light-sand transition-colors hover:bg-light-sand/50"
                 >
                   <td className="py-4 font-mono text-sm text-charcoal">
-                    {order.id.slice(0, 8)}
+                    #{order.id.slice(0, 8).toUpperCase()}
                   </td>
                   <td className="py-4 text-sm text-warm-gray">
-                    {new Date(order.created_at).toLocaleDateString()}
+                    {new Date(order.created_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
                   </td>
-                  <td className="py-4 text-sm">{getItemCount(order.items)}</td>
+                  <td className="py-4 text-sm text-charcoal max-w-[200px] truncate">
+                    {formatItems(order.items)}
+                  </td>
                   <td className="py-4 font-medium text-charcoal">
-                    ${Number(order.total).toLocaleString()}
+                    ${Number(order.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                   </td>
                   <td className="py-4">
                     <Badge
                       className={
-                        STATUS_STYLES[order.status] ??
-                        "bg-gray-100 text-gray-800"
+                        STATUS_STYLES[order.status] ?? "bg-gray-100 text-gray-800"
                       }
                     >
                       {order.status}
