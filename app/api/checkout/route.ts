@@ -10,6 +10,7 @@ const SHIPPING_COST = 29;
 interface CheckoutBody {
   items: CartItem[];
   shippingAddress: ShippingAddress;
+  consent?: boolean;
 }
 
 function getEffectivePrice(product: CartItem["product"]): number {
@@ -31,6 +32,13 @@ export async function POST(request: NextRequest) {
 
     // ── 2. Validate request body ──────────────────────────────────────────
     const body: CheckoutBody = await request.json();
+
+    if (!body.consent) {
+      return NextResponse.json(
+        { error: "Terms and Privacy Policy consent is required" },
+        { status: 400 }
+      );
+    }
 
     if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
       return NextResponse.json(

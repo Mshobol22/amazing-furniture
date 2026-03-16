@@ -68,6 +68,7 @@ function CheckoutForm() {
   );
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [consented, setConsented] = useState(false);
 
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
@@ -132,6 +133,7 @@ function CheckoutForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          consent: true,
           items,
           shippingAddress: {
             name: shippingData.fullName,
@@ -412,6 +414,34 @@ function CheckoutForm() {
                 {paymentError && (
                   <p className="mt-2 text-sm text-red-600">{paymentError}</p>
                 )}
+                <label className="mt-4 flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={consented}
+                    onChange={(e) => setConsented(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-walnut"
+                  />
+                  <span className="text-sm text-warm-gray">
+                    I have read and agree to the{" "}
+                    <a
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-walnut underline hover:text-walnut/80"
+                    >
+                      Terms of Service
+                    </a>{" "}
+                    and{" "}
+                    <a
+                      href="/privacy-policy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-walnut underline hover:text-walnut/80"
+                    >
+                      Privacy Policy
+                    </a>
+                  </span>
+                </label>
                 <div className="mt-4 flex gap-2">
                   <Button
                     type="button"
@@ -422,8 +452,8 @@ function CheckoutForm() {
                   </Button>
                   <Button
                     onClick={onPaymentSubmit}
-                    disabled={!stripe || isProcessing}
-                    className="flex-1 bg-walnut text-cream hover:bg-walnut/90"
+                    disabled={!stripe || isProcessing || !consented}
+                    className="flex-1 bg-walnut text-cream hover:bg-walnut/90 disabled:opacity-50"
                   >
                     {isProcessing ? "Processing..." : `Pay $${total.toFixed(2)}`}
                   </Button>
