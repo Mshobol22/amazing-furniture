@@ -32,12 +32,18 @@ export async function POST(request: NextRequest) {
   try {
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
+
+      // Defensive logging — visible in Vercel runtime logs
+      console.log("Webhook event type:", event.type);
+      console.log("PaymentIntent metadata:", JSON.stringify(paymentIntent.metadata));
+      console.log("Order ID from metadata:", paymentIntent.metadata?.order_id);
+
       const orderId = paymentIntent.metadata?.order_id;
 
       if (!orderId) {
-        // Payment has no order attached — nothing to update
-        console.error("payment_intent.succeeded: no order_id in metadata", paymentIntent.id);
-        return NextResponse.json({ received: true });
+        // Return 400 so Stripe retries and the failure is visible in the dashboard
+        console.error("ERROR: No order_id in PaymentIntent metadata", paymentIntent.id);
+        return NextResponse.json({ error: "No order_id in metadata" }, { status: 400 });
       }
 
       // Update the pending order to paid and record the payment intent ID
@@ -53,9 +59,11 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (updateError || !order) {
-        console.error("Failed to update order to paid:", updateError?.message);
+        console.error("Failed to update order to paid:", updateError?.message, "order_id:", orderId);
         return NextResponse.json({ received: true });
       }
+
+      console.log("Order updated to paid:", orderId);
 
       // Send confirmation email
       try {
