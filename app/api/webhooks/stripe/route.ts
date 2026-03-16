@@ -38,19 +38,9 @@ export async function POST(request: NextRequest) {
   try {
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
-
-      console.log("=== WEBHOOK FIRED ===");
-      console.log("Event type:", event.type);
-      console.log("PI metadata:", JSON.stringify(paymentIntent.metadata));
-      console.log("order_id from metadata:", paymentIntent.metadata?.order_id);
-      console.log("SUPABASE_URL present:", !!process.env.NEXT_PUBLIC_SUPABASE_URL);
-      console.log("SERVICE_ROLE_KEY present:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
-      console.log("RESEND_API_KEY present:", !!process.env.RESEND_API_KEY);
-
       const orderId = paymentIntent.metadata?.order_id;
 
       if (!orderId) {
-        console.error("CRITICAL: No order_id in webhook metadata", paymentIntent.id);
         return NextResponse.json({ error: "No order_id in metadata" }, { status: 400 });
       }
 
@@ -65,27 +55,12 @@ export async function POST(request: NextRequest) {
         .eq("id", orderId)
         .select();
 
-      console.log("=== WEBHOOK UPDATE RESULT ===");
-      console.log("order_id targeted:", orderId);
-      console.log("rows updated:", data?.length ?? 0);
-      console.log("error:", JSON.stringify(error));
-
-      // Diagnostic: if 0 rows updated with no error, the UUID didn't match
-      if (!error && (!data || data.length === 0)) {
-        const { data: orderCheck } = await supabaseAdmin
-          .from("orders")
-          .select("id, status")
-          .eq("id", orderId);
-        console.log("Order found by direct lookup:", JSON.stringify(orderCheck));
-      }
-
       if (error || !data?.length) {
-        console.error("Failed to update order to paid:", error?.message, "order_id:", orderId);
+        console.error("Webhook: failed to update order", orderId, error?.message);
         return NextResponse.json({ received: true });
       }
 
       const order = data[0];
-      console.log("Order updated to paid:", orderId);
 
       // ── Send confirmation email — only after confirmed DB update ──────
       try {
@@ -105,9 +80,8 @@ export async function POST(request: NextRequest) {
             zip: rawAddress.zip ?? rawAddress.zipCode ?? "",
           },
         });
-        console.log("Email sent for order:", order.id);
       } catch (emailErr) {
-        console.error("Email failed for order:", order.id, (emailErr as Error).message);
+        console.error("Webhook: email failed", order.id, (emailErr as Error).message);
       }
     }
 

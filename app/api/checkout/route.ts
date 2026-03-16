@@ -63,29 +63,15 @@ export async function POST(request: NextRequest) {
     const total = subtotal + shippingCost;
     const totalCents = Math.round(total * 100);
 
-    // isFinite catches NaN and Infinity — JS NaN <= 0 is always false
     if (!isFinite(subtotal) || subtotal <= 0 || !isFinite(total) || totalCents <= 0) {
-      console.error("Invalid amount — subtotal:", subtotal, "total:", total);
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
     // ── 5. Create PENDING order in Supabase via inline service-role client ─
-    // Using inline createClient (not shared singleton) to avoid cold-start
-    // state issues in serverless — same pattern as the webhook handler.
     const supabaseAdmin = createSupabaseAdmin(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-
-    console.log("ORDER INSERT PAYLOAD:", JSON.stringify({
-      subtotal,
-      shipping: shippingCost,
-      total,
-      user_id: user.id,
-      items: orderItems?.length,
-      customer_name: body.shippingAddress.name,
-      customer_email: body.shippingAddress.email || user.email,
-    }, null, 2));
 
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
@@ -104,7 +90,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orderError || !order) {
-      console.error("Failed to create order record:", orderError?.message);
+      console.error("Checkout: order insert failed", orderError?.message);
       return NextResponse.json(
         { error: "Failed to create order" },
         { status: 500 }
