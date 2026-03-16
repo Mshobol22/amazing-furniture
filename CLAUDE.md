@@ -11,7 +11,7 @@ Goal: Build a world-class, conversion-optimized furniture shopping experience th
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **Database**: Supabase (PostgreSQL)
-- **Auth**: Clerk
+- **Auth**: Supabase Auth (NOT Clerk). Google OAuth via Supabase PKCE flow. Use `supabase.auth.getUser()` server-side and `supabase.auth.getSession()` client-side. Never use Clerk packages.
 - **Payments**: Stripe
 - **UI Components**: shadcn/ui
 - **Deployment**: Vercel
@@ -38,7 +38,7 @@ Work through these in order:
 
 ### 🟡 Priority 2 — Next Up
 4. **Product filtering & search** — filter by category, material, color, price range
-5. **Wishlist / Save for later** — user can save products (requires Clerk auth)
+5. **Wishlist / Save for later** — user can save products (requires Supabase Auth)
 6. **Product image gallery** — multi-image viewer with zoom on product detail page
 
 ### 🟢 Priority 3 — Future
@@ -92,11 +92,10 @@ All code must follow these rules — no exceptions:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-CLERK_SECRET_KEY=
 STRIPE_SECRET_KEY=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 STRIPE_WEBHOOK_SECRET=
+RESEND_API_KEY=
 ```
 Ask the user for these values when ready to connect services. Never assume or hardcode them.
 
