@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-// Service-role client — module level, no shared import, bypasses RLS
+// Service-role client — inline, not imported from shared module
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET!
     );
   } catch {
-    // Never expose the reason — could leak internal info
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
@@ -43,6 +42,7 @@ export async function POST(request: NextRequest) {
       console.log("Event type:", event.type);
       console.log("PI metadata:", JSON.stringify(paymentIntent.metadata));
       console.log("order_id from metadata:", paymentIntent.metadata?.order_id);
+      console.log("RESEND_API_KEY present:", !!process.env.RESEND_API_KEY);
 
       const orderId = paymentIntent.metadata?.order_id;
 
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "No order_id in metadata" }, { status: 400 });
       }
 
-      // Update order to paid — service role bypasses RLS
+      // ── Update order to paid — service role bypasses RLS ──────────────
       const { data, error } = await supabaseAdmin
         .from("orders")
         .update({
@@ -62,9 +62,19 @@ export async function POST(request: NextRequest) {
         .eq("id", orderId)
         .select();
 
-      console.log("Update result data:", JSON.stringify(data));
-      console.log("Update error:", JSON.stringify(error));
-      console.log("Rows updated:", data?.length ?? 0);
+      console.log("=== WEBHOOK UPDATE RESULT ===");
+      console.log("order_id targeted:", orderId);
+      console.log("rows updated:", data?.length ?? 0);
+      console.log("error:", JSON.stringify(error));
+
+      // Diagnostic: if 0 rows updated with no error, the UUID didn't match
+      if (!error && (!data || data.length === 0)) {
+        const { data: orderCheck } = await supabaseAdmin
+          .from("orders")
+          .select("id, status")
+          .eq("id", orderId);
+        console.log("Order found by direct lookup:", JSON.stringify(orderCheck));
+      }
 
       if (error || !data?.length) {
         console.error("Failed to update order to paid:", error?.message, "order_id:", orderId);
@@ -74,7 +84,7 @@ export async function POST(request: NextRequest) {
       const order = data[0];
       console.log("Order updated to paid:", orderId);
 
-      // Send confirmation email — failure must not block order update
+      // ── Send confirmation email — only after confirmed DB update ──────
       try {
         const items = Array.isArray(order.items) ? order.items : [];
         const rawAddress = order.shipping_address ?? {};
@@ -92,8 +102,9 @@ export async function POST(request: NextRequest) {
             zip: rawAddress.zip ?? rawAddress.zipCode ?? "",
           },
         });
+        console.log("Email sent for order:", order.id);
       } catch (emailErr) {
-        console.error("Failed to send order confirmation email:", emailErr);
+        console.error("Email failed for order:", order.id, (emailErr as Error).message);
       }
     }
 

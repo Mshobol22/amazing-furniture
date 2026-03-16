@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { supabaseAdmin } from "@/lib/supabase/service";
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { CartItem, ShippingAddress } from "@/types";
 
@@ -19,7 +19,7 @@ function getEffectivePrice(product: CartItem["product"]): number {
 
 export async function POST(request: NextRequest) {
   try {
-    // ── 1. Require authenticated user (server-side check) ─────────────────
+    // ── 1. Require authenticated user ──────────────────────────────────────
     const supabase = await createClient();
     const {
       data: { user },
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── 3. Build order items — price computed server-side, never trusted from client ──
+    // ── 3. Build order items — price computed server-side ─────────────────
     const orderItems = body.items.map((item) => ({
       product_id: item.product.id,
       name: item.product.name,
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       quantity: item.quantity,
     }));
 
-    // ── 4. Calculate amounts from orderItems (server-side only) ──────────
+    // ── 4. Calculate amounts — guard against NaN if product price is missing
     const subtotal = orderItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
@@ -63,11 +63,20 @@ export async function POST(request: NextRequest) {
     const total = subtotal + shippingCost;
     const totalCents = Math.round(total * 100);
 
-    if (subtotal <= 0 || totalCents <= 0) {
+    // isFinite catches NaN and Infinity — JS NaN <= 0 is always false
+    if (!isFinite(subtotal) || subtotal <= 0 || !isFinite(total) || totalCents <= 0) {
+      console.error("Invalid amount — subtotal:", subtotal, "total:", total);
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
-    // ── 5. Create PENDING order in Supabase (service role — server only) ──
+    // ── 5. Create PENDING order in Supabase via inline service-role client ─
+    // Using inline createClient (not shared singleton) to avoid cold-start
+    // state issues in serverless — same pattern as the webhook handler.
+    const supabaseAdmin = createSupabaseAdmin(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     console.log("ORDER INSERT PAYLOAD:", JSON.stringify({
       subtotal,
       shipping: shippingCost,
@@ -102,7 +111,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── 6. Create Stripe PaymentIntent — pass order_id in metadata ────────
+    // ── 6. Create Stripe PaymentIntent with order_id in metadata ──────────
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalCents,
       currency: "usd",
