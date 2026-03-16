@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
           id: order.id,
           customer_name: order.customer_name ?? "Customer",
           customer_email: order.customer_email ?? "",
+          subtotal: Number(order.subtotal),
           total: Number(order.total),
           items,
           shipping_address: {

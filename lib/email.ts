@@ -1,11 +1,13 @@
 import { Resend } from "resend";
 
+// RESEND_API_KEY sourced from env only — never hardcoded
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export interface OrderEmailData {
   id: string;
   customer_name: string;
   customer_email: string;
+  subtotal: number;
   total: number;
   items: Array<{ name: string; quantity: number; price: number }>;
   shipping_address: {
@@ -16,92 +18,135 @@ export interface OrderEmailData {
   };
 }
 
-export async function sendOrderConfirmation(order: OrderEmailData) {
+export async function sendOrderConfirmation(order: OrderEmailData): Promise<void> {
+  // Validate all required fields before sending — never send a partial email
+  if (
+    !order.customer_email ||
+    !order.id ||
+    !order.customer_name ||
+    !Array.isArray(order.items) ||
+    order.items.length === 0
+  ) {
+    throw new Error("sendOrderConfirmation: missing required order fields");
+  }
+
   const orderNumber = order.id.slice(0, 8).toUpperCase();
+  const firstName = order.customer_name.split(" ")[0] || order.customer_name;
+  const orderDate = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const shipping = order.total - order.subtotal;
 
   const itemRows = order.items
     .map(
       (item, i) => `
     <tr style="background:${i % 2 === 0 ? "#ffffff" : "#faf8f5"}">
-      <td style="padding:10px 12px;border-bottom:1px solid #ede8e1">${item.name}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #ede8e1;text-align:center">${item.quantity}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #ede8e1;text-align:right">$${(item.price * item.quantity).toFixed(2)}</td>
-    </tr>
-  `
+      <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;color:#1c1c1c;font-size:14px">${item.name}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;text-align:center;color:#555;font-size:14px">${item.quantity}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;text-align:right;color:#1c1c1c;font-size:14px">$${(item.price).toFixed(2)}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;text-align:right;color:#1c1c1c;font-size:14px;font-weight:500">$${(item.price * item.quantity).toFixed(2)}</td>
+    </tr>`
     )
     .join("");
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <body style="margin:0;padding:0;background:#f0ece6;font-family:Georgia,serif">
-      <div style="max-width:600px;margin:40px auto;background:#faf8f5;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
-        
-        <!-- Header -->
-        <div style="background:#1c1c1c;padding:28px 32px;text-align:center">
-          <p style="margin:0;color:#8b6914;font-size:13px;letter-spacing:3px;text-transform:uppercase">Order Confirmed</p>
-          <h1 style="margin:8px 0 0;color:#ffffff;font-size:24px;font-weight:normal;letter-spacing:1px">Amazing Home Furniture</h1>
-        </div>
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f0ece6;font-family:Georgia,'Times New Roman',serif">
 
-        <!-- Body -->
-        <div style="padding:36px 32px">
-          <p style="margin:0 0 8px;color:#1c1c1c;font-size:18px">Hi ${order.customer_name},</p>
-          <p style="margin:0 0 28px;color:#555;font-size:15px;line-height:1.6">
-            Your order <strong style="color:#1c1c1c">#${orderNumber}</strong> has been confirmed and is being prepared. 
-            We'll send you another email when it ships.
-          </p>
+  <div style="max-width:600px;margin:40px auto;background:#faf8f5;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.10)">
 
-          <!-- Order Table -->
-          <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
-            <thead>
-              <tr style="background:#f0ece6">
-                <th style="padding:10px 12px;text-align:left;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#666;font-weight:normal">Item</th>
-                <th style="padding:10px 12px;text-align:center;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#666;font-weight:normal">Qty</th>
-                <th style="padding:10px 12px;text-align:right;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#666;font-weight:normal">Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemRows}
-              <tr style="background:#faf8f5">
-                <td colspan="2" style="padding:12px;font-weight:bold;color:#1c1c1c;border-top:2px solid #1c1c1c">Order Total</td>
-                <td style="padding:12px;font-weight:bold;color:#1c1c1c;text-align:right;border-top:2px solid #1c1c1c">$${order.total.toFixed(2)}</td>
-              </tr>
-            </tbody>
-          </table>
+    <!-- Header -->
+    <div style="background:#1c1c1c;padding:32px;text-align:center">
+      <p style="margin:0 0 6px;color:#8b6914;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-family:Arial,sans-serif">Order Confirmed</p>
+      <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:normal;letter-spacing:1px">Amazing Home Furniture</h1>
+    </div>
 
-          <!-- Shipping Address -->
-          <div style="background:#f0ece6;border-radius:6px;padding:16px 20px;margin-bottom:28px">
-            <p style="margin:0 0 8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8b6914;font-weight:bold">Shipping To</p>
-            <p style="margin:0;color:#1c1c1c;font-size:14px;line-height:1.7">
-              ${order.customer_name}<br>
-              ${order.shipping_address.address}<br>
-              ${order.shipping_address.city}, ${order.shipping_address.state} ${order.shipping_address.zip}
-            </p>
-          </div>
+    <!-- Body -->
+    <div style="padding:40px 36px">
 
-          <p style="margin:0;color:#555;font-size:14px;line-height:1.6">
-            Questions about your order? Reply to this email or contact us at 
-            <a href="mailto:support@amazinghomefurniturestore.com" style="color:#8b6914">support@amazinghomefurniturestore.com</a>
-          </p>
-        </div>
+      <p style="margin:0 0 6px;color:#1c1c1c;font-size:20px;font-family:Georgia,serif">Thank you for your order, ${firstName}!</p>
+      <p style="margin:0 0 4px;color:#555;font-size:14px;font-family:Arial,sans-serif;line-height:1.6">Order <strong style="color:#1c1c1c">#${orderNumber}</strong> &nbsp;·&nbsp; ${orderDate}</p>
+      <p style="margin:0 0 32px;color:#555;font-size:14px;font-family:Arial,sans-serif;line-height:1.6">
+        We've received your order and it's being prepared. Your order will be delivered within <strong style="color:#1c1c1c">5–7 business days</strong>.
+      </p>
 
-        <!-- Footer -->
-        <div style="background:#1c1c1c;padding:20px 32px;text-align:center">
-          <p style="margin:0;color:#888;font-size:12px">Free shipping on orders over $299</p>
-          <p style="margin:6px 0 0">
-            <a href="https://amazinghomefurniturestore.com" style="color:#8b6914;font-size:12px;text-decoration:none">amazinghomefurniturestore.com</a>
-          </p>
-        </div>
+      <!-- Items table -->
+      <table style="width:100%;border-collapse:collapse;margin-bottom:8px">
+        <thead>
+          <tr style="background:#f0ece6">
+            <th style="padding:10px 16px;text-align:left;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#666;font-weight:normal;font-family:Arial,sans-serif">Item</th>
+            <th style="padding:10px 16px;text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#666;font-weight:normal;font-family:Arial,sans-serif">Qty</th>
+            <th style="padding:10px 16px;text-align:right;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#666;font-weight:normal;font-family:Arial,sans-serif">Unit</th>
+            <th style="padding:10px 16px;text-align:right;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#666;font-weight:normal;font-family:Arial,sans-serif">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemRows}
+        </tbody>
+      </table>
 
+      <!-- Totals -->
+      <table style="width:100%;border-collapse:collapse;margin-bottom:32px">
+        <tr>
+          <td style="padding:8px 16px;color:#555;font-size:14px;font-family:Arial,sans-serif">Subtotal</td>
+          <td style="padding:8px 16px;text-align:right;color:#1c1c1c;font-size:14px;font-family:Arial,sans-serif">$${order.subtotal.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 16px;color:#555;font-size:14px;font-family:Arial,sans-serif">Shipping</td>
+          <td style="padding:8px 16px;text-align:right;color:#1c1c1c;font-size:14px;font-family:Arial,sans-serif">${shipping === 0 ? "FREE" : "$" + shipping.toFixed(2)}</td>
+        </tr>
+        <tr style="border-top:2px solid #1c1c1c">
+          <td style="padding:12px 16px;color:#1c1c1c;font-size:16px;font-weight:bold;font-family:Arial,sans-serif">Order Total</td>
+          <td style="padding:12px 16px;text-align:right;color:#1c1c1c;font-size:16px;font-weight:bold;font-family:Arial,sans-serif">$${order.total.toFixed(2)}</td>
+        </tr>
+      </table>
+
+      <!-- Shipping address -->
+      <div style="background:#f0ece6;border-radius:6px;padding:20px 24px;margin-bottom:32px">
+        <p style="margin:0 0 10px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8b6914;font-weight:bold;font-family:Arial,sans-serif">Shipping To</p>
+        <p style="margin:0;color:#1c1c1c;font-size:14px;line-height:1.8;font-family:Arial,sans-serif">
+          ${order.customer_name}<br>
+          ${order.shipping_address.address}<br>
+          ${order.shipping_address.city}, ${order.shipping_address.state} ${order.shipping_address.zip}
+        </p>
       </div>
-    </body>
-    </html>
-  `;
 
-  return resend.emails.send({
+      <!-- Delivery note -->
+      <div style="border-left:3px solid #8b6914;padding:12px 20px;margin-bottom:32px;background:#fffdf8">
+        <p style="margin:0;color:#555;font-size:14px;font-family:Arial,sans-serif;line-height:1.6">
+          Your order will be delivered within <strong style="color:#1c1c1c">5–7 business days</strong>.
+          You'll receive a shipping confirmation email with tracking details once it dispatches.
+        </p>
+      </div>
+
+      <p style="margin:0;color:#555;font-size:14px;font-family:Arial,sans-serif;line-height:1.6">
+        Questions about your order? Contact us at
+        <a href="mailto:support@amazinghomefurniturestore.com" style="color:#8b6914;text-decoration:none">support@amazinghomefurniturestore.com</a>
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#1c1c1c;padding:24px 36px;text-align:center">
+      <p style="margin:0 0 6px;color:#888;font-size:12px;font-family:Arial,sans-serif">Free shipping on orders over $299</p>
+      <p style="margin:0 0 6px">
+        <a href="https://amazinghomefurniturestore.com" style="color:#8b6914;font-size:12px;text-decoration:none;font-family:Arial,sans-serif">amazinghomefurniturestore.com</a>
+      </p>
+      <p style="margin:0;color:#666;font-size:11px;font-family:Arial,sans-serif">
+        Amazing Home Furniture &nbsp;·&nbsp; You received this because you placed an order
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>`;
+
+  await resend.emails.send({
     from: "Amazing Home Furniture <orders@amazinghomefurniturestore.com>",
     to: order.customer_email,
-    subject: `Order Confirmed — Amazing Home Furniture (#${orderNumber})`,
+    subject: `Your Amazing Furniture order is confirmed 🛋️ (#${orderNumber})`,
     html,
   });
 }
