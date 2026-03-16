@@ -5,6 +5,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
+// Service-role client — module level, no shared import, bypasses RLS
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
 export async function POST(request: NextRequest) {
   // ── 1. Verify Stripe webhook signature BEFORE processing anything ──────
   const buf = await request.arrayBuffer();
@@ -28,14 +34,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // ── 2. Initialize service-role Supabase client inline (not shared singleton) ──
-  // This avoids any stale module-level state in serverless cold starts.
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  // ── 3. Handle events ─────────────────────────────────────────────────────
+  // ── 2. Handle events ─────────────────────────────────────────────────────
   try {
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
@@ -53,7 +52,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Update order to paid — service role bypasses RLS
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from("orders")
         .update({
           status: "paid",
@@ -100,7 +99,7 @@ export async function POST(request: NextRequest) {
     if (event.type === "charge.refunded") {
       const charge = event.data.object as Stripe.Charge;
       if (charge.payment_intent) {
-        await supabase
+        await supabaseAdmin
           .from("orders")
           .update({ status: "cancelled" })
           .eq("stripe_payment_intent_id", String(charge.payment_intent));
