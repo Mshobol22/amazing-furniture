@@ -8,3 +8,5 @@ CREATE TABLE IF NOT EXISTS banners (
   is_active boolean NOT NULL DEFAULT true,
   created_at timestamptz DEFAULT now()
 );
+
+

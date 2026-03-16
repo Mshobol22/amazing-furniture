@@ -120,17 +120,10 @@ export default function TermsPage() {
               6. Returns and Refunds
             </h2>
             <p className="mt-3">
-              We offer a <strong>30-day return policy</strong> on most items.
-              To be eligible for a return:
+              We want you to be fully satisfied with your purchase. To be
+              eligible for a return, items must be unused, unassembled, and in
+              their original packaging.
             </p>
-            <ul className="mt-3 list-disc space-y-1 pl-6">
-              <li>The item must be returned within 30 days of delivery</li>
-              <li>
-                The item must be in its original, undamaged condition and in
-                original packaging
-              </li>
-              <li>Assembly must not have been started</li>
-            </ul>
             <p className="mt-3">
               To initiate a return, contact us at{" "}
               <a
@@ -139,11 +132,13 @@ export default function TermsPage() {
               >
                 support@amazinghomefurniturestore.com
               </a>{" "}
-              with your order number. Return shipping costs are the
-              responsibility of the customer unless the item arrived damaged or
-              defective.
+              with your order number. Clearance and custom items are final sale.
+              Return shipping costs are the responsibility of the customer
+              unless the item arrived damaged or defective.
             </p>
             <p className="mt-3">
+              All products are covered by a <strong>2-year manufacturer
+              warranty</strong> against defects in materials and workmanship.
               Refunds are issued to the original payment method within 5–10
               business days of us receiving and inspecting the returned item.
             </p>

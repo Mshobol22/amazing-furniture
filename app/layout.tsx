@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     template: "%s | Amazing Home Furniture",
   },
   description:
-    "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. Easy 30-day returns.",
+    "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. 2-year manufacturer warranty.",
   keywords: [
     "furniture",
     "sofas",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Amazing Home Furniture — Premium Furniture for Every Room",
     description:
-      "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. Easy 30-day returns.",
+      "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. 2-year manufacturer warranty.",
     url: "https://amazinghomefurniturestore.com",
     siteName: "Amazing Home Furniture",
     type: "website",
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Amazing Home Furniture — Premium Furniture for Every Room",
     description:
-      "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. Easy 30-day returns.",
+      "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. 2-year manufacturer warranty.",
     images: ["https://amazinghomefurniturestore.com/og-image.png?v=2"],
   },
   alternates: { canonical: "https://amazinghomefurniturestore.com" },

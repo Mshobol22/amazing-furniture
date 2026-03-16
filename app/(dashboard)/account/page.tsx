@@ -42,11 +42,11 @@ export default async function AccountPage() {
           <div className="mb-6 flex items-center justify-between rounded-lg bg-[#1C1C1C] p-4">
             <div>
               <p className="text-sm font-semibold text-[#FAF8F5]">Administrator Account</p>
-              <p className="text-xs text-[#8B6914]">You have admin access</p>
+              <p className="text-xs text-[#2D4A3E]">You have admin access</p>
             </div>
             <Link
               href="/admin"
-              className="rounded bg-[#8B6914] px-4 py-2 text-sm font-medium text-[#FAF8F5] transition-colors hover:bg-[#6d5210]"
+              className="rounded bg-[#2D4A3E] px-4 py-2 text-sm font-medium text-[#FAF8F5] transition-colors hover:bg-[#6d5210]"
             >
               Open Dashboard →
             </Link>

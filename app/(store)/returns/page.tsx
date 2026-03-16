@@ -4,7 +4,7 @@ import { ChevronRight } from "lucide-react";
 export const metadata = {
   title: "Returns Policy",
   description:
-    "30-day hassle-free returns at Amazing Home Furniture. Full policy details.",
+    "Returns and exchange policy at Amazing Home Furniture. Contact us for assistance.",
 };
 
 export default function ReturnsPage() {
@@ -26,10 +26,12 @@ export default function ReturnsPage() {
         <div className="prose prose-charcoal max-w-none space-y-6 text-warm-gray">
           <section>
             <h2 className="font-display text-lg font-semibold text-charcoal">
-              30-Day Return Window
+              Our Policy
             </h2>
             <p>
-              30-day return window from delivery date.
+              We want you to love your furniture. If you have any concerns with
+              your order, please contact our team and we&apos;ll work with you
+              to make it right.
             </p>
           </section>
 
@@ -38,26 +40,8 @@ export default function ReturnsPage() {
               Return Conditions
             </h2>
             <p>
-              Items must be unused, unassembled, in original packaging.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
-              Return Shipping
-            </h2>
-            <p>
-              Customer responsible for return shipping costs.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
-              Refunds
-            </h2>
-            <p>
-              Refund processed within 5–7 business days after we receive the
-              item.
+              Items eligible for return must be unused, unassembled, and in
+              original packaging. Clearance and custom items are final sale.
             </p>
           </section>
 
@@ -66,16 +50,18 @@ export default function ReturnsPage() {
               Damaged on Arrival
             </h2>
             <p>
-              Contact within 48 hours with photos — we&apos;ll replace at no cost.
+              Contact us within 48 hours of delivery with photos — we&apos;ll
+              replace or refund at no cost to you.
             </p>
           </section>
 
           <section>
             <h2 className="font-display text-lg font-semibold text-charcoal">
-              Final Sale
+              2-Year Manufacturer Warranty
             </h2>
             <p>
-              Clearance and custom items are final sale.
+              All products are covered by a 2-year manufacturer warranty against
+              defects in materials and workmanship.
             </p>
           </section>
 

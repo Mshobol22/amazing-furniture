@@ -27,7 +27,7 @@ const FAQ_ITEMS = [
   {
     value: "returns",
     q: "What is your return policy?",
-    a: "30-day returns from delivery date. Items must be unused and in original packaging.",
+    a: "We accept returns on unused, unassembled items in original packaging. Contact us at support@amazinghomefurniturestore.com to initiate a return.",
   },
   {
     value: "delivery",

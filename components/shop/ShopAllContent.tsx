@@ -38,8 +38,8 @@ export default function ShopAllContent({ products }: ShopAllContentProps) {
               onClick={() => setActiveCategory(cat.slug)}
               className={`rounded-full px-3 py-2 text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-[#8B6914] text-[#FAF8F5]"
-                  : "border border-[#1C1C1C] bg-transparent text-[#1C1C1C] hover:border-[#8B6914] hover:text-[#8B6914]"
+                  ? "bg-[#2D4A3E] text-[#FAF8F5]"
+                  : "border border-[#1C1C1C] bg-transparent text-[#1C1C1C] hover:border-[#2D4A3E] hover:text-[#2D4A3E]"
               }`}
             >
               {cat.name}

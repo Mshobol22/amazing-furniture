@@ -34,7 +34,7 @@ export function AdminNav() {
             href={item.href}
             className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
               isActive
-                ? "bg-[#8B6914] text-white"
+                ? "bg-[#2D4A3E] text-white"
                 : "text-white/80 hover:bg-white/10 hover:text-white"
             }`}
           >

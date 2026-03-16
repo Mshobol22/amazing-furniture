@@ -211,7 +211,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {/* You May Also Like */}
         {relatedProducts.length > 0 && (
           <section>
-            <h2 className="mb-8 font-serif text-2xl font-semibold text-charcoal text-center border-b border-[#8B6914]/30 pb-2 w-fit mx-auto">
+            <h2 className="mb-8 font-serif text-2xl font-semibold text-charcoal text-center border-b border-[#2D4A3E]/30 pb-2 w-fit mx-auto">
               You May Also Like
             </h2>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">

@@ -116,7 +116,7 @@ export default function ExitIntentPopup() {
         <div className="flex">
           <div
             className="w-1.5 shrink-0 rounded-l-xl"
-            style={{ backgroundColor: "#8B6914" }}
+            style={{ backgroundColor: "#2D4A3E" }}
           />
           <div className="flex-1 p-8">
             {success ? (
@@ -159,7 +159,7 @@ export default function ExitIntentPopup() {
               <>
                 <p
                   className="text-[11px] font-semibold uppercase tracking-[0.3em]"
-                  style={{ color: "#8B6914" }}
+                  style={{ color: "#2D4A3E" }}
                 >
                   Exclusive Offer
                 </p>
@@ -168,7 +168,7 @@ export default function ExitIntentPopup() {
                 </h2>
                 <p
                   className="mt-2 text-lg font-medium"
-                  style={{ color: "#8B6914" }}
+                  style={{ color: "#2D4A3E" }}
                 >
                   Get 10% off your first order
                 </p>
@@ -185,14 +185,14 @@ export default function ExitIntentPopup() {
                       setError(null);
                     }}
                     placeholder="Your email address"
-                    className="w-full rounded-md border border-gray-200 bg-[#FAF8F5] px-4 py-3 text-sm outline-none placeholder:text-warm-gray focus:border-[#8B6914] focus:ring-1 focus:ring-[#8B6914]"
+                    className="w-full rounded-md border border-gray-200 bg-[#FAF8F5] px-4 py-3 text-sm outline-none placeholder:text-warm-gray focus:border-[#2D4A3E] focus:ring-1 focus:ring-[#2D4A3E]"
                   />
                   {error && (
                     <p className="text-sm text-red-600">{error}</p>
                   )}
                   <Button
                     type="submit"
-                    className="w-full bg-charcoal text-cream hover:bg-[#8B6914]"
+                    className="w-full bg-charcoal text-cream hover:bg-[#2D4A3E]"
                   >
                     Claim My 10% Off
                   </Button>

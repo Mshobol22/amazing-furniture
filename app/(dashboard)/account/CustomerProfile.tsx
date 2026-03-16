@@ -65,7 +65,7 @@ export default function CustomerProfile({ user, orders }: CustomerProfileProps) 
       <div className="relative bg-[#0D2818] pt-16 pb-20 overflow-hidden">
         <NoiseOverlay opacity={0.04} />
         <div className="relative z-10 max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center sm:items-end gap-6">
-          <div className="w-20 h-20 rounded-full bg-[#8B6914] flex items-center justify-center text-white text-3xl font-bold border-4 border-white/20 shrink-0">
+          <div className="w-20 h-20 rounded-full bg-[#2D4A3E] flex items-center justify-center text-white text-3xl font-bold border-4 border-white/20 shrink-0">
             {initial}
           </div>
           <div className="text-center sm:text-left">
@@ -87,10 +87,10 @@ export default function CustomerProfile({ user, orders }: CustomerProfileProps) 
             <Link
               key={card.label}
               href={card.href}
-              className="bg-white rounded-xl border border-gray-200 p-4 text-center hover:border-[#8B6914]/40 hover:shadow-md transition-all group"
+              className="bg-white rounded-xl border border-gray-200 p-4 text-center hover:border-[#2D4A3E]/40 hover:shadow-md transition-all group"
             >
-              <div className="w-10 h-10 bg-[#FAF8F5] rounded-full flex items-center justify-center mx-auto mb-2 group-hover:bg-[#8B6914]/10 transition-colors">
-                <card.icon className="w-5 h-5 text-[#8B6914]" />
+              <div className="w-10 h-10 bg-[#FAF8F5] rounded-full flex items-center justify-center mx-auto mb-2 group-hover:bg-[#2D4A3E]/10 transition-colors">
+                <card.icon className="w-5 h-5 text-[#2D4A3E]" />
               </div>
               <div className="font-semibold text-sm text-[#1C1C1C]">{card.label}</div>
               <div className="text-xs text-gray-400 mt-0.5">{card.desc}</div>
@@ -102,7 +102,7 @@ export default function CustomerProfile({ user, orders }: CustomerProfileProps) 
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-[#1C1C1C]">Recent Orders</h2>
-            <Link href="/account/orders" className="text-sm text-[#8B6914] hover:underline">
+            <Link href="/account/orders" className="text-sm text-[#2D4A3E] hover:underline">
               View all
             </Link>
           </div>
@@ -112,7 +112,7 @@ export default function CustomerProfile({ user, orders }: CustomerProfileProps) 
               <p className="text-sm">No orders yet</p>
               <Link
                 href="/collections/all"
-                className="mt-3 inline-block text-sm text-[#8B6914] hover:underline"
+                className="mt-3 inline-block text-sm text-[#2D4A3E] hover:underline"
               >
                 Start shopping →
               </Link>
@@ -123,9 +123,9 @@ export default function CustomerProfile({ user, orders }: CustomerProfileProps) 
                 <Link
                   key={order.id}
                   href="/account/orders"
-                  className="block rounded-lg border border-gray-100 p-4 hover:border-[#8B6914]/30 transition-colors"
+                  className="block rounded-lg border border-gray-100 p-4 hover:border-[#2D4A3E]/30 transition-colors"
                 >
-                  <p className="font-mono text-xs text-[#8B6914]">
+                  <p className="font-mono text-xs text-[#2D4A3E]">
                     {order.id.slice(0, 12)}...
                   </p>
                   <p className="text-sm text-gray-500 mt-1">

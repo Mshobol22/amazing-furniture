@@ -96,7 +96,7 @@ function CollectionWithSortInner({ products }: CollectionWithSortProps) {
         <select
           value={sort}
           onChange={(e) => handleSortChange(e.target.value)}
-          className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-charcoal outline-none focus:ring-2 focus:ring-[#8B6914]/50 focus:border-[#8B6914]/40"
+          className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-charcoal outline-none focus:ring-2 focus:ring-[#2D4A3E]/50 focus:border-[#2D4A3E]/40"
         >
           <option value="default">Default</option>
           <option value="price-asc">Price: Low to High</option>

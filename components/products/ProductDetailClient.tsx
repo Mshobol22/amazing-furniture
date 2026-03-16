@@ -45,7 +45,7 @@ export default function ProductDetailClient({
         disabled={!product.in_stock}
         className="w-fit bg-[#1C1C1C] text-white hover:bg-[#2a2a2a] disabled:opacity-50"
       >
-        <ShoppingCart className="mr-2 h-4 w-4 text-[#8B6914]" />
+        <ShoppingCart className="mr-2 h-4 w-4 text-[#2D4A3E]" />
         Add to Cart
       </Button>
     </div>

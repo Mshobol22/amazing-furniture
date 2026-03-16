@@ -166,3 +166,96 @@ export async function searchProducts(query: string): Promise<Product[]> {
 
   return (data ?? []).map(mapRowToProduct);
 }
+
+// ── Homepage data fetchers ─────────────────────────────────────────────────
+
+export interface HeroSlide {
+  id: string;
+  headline: string;
+  subheading: string | null;
+  cta_label: string;
+  cta_href: string;
+  image_url: string;
+}
+
+export async function getHeroSlides(): Promise<HeroSlide[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("hero_slides")
+    .select("id, headline, subheading, cta_label, cta_href, image_url")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+  if (error) {
+    console.error("getHeroSlides error:", error);
+    return [];
+  }
+  return (data ?? []) as HeroSlide[];
+}
+
+export interface ManufacturerWithCount {
+  name: string;
+  slug: string;
+  description: string;
+  count: number;
+  comingSoon: boolean;
+}
+
+export async function getManufacturersWithCounts(): Promise<ManufacturerWithCount[]> {
+  const supabase = createAdminClient();
+
+  const [{ data: mfrs }, { data: counts }] = await Promise.all([
+    supabase
+      .from("manufacturers")
+      .select("name, slug, description, is_active")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("products")
+      .select("manufacturer")
+      .not("manufacturer", "is", null),
+  ]);
+
+  const countMap = new Map<string, number>();
+  for (const row of counts ?? []) {
+    const m = row.manufacturer as string;
+    countMap.set(m, (countMap.get(m) ?? 0) + 1);
+  }
+
+  return (mfrs ?? []).map((m) => ({
+    name: m.name as string,
+    slug: m.slug as string,
+    description: m.description as string,
+    count: countMap.get(m.name as string) ?? 0,
+    comingSoon: countMap.get(m.name as string) === 0,
+  }));
+}
+
+export interface SpotlightProduct {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  images: string[];
+}
+
+export async function getRugsSpotlight(): Promise<SpotlightProduct[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, name, slug, price, images")
+    .eq("category", "rug")
+    .eq("in_stock", true)
+    .order("rating", { ascending: false })
+    .limit(4);
+  if (error) {
+    console.error("getRugsSpotlight error:", error);
+    return [];
+  }
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    slug: r.slug as string,
+    price: Number(r.price),
+    images: (r.images as string[]) ?? [],
+  }));
+}

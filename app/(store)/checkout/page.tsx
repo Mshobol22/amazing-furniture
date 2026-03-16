@@ -540,7 +540,7 @@ export default function CheckoutPage() {
       <div className="min-h-screen bg-[#FAF8F5]">
       <div className="mx-auto mt-20 max-w-md px-4">
         <div className="flex flex-col items-center text-center">
-          <Lock className="mb-4 h-12 w-12 text-[#8B6914]" />
+          <Lock className="mb-4 h-12 w-12 text-[#2D4A3E]" />
           <h1 className="mb-2 font-display text-[28px] font-semibold text-charcoal">
             Sign In to Complete Your Order
           </h1>
@@ -548,7 +548,7 @@ export default function CheckoutPage() {
             Create a free account to checkout and track your orders. Your cart will be saved.
           </p>
           <div className="flex w-full flex-col gap-3">
-            <Button asChild className="w-full bg-[#8B6914] text-[#FAF8F5] hover:bg-[#6d5210]">
+            <Button asChild className="w-full bg-[#2D4A3E] text-[#FAF8F5] hover:bg-[#6d5210]">
               <Link href="/login?redirect=/checkout">Sign In</Link>
             </Button>
             <Button asChild variant="outline" className="w-full border-[#1C1C1C]">
@@ -586,7 +586,7 @@ export default function CheckoutPage() {
         appearance: {
           theme: "stripe",
           variables: {
-            colorPrimary: "#8B6914",
+            colorPrimary: "#2D4A3E",
             colorBackground: "#FAF8F5",
             colorText: "#1C1C1C",
             colorDanger: "#dc2626",

@@ -121,7 +121,7 @@ export default function CreateSaleForm() {
             type="submit"
             disabled={loading || !isValidDiscount}
             className="rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-            style={{ backgroundColor: "#8B6914" }}
+            style={{ backgroundColor: "#2D4A3E" }}
           >
             Apply Sale
           </button>

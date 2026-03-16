@@ -200,7 +200,7 @@ export default function ProductSaleForm() {
             type="submit"
             disabled={loading || !isValidPrice}
             className="rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-            style={{ backgroundColor: "#8B6914" }}
+            style={{ backgroundColor: "#2D4A3E" }}
           >
             {loading ? "Saving..." : "Apply Sale"}
           </button>

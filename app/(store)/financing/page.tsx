@@ -66,7 +66,7 @@ export default function FinancingPage() {
       <section className="relative overflow-hidden bg-[#0D2818] py-20">
         <NoiseOverlay opacity={0.04} />
         <div className="relative z-10 mx-auto max-w-4xl px-4 text-center text-white">
-          <span className="text-sm font-semibold uppercase tracking-widest text-[#8B6914]">
+          <span className="text-sm font-semibold uppercase tracking-widest text-[#2D4A3E]">
             Flexible Payments
           </span>
           <h1 className="mt-3 font-display text-4xl font-bold md:text-5xl">
@@ -80,7 +80,7 @@ export default function FinancingPage() {
             href="https://snapfinance.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-[#8B6914] px-8 py-3 font-semibold text-white transition-colors hover:bg-[#7a5c10]"
+            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-[#2D4A3E] px-8 py-3 font-semibold text-white transition-colors hover:bg-[#7a5c10]"
           >
             Apply Now — Takes 2 Minutes
           </a>
@@ -99,19 +99,19 @@ export default function FinancingPage() {
                 key={p.plan}
                 className={`relative rounded-2xl border-2 p-6 ${
                   p.highlight
-                    ? "border-[#8B6914] bg-white shadow-lg"
+                    ? "border-[#2D4A3E] bg-white shadow-lg"
                     : "border-gray-200 bg-white"
                 }`}
               >
                 {p.badge && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#8B6914] px-3 py-1 text-xs font-semibold text-white">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#2D4A3E] px-3 py-1 text-xs font-semibold text-white">
                     {p.badge}
                   </span>
                 )}
                 <div className="mb-1 text-2xl font-bold text-[#1C1C1C]">
                   {p.plan}
                 </div>
-                <div className="mb-3 text-lg font-semibold text-[#8B6914]">
+                <div className="mb-3 text-lg font-semibold text-[#2D4A3E]">
                   {p.apr}
                 </div>
                 <div className="text-sm text-gray-500">Orders {p.min}</div>
@@ -121,7 +121,7 @@ export default function FinancingPage() {
                   rel="noopener noreferrer"
                   className={`mt-6 block rounded-lg px-4 py-2.5 text-center font-medium transition-colors ${
                     p.highlight
-                      ? "bg-[#8B6914] text-white hover:bg-[#7a5c10]"
+                      ? "bg-[#2D4A3E] text-white hover:bg-[#7a5c10]"
                       : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                   }`}
                 >
@@ -145,7 +145,7 @@ export default function FinancingPage() {
           <div className="grid gap-8 text-center md:grid-cols-3">
             {STEPS.map((s) => (
               <div key={s.step}>
-                <div className="mb-2 text-4xl font-bold text-[#8B6914]/30">
+                <div className="mb-2 text-4xl font-bold text-[#2D4A3E]/30">
                   {s.step}
                 </div>
                 <h3 className="mb-2 font-semibold text-[#1C1C1C]">{s.title}</h3>

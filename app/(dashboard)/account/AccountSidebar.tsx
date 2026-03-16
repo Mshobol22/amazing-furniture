@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { Package, User, Heart, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -18,6 +18,7 @@ interface AccountSidebarProps {
 
 export default function AccountSidebar({ user }: AccountSidebarProps) {
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -61,21 +62,33 @@ export default function AccountSidebar({ user }: AccountSidebarProps) {
           </Link>
           <Link
             href="/account"
-            className="flex items-center gap-2 rounded-md px-3 py-2 text-charcoal hover:bg-light-sand"
+            className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${
+              pathname === "/account"
+                ? "bg-light-sand font-medium text-charcoal"
+                : "text-warm-gray hover:bg-light-sand hover:text-charcoal"
+            }`}
           >
             <Package className="h-4 w-4" />
             Orders
           </Link>
           <Link
             href="/account/profile"
-            className="flex items-center gap-2 rounded-md px-3 py-2 text-warm-gray hover:bg-light-sand hover:text-charcoal"
+            className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${
+              pathname === "/account/profile"
+                ? "bg-light-sand font-medium text-charcoal"
+                : "text-warm-gray hover:bg-light-sand hover:text-charcoal"
+            }`}
           >
             <User className="h-4 w-4" />
             Profile
           </Link>
           <Link
             href="/account/wishlist"
-            className="flex items-center gap-2 rounded-md px-3 py-2 text-warm-gray hover:bg-light-sand hover:text-charcoal"
+            className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${
+              pathname === "/account/wishlist"
+                ? "bg-light-sand font-medium text-charcoal"
+                : "text-warm-gray hover:bg-light-sand hover:text-charcoal"
+            }`}
           >
             <Heart className="h-4 w-4" />
             Wishlist

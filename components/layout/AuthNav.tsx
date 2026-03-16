@@ -11,7 +11,7 @@ export default function AuthNav() {
       </Link>
       <Link
         href="/"
-        className="text-sm text-[#8B6914] hover:underline"
+        className="text-sm text-[#2D4A3E] hover:underline"
       >
         ← Back to store
       </Link>

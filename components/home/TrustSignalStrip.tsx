@@ -1,16 +1,16 @@
-import { Truck, RotateCcw, CreditCard, Star } from "lucide-react";
+import { Truck, Shield, CreditCard, Star } from "lucide-react";
 import { NoiseOverlay } from "@/components/ui/NoiseOverlay";
 
 const SIGNALS = [
   { icon: Truck, text: "Free Delivery on Orders $500+" },
-  { icon: RotateCcw, text: "Easy 30-Day Returns" },
+  { icon: Shield, text: "2-Year Manufacturer Warranty" },
   { icon: CreditCard, text: "Flexible Financing Available" },
   { icon: Star, text: "Trusted by 10,000+ Customers" },
 ];
 
 export default function TrustSignalStrip() {
   return (
-    <section className="relative overflow-hidden bg-[#8B6914] py-4">
+    <section className="relative overflow-hidden bg-[#2D4A3E] py-4">
       <NoiseOverlay opacity={0.06} />
       <div className="relative z-10 flex w-full flex-nowrap items-center justify-center gap-8 overflow-x-auto px-4">
         {SIGNALS.map(({ icon: Icon, text }) => (

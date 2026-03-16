@@ -73,7 +73,7 @@ export default function NewsletterTable({
           <button
             onClick={handleExport}
             className="rounded-md px-4 py-1.5 text-sm font-medium text-white"
-            style={{ backgroundColor: "#8B6914" }}
+            style={{ backgroundColor: "#2D4A3E" }}
           >
             Export CSV
           </button>

@@ -116,7 +116,7 @@ export default async function AdminDashboardPage() {
           <Link
             key={card.label}
             href={card.href}
-            className="group rounded-xl border border-gray-200 bg-white p-5 transition-all duration-200 hover:border-[#8B6914]/40 hover:shadow-md"
+            className="group rounded-xl border border-gray-200 bg-white p-5 transition-all duration-200 hover:border-[#2D4A3E]/40 hover:shadow-md"
           >
             <div className="flex items-start justify-between">
               <div>
@@ -124,7 +124,7 @@ export default async function AdminDashboardPage() {
                   {card.label}
                 </p>
                 <p className="text-3xl font-bold text-gray-900">{card.value}</p>
-                <p className="mt-2 text-xs text-gray-400 transition-colors group-hover:text-[#8B6914]">
+                <p className="mt-2 text-xs text-gray-400 transition-colors group-hover:text-[#2D4A3E]">
                   {card.change}
                 </p>
               </div>

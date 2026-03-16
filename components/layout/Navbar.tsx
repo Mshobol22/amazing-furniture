@@ -245,7 +245,7 @@ export default function Navbar() {
                 className={`h-5 w-5 ${hasWishlistItems ? "fill-red-500 text-red-500" : ""}`}
               />
               {wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 min-w-[16px] items-center justify-center rounded-full bg-[#8B6914] text-[10px] font-medium text-white">
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 min-w-[16px] items-center justify-center rounded-full bg-[#2D4A3E] text-[10px] font-medium text-white">
                   {wishlistCount}
                 </span>
               )}
@@ -267,7 +267,7 @@ export default function Navbar() {
             >
               <ShoppingBag className="h-5 w-5" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 min-w-[16px] items-center justify-center rounded-full bg-[#8B6914] text-[10px] font-medium text-white">
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 min-w-[16px] items-center justify-center rounded-full bg-[#2D4A3E] text-[10px] font-medium text-white">
                   {cartCount}
                 </span>
               )}
@@ -324,7 +324,7 @@ export default function Navbar() {
                               <div className="w-10 h-10 rounded-lg bg-gray-100 shrink-0" />
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-[#1C1C1C] line-clamp-1 group-hover:text-[#8B6914] transition-colors">
+                              <p className="text-sm font-medium text-[#1C1C1C] line-clamp-1 group-hover:text-[#2D4A3E] transition-colors">
                                 {result.name}
                               </p>
                               <p className="text-xs text-gray-400 capitalize">
@@ -353,7 +353,7 @@ export default function Navbar() {
                                 `/collections/all?search=${encodeURIComponent(searchQuery.trim())}`
                               );
                             }}
-                            className="text-xs text-[#8B6914] font-medium hover:underline w-full text-center py-1"
+                            className="text-xs text-[#2D4A3E] font-medium hover:underline w-full text-center py-1"
                           >
                             View all results for &quot;{searchQuery}&quot; →
                           </button>
@@ -391,8 +391,8 @@ export default function Navbar() {
                     navTransparent ? "text-white/90 hover:text-white" : "text-[#1C1C1C]"
                   } ${
                     isCollectionActive(cat.slug)
-                      ? "border-b-2 border-[#8B6914]"
-                      : "hover:border-b-2 hover:border-[#8B6914]"
+                      ? "border-b-2 border-[#2D4A3E]"
+                      : "hover:border-b-2 hover:border-[#2D4A3E]"
                   }`}
                 >
                   {cat.name}
@@ -412,7 +412,7 @@ export default function Navbar() {
                         <Link
                           key={sub.label}
                           href={href}
-                          className="block py-1.5 text-sm text-[#1C1C1C] hover:text-[#8B6914] hover:underline"
+                          className="block py-1.5 text-sm text-[#1C1C1C] hover:text-[#2D4A3E] hover:underline"
                           onClick={() => setActiveDropdown(null)}
                         >
                           {sub.label}
@@ -472,7 +472,7 @@ export default function Navbar() {
                 href="/collections/all"
                 onClick={() => setMobileMenuOpen(false)}
                 className={`block px-4 py-3 font-medium hover:bg-gray-50 ${
-                  pathname === "/collections/all" ? "text-[#8B6914] font-semibold" : "text-[#1C1C1C]"
+                  pathname === "/collections/all" ? "text-[#2D4A3E] font-semibold" : "text-[#1C1C1C]"
                 }`}
               >
                 Shop All
@@ -484,7 +484,7 @@ export default function Navbar() {
                       setExpandedMobileCategory(expandedMobileCategory === key ? null : key)
                     }
                     className={`flex w-full items-center justify-between px-4 py-3 text-left font-medium hover:bg-gray-50 ${
-                      isCollectionActive(cat.slug) ? "text-[#8B6914] font-semibold" : "text-[#1C1C1C]"
+                      isCollectionActive(cat.slug) ? "text-[#2D4A3E] font-semibold" : "text-[#1C1C1C]"
                     }`}
                   >
                     {cat.name}
@@ -508,7 +508,7 @@ export default function Navbar() {
                               setMobileMenuOpen(false);
                               setExpandedMobileCategory(null);
                             }}
-                            className="block py-2 text-sm text-[#6B6560] hover:text-[#8B6914]"
+                            className="block py-2 text-sm text-[#6B6560] hover:text-[#2D4A3E]"
                           >
                             {sub.label}
                           </Link>

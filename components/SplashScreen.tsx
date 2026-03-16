@@ -37,7 +37,7 @@ export default function SplashScreen() {
         <div className="text-center">
           <p
             className="font-display text-4xl italic"
-            style={{ color: "#8B6914" }}
+            style={{ color: "#2D4A3E" }}
           >
             Amazing
           </p>
@@ -50,7 +50,7 @@ export default function SplashScreen() {
         </div>
         <div className="mx-auto mt-6 h-0.5 w-48 overflow-hidden rounded bg-gray-200">
           <motion.div
-            className="h-full rounded bg-[#8B6914]"
+            className="h-full rounded bg-[#2D4A3E]"
             initial={{ width: 0 }}
             animate={{ width: "100%" }}
             transition={{ duration: 1.4, ease: "easeInOut" }}

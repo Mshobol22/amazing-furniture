@@ -185,7 +185,7 @@ export default function BannersPage() {
             <p className="text-sm font-medium text-gray-600 mb-2">Color Presets</p>
             <div className="flex gap-2 flex-wrap">
               {[
-                { label: "Walnut", bg: "#8B6914", text: "#FAF8F5" },
+                { label: "Walnut", bg: "#2D4A3E", text: "#FAF8F5" },
                 { label: "Charcoal", bg: "#1C1C1C", text: "#FAF8F5" },
                 { label: "Forest", bg: "#0D2818", text: "#FAF8F5" },
                 { label: "Cream", bg: "#FAF8F5", text: "#1C1C1C" },
