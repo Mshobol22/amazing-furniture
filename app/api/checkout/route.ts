@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { CartItem, ShippingAddress } from "@/types";
 
 const SHIPPING_THRESHOLD = 299;
-const SHIPPING_CENTS = 2900;
+const SHIPPING_COST = 29;
 
 interface CheckoutBody {
   items: CartItem[];
@@ -46,29 +46,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── 3. Calculate amounts ──────────────────────────────────────────────
-    const subtotalCents = Math.round(
-      body.items.reduce(
-        (sum, item) => sum + getEffectivePrice(item.product) * item.quantity,
-        0
-      ) * 100
-    );
-
-    const shippingCents =
-      subtotalCents >= SHIPPING_THRESHOLD * 100 ? 0 : SHIPPING_CENTS;
-    const totalCents = subtotalCents + shippingCents;
-
-    if (totalCents <= 0) {
-      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
-    }
-
-    // ── 4. Build order items for DB storage ───────────────────────────────
+    // ── 3. Build order items — price computed server-side, never trusted from client ──
     const orderItems = body.items.map((item) => ({
       product_id: item.product.id,
       name: item.product.name,
       price: getEffectivePrice(item.product),
       quantity: item.quantity,
     }));
+
+    // ── 4. Calculate amounts from orderItems (server-side only) ──────────
+    const subtotal = orderItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    const shippingCost = subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+    const total = subtotal + shippingCost;
+    const totalCents = Math.round(total * 100);
+
+    if (subtotal <= 0 || totalCents <= 0) {
+      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+    }
 
     // ── 5. Create PENDING order in Supabase (service role — server only) ──
     const { data: order, error: orderError } = await supabaseAdmin
@@ -78,9 +75,9 @@ export async function POST(request: NextRequest) {
         customer_name: body.shippingAddress.name,
         customer_email: body.shippingAddress.email || user.email,
         items: orderItems,
-        subtotal: subtotalCents / 100,
-        shipping: shippingCents / 100,
-        total: totalCents / 100,
+        subtotal,
+        shipping_cost: shippingCost,
+        total,
         status: "pending",
         shipping_address: body.shippingAddress,
       })
@@ -88,7 +85,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orderError || !order) {
-      console.error("Failed to create order record");
+      console.error("Failed to create order record:", orderError?.message);
       return NextResponse.json(
         { error: "Failed to create order" },
         { status: 500 }
