@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { mapRowToProduct } from "@/lib/supabase/products";
 import type { Product } from "@/types";
 import CreateSaleForm from "@/components/admin/CreateSaleForm";
+import ProductSaleForm from "@/components/admin/ProductSaleForm";
 import ActiveSalesList from "@/components/admin/ActiveSalesList";
 
 export default async function PromotionsPage() {
@@ -21,7 +22,10 @@ export default async function PromotionsPage() {
       <h1 className="mb-8 font-display text-2xl font-semibold text-charcoal">
         Promotions & Sales
       </h1>
-      <CreateSaleForm />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <CreateSaleForm />
+        <ProductSaleForm />
+      </div>
       <div className="mt-8">
         <ActiveSalesList products={onSaleProducts} />
       </div>

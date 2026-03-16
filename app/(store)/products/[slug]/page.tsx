@@ -101,6 +101,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
           {/* Image gallery */}
           <div className="space-y-4">
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-50 p-3 shadow-lg">
+              {product.on_sale && product.sale_price != null && (
+                <span
+                  className="absolute left-3 top-3 z-10 rounded px-2 py-0.5 text-xs font-semibold text-white"
+                  style={{ backgroundColor: "#DC2626" }}
+                >
+                  SALE
+                </span>
+              )}
               <ProductImage
                 src={product.images[0]}
                 alt={product.name}
@@ -173,6 +181,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </>
               )}
             </div>
+            {product.on_sale && product.sale_price != null && (
+              <p className="mt-1 text-sm font-medium text-green-700">
+                You save ${(product.price - product.sale_price).toFixed(2)}
+              </p>
+            )}
 
             {/* In stock badge - default to In Stock unless explicitly out of stock */}
             <div className="mt-4">
