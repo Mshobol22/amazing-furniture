@@ -8,7 +8,7 @@ export default function LifestyleSplit() {
       <div className="mx-auto grid max-w-7xl gap-0 lg:grid-cols-2 lg:gap-12">
         <div className="relative aspect-[4/3] overflow-hidden rounded-lg lg:aspect-auto lg:min-h-[500px]">
           <Image
-            src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200"
+            src="/placeholder-furniture.svg"
             alt="Designed for real living"
             fill
             className="object-cover"

@@ -30,7 +30,7 @@ export default function HeroBanner() {
     <section className="relative flex min-h-[85vh] w-full items-center justify-center overflow-hidden">
       <div className="absolute inset-0">
         <Image
-          src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1800"
+          src="/placeholder-furniture.svg"
           alt="Luxury living room"
           fill
           className="object-cover"

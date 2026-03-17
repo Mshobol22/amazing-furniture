@@ -9,6 +9,8 @@ export interface OrderEmailData {
   customer_email: string;
   subtotal: number;
   total: number;
+  tax_amount?: number;
+  tax_rate?: number;
   items: Array<{ name: string; quantity: number; price: number }>;
   shipping_address: {
     address: string;
@@ -37,7 +39,8 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<void
     month: "long",
     day: "numeric",
   });
-  const shipping = order.total - order.subtotal;
+  const taxAmount = order.tax_amount ?? 0;
+  const shipping = order.total - order.subtotal - taxAmount;
 
   const itemRows = order.items
     .map(
@@ -97,6 +100,10 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<void
         <tr>
           <td style="padding:8px 16px;color:#555;font-size:14px;font-family:Arial,sans-serif">Shipping</td>
           <td style="padding:8px 16px;text-align:right;color:#1c1c1c;font-size:14px;font-family:Arial,sans-serif">${shipping === 0 ? "FREE" : "$" + shipping.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 16px;color:#555;font-size:14px;font-family:Arial,sans-serif">Illinois Sales Tax (10.25%)</td>
+          <td style="padding:8px 16px;text-align:right;color:#1c1c1c;font-size:14px;font-family:Arial,sans-serif">$${taxAmount.toFixed(2)}</td>
         </tr>
         <tr style="border-top:2px solid #1c1c1c">
           <td style="padding:12px 16px;color:#1c1c1c;font-size:16px;font-weight:bold;font-family:Arial,sans-serif">Order Total</td>

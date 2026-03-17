@@ -10,8 +10,8 @@ export default function PromoBanner() {
       />
       <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
         <p className="font-display text-lg font-medium text-cream sm:text-xl">
-          Free Shipping on Orders Over $299 · 2-Year Manufacturer Warranty ·
-          Flexible Financing Available
+          Free Shipping on Orders Over $299 · Flexible Financing Available ·
+          Illinois-Based Business
         </p>
       </div>
     </section>

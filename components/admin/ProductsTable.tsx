@@ -9,7 +9,8 @@ import { extractSku } from "@/lib/utils";
 import { ProductImage } from "@/components/ui/ProductImage";
 import type { Product } from "@/types";
 
-const CATEGORIES = ["bed", "chair", "sofa", "table", "cabinet", "tv-stand"];
+const CATEGORIES = ["bed", "chair", "sofa", "table", "cabinet", "tv-stand", "rug"];
+const MANUFACTURERS = ["ACME", "United Furniture", "Zinatex", "Nationwide FD"];
 
 interface ProductsTableProps {
   products: Product[];
@@ -31,6 +32,7 @@ function ProductsTableInner({ products }: ProductsTableProps) {
 
   const qFromUrl = searchParams.get("q") ?? "";
   const categoryFromUrl = searchParams.get("category") ?? "all";
+  const manufacturerFromUrl = searchParams.get("manufacturer") ?? "all";
   const statusFromUrl = searchParams.get("status") ?? "";
   const promotionsFromUrl = searchParams.get("promotions") ?? "";
 
@@ -42,7 +44,7 @@ function ProductsTableInner({ products }: ProductsTableProps) {
   }, [qFromUrl]);
 
   const updateUrl = useCallback(
-    (updates: { q?: string; category?: string }) => {
+    (updates: { q?: string; category?: string; manufacturer?: string }) => {
       const params = new URLSearchParams(searchParams.toString());
       if ("q" in updates) {
         if (updates.q?.trim()) params.set("q", updates.q.trim());
@@ -52,6 +54,11 @@ function ProductsTableInner({ products }: ProductsTableProps) {
         if (updates.category && updates.category !== "all")
           params.set("category", updates.category);
         else params.delete("category");
+      }
+      if ("manufacturer" in updates) {
+        if (updates.manufacturer && updates.manufacturer !== "all")
+          params.set("manufacturer", updates.manufacturer);
+        else params.delete("manufacturer");
       }
       const query = params.toString();
       router.replace(query ? `${pathname}?${query}` : pathname, {
@@ -86,6 +93,8 @@ function ProductsTableInner({ products }: ProductsTableProps) {
       sku.toLowerCase().includes(qFromUrl.toLowerCase());
     const matchCategory =
       categoryFromUrl === "all" || p.category === categoryFromUrl;
+    const matchManufacturer =
+      manufacturerFromUrl === "all" || (p.manufacturer ?? "") === manufacturerFromUrl;
     const matchStatus =
       !statusFromUrl ||
       (statusFromUrl === "in-stock" && p.in_stock) ||
@@ -93,7 +102,7 @@ function ProductsTableInner({ products }: ProductsTableProps) {
     const matchPromotions =
       !promotionsFromUrl ||
       (promotionsFromUrl === "active" && p.on_sale);
-    return matchSearch && matchCategory && matchStatus && matchPromotions;
+    return matchSearch && matchCategory && matchManufacturer && matchStatus && matchPromotions;
   });
 
   const handleClearFilters = () => {
@@ -101,6 +110,7 @@ function ProductsTableInner({ products }: ProductsTableProps) {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("q");
     params.delete("category");
+    params.delete("manufacturer");
     params.delete("status");
     params.delete("promotions");
     const query = params.toString();
@@ -190,7 +200,7 @@ function ProductsTableInner({ products }: ProductsTableProps) {
     setEditingPriceId(null);
   };
 
-  const hasFilters = qFromUrl || (categoryFromUrl && categoryFromUrl !== "all");
+  const hasFilters = qFromUrl || (categoryFromUrl && categoryFromUrl !== "all") || (manufacturerFromUrl && manufacturerFromUrl !== "all");
 
   return (
     <div>
@@ -211,6 +221,18 @@ function ProductsTableInner({ products }: ProductsTableProps) {
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>
               {c}
+            </option>
+          ))}
+        </select>
+        <select
+          value={manufacturerFromUrl}
+          onChange={(e) => updateUrl({ manufacturer: e.target.value })}
+          className="rounded-md border border-gray-200 px-3 py-2 text-sm"
+        >
+          <option value="all">All manufacturers</option>
+          {MANUFACTURERS.map((m) => (
+            <option key={m} value={m}>
+              {m}
             </option>
           ))}
         </select>

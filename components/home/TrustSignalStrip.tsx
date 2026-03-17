@@ -1,11 +1,11 @@
-import { Truck, Shield, CreditCard, Star } from "lucide-react";
+import { Truck, CreditCard, Star, MapPin } from "lucide-react";
 import { NoiseOverlay } from "@/components/ui/NoiseOverlay";
 
 const SIGNALS = [
-  { icon: Truck, text: "Free Delivery on Orders $500+" },
-  { icon: Shield, text: "2-Year Manufacturer Warranty" },
+  { icon: Truck, text: "Free Shipping on All Orders Over $299" },
   { icon: CreditCard, text: "Flexible Financing Available" },
-  { icon: Star, text: "Trusted by 10,000+ Customers" },
+  { icon: Star, text: "Trusted by Thousands of Customers" },
+  { icon: MapPin, text: "Illinois-Based Business" },
 ];
 
 export default function TrustSignalStrip() {

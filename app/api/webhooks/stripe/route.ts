@@ -72,6 +72,8 @@ export async function POST(request: NextRequest) {
           customer_email: order.customer_email ?? "",
           subtotal: Number(order.subtotal),
           total: Number(order.total),
+          tax_amount: Number(order.tax_amount ?? 0),
+          tax_rate: Number(order.tax_rate ?? 0),
           items,
           shipping_address: {
             address: rawAddress.address ?? rawAddress.street ?? "",

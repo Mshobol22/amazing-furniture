@@ -210,9 +210,9 @@ export default function Navbar() {
   }, []);
 
   const navTransparent = isHomepage && !scrolled;
-  const iconColor = navTransparent ? "text-white" : "text-cream";
-  const logoColor = navTransparent ? "text-white" : "text-cream";
-  const iconHover = navTransparent ? "hover:bg-white/10" : "hover:bg-white/10";
+  const iconColor = "text-cream";
+  const logoColor = "text-cream";
+  const iconHover = "hover:bg-white/10";
 
   return (
     <>
@@ -221,7 +221,7 @@ export default function Navbar() {
           hidden ? "-translate-y-full" : "translate-y-0"
         } ${
           navTransparent
-            ? "bg-transparent"
+            ? "border-b border-[#2D4A3E]/20 bg-[#2D4A3E]/80 backdrop-blur-md"
             : "border-b border-[#2D4A3E]/20 bg-[#2D4A3E]/95 shadow-sm backdrop-blur-md"
         }`}
       >
@@ -388,7 +388,7 @@ export default function Navbar() {
         {/* Row 2 - Desktop only, hidden on mobile */}
         <div
           className={`hidden overflow-hidden border-b lg:flex ${
-            navTransparent ? "border-white/20 bg-transparent" : "border-[#2D4A3E]/30 bg-[#1E3329]"
+            navTransparent ? "border-[#2D4A3E]/20 bg-[#1E3329]/80" : "border-[#2D4A3E]/30 bg-[#1E3329]"
           }`}
         >
           <div className="mx-auto flex h-10 max-w-7xl items-center justify-center gap-0 overflow-hidden px-4">

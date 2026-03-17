@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <rect width="400" height="400" fill="#FAF8F5"/>
+  <g transform="translate(120,140)" fill="none" stroke="#C4B5A0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="0" y="40" width="160" height="60" rx="8"/>
+    <rect x="10" y="0" width="140" height="45" rx="6"/>
+    <line x1="20" y1="100" x2="20" y2="120"/>
+    <line x1="140" y1="100" x2="140" y2="120"/>
+  </g>
+  <text x="200" y="300" text-anchor="middle" fill="#C4B5A0" font-family="sans-serif" font-size="14">No image available</text>
+</svg>

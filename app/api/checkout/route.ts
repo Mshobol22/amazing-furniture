@@ -6,6 +6,7 @@ import type { CartItem, ShippingAddress } from "@/types";
 
 const SHIPPING_THRESHOLD = 299;
 const SHIPPING_COST = 29;
+const ILLINOIS_TAX_RATE = 0.1025; // 6.25% state + 1.75% county + 1.25% city + 1% RTA
 
 interface CheckoutBody {
   items: CartItem[];
@@ -68,7 +69,8 @@ export async function POST(request: NextRequest) {
       0
     );
     const shippingCost = subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
-    const total = subtotal + shippingCost;
+    const taxAmount = Math.round(subtotal * ILLINOIS_TAX_RATE * 100) / 100;
+    const total = subtotal + shippingCost + taxAmount;
     const totalCents = Math.round(total * 100);
 
     if (!isFinite(subtotal) || subtotal <= 0 || !isFinite(total) || totalCents <= 0) {
@@ -90,6 +92,8 @@ export async function POST(request: NextRequest) {
         items: orderItems,
         subtotal,
         shipping: shippingCost,
+        tax_amount: taxAmount,
+        tax_rate: ILLINOIS_TAX_RATE,
         total,
         status: "pending",
         shipping_address: body.shippingAddress,

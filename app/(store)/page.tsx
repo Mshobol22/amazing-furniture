@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import TrustSignalStrip from "@/components/home/TrustSignalStrip";
 import CategoryGrid from "@/components/home/CategoryGrid";
-import FeaturedProducts from "@/components/home/FeaturedProducts";
 import PromoBanner from "@/components/home/PromoBanner";
+import FinancingSection from "@/components/home/FinancingSection";
 import HeroSlideshow from "@/components/home/HeroSlideshow";
 import ManufacturerSection from "@/components/home/ManufacturerSection";
 import RugsSpotlight from "@/components/home/RugsSpotlight";
 import {
-  getFeaturedProducts,
   getHeroSlides,
   getManufacturersWithCounts,
   getRugsSpotlight,
@@ -17,14 +16,14 @@ import {
 export const metadata: Metadata = {
   title: "Amazing Home Furniture — Premium Furniture for Every Room",
   description:
-    "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. 2-year manufacturer warranty.",
+    "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. Flexible financing available.",
   alternates: {
     canonical: "https://amazinghomefurniturestore.com",
   },
   openGraph: {
     title: "Amazing Home Furniture — Premium Furniture for Every Room",
     description:
-      "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. 2-year manufacturer warranty.",
+      "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. Flexible financing available.",
     url: "https://amazinghomefurniturestore.com",
     siteName: "Amazing Home Furniture",
     type: "website",
@@ -41,18 +40,17 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Amazing Home Furniture — Premium Furniture for Every Room",
     description:
-      "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. 2-year manufacturer warranty.",
+      "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. Flexible financing available.",
     images: ["https://amazinghomefurniturestore.com/og-image.png?v=2"],
   },
 };
 
 export default async function StorePage() {
-  const [slides, manufacturers, rugProducts, featuredProducts, categoryImagesList] =
+  const [slides, manufacturers, rugProducts, categoryImagesList] =
     await Promise.all([
       getHeroSlides(),
       getManufacturersWithCounts(),
       getRugsSpotlight(),
-      getFeaturedProducts(),
       getCategoryImages(),
     ]);
 
@@ -66,8 +64,8 @@ export default async function StorePage() {
       <ManufacturerSection manufacturers={manufacturers} />
       <CategoryGrid categoryImages={categoryImages} />
       <TrustSignalStrip />
+      <FinancingSection />
       <RugsSpotlight products={rugProducts} />
-      <FeaturedProducts products={featuredProducts} />
       <PromoBanner />
     </div>
   );

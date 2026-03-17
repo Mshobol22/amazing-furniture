@@ -18,7 +18,7 @@ export default function ManufacturerSection({ manufacturers }: ManufacturerSecti
       <div className="mx-auto max-w-7xl">
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
           <span className="shrink-0 text-xs font-medium uppercase tracking-[0.15em] text-white/40 mr-2">
-            Brands
+            Shop by Brand
           </span>
           {manufacturers.map((m) =>
             m.comingSoon ? (

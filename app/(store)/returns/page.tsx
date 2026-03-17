@@ -51,18 +51,6 @@ export default function ReturnsPage() {
 
           <section>
             <h2 className="font-display text-lg font-semibold text-charcoal">
-              2-Year Manufacturer Warranty
-            </h2>
-            <p>
-              All products are backed by a 2-year manufacturer warranty against
-              defects in materials and workmanship under normal use. This
-              warranty does not cover damage resulting from misuse, accidents,
-              modifications, or normal wear and tear.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
               Order Cancellations
             </h2>
             <p>

@@ -137,8 +137,6 @@ export default function TermsPage() {
               unless the item arrived damaged or defective.
             </p>
             <p className="mt-3">
-              All products are covered by a <strong>2-year manufacturer
-              warranty</strong> against defects in materials and workmanship.
               Refunds are issued to the original payment method within 5–10
               business days of us receiving and inspecting the returned item.
             </p>

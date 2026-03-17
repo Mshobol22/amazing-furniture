@@ -30,6 +30,7 @@ const stripePromise = loadStripe(
 
 const SHIPPING_THRESHOLD = 299;
 const SHIPPING_COST = 29;
+const ILLINOIS_TAX_RATE = 0.1025;
 
 const shippingSchema = z.object({
   fullName: z.string().min(1, "Name is required"),
@@ -74,7 +75,8 @@ function CheckoutForm() {
   const clearCart = useCartStore((state) => state.clearCart);
   const subtotal = useCartTotal();
   const shipping = subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
-  const total = subtotal + shipping;
+  const tax = Math.round(subtotal * ILLINOIS_TAX_RATE * 100) / 100;
+  const total = subtotal + shipping + tax;
 
   const stripe = useStripe();
   const elements = useElements();
@@ -397,10 +399,20 @@ function CheckoutForm() {
                       {shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}
                     </span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-warm-gray">
+                      Illinois Sales Tax (10.25%)
+                    </span>
+                    <span>${tax.toFixed(2)}</span>
+                  </div>
                   <div className="flex justify-between font-semibold">
                     <span>Total</span>
-                    <span>${total.toLocaleString()}</span>
+                    <span>${total.toFixed(2)}</span>
                   </div>
+                  <p className="mt-2 text-xs text-warm-gray">
+                    Tax is calculated based on Illinois state and local rates
+                    (6.25% state + 1.75% county + 1.25% city + 1% RTA).
+                  </p>
                 </div>
               </div>
 
@@ -501,8 +513,15 @@ function CheckoutForm() {
                     </span>
                   </div>
                 ))}
-                <div className="mt-2 border-t pt-2 font-semibold">
-                  Total: ${total.toLocaleString()}
+                <div className="mt-2 space-y-1 border-t pt-2 text-sm">
+                  <div className="flex justify-between text-warm-gray">
+                    <span>Tax (10.25%)</span>
+                    <span>${tax.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold">
+                    <span>Total</span>
+                    <span>${total.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
               <Button
