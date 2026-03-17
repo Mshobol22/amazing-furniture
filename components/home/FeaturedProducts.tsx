@@ -8,9 +8,9 @@ interface FeaturedProductsProps {
 export default function FeaturedProducts({ products }: FeaturedProductsProps) {
   if (products.length === 0) {
     return (
-      <section className="bg-white px-4 py-16 sm:px-6 lg:px-8">
+      <section className="bg-white px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <h2 className="mb-12 font-display text-3xl font-semibold text-charcoal">
+          <h2 className="mb-6 font-display text-3xl font-semibold text-charcoal">
             Featured Collection
           </h2>
           <p className="text-warm-gray">
@@ -22,9 +22,9 @@ export default function FeaturedProducts({ products }: FeaturedProductsProps) {
   }
 
   return (
-    <section className="bg-white px-4 py-16 sm:px-6 lg:px-8">
+    <section className="bg-white px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <h2 className="mb-12 font-display text-3xl font-semibold text-charcoal">
+        <h2 className="mb-6 font-display text-3xl font-semibold text-charcoal">
           Featured Collection
         </h2>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">

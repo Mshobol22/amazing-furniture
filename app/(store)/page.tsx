@@ -11,6 +11,7 @@ import {
   getHeroSlides,
   getManufacturersWithCounts,
   getRugsSpotlight,
+  getCategoryImages,
 } from "@/lib/supabase/products";
 
 export const metadata: Metadata = {
@@ -46,20 +47,25 @@ export const metadata: Metadata = {
 };
 
 export default async function StorePage() {
-  const [slides, manufacturers, rugProducts, featuredProducts] =
+  const [slides, manufacturers, rugProducts, featuredProducts, categoryImagesList] =
     await Promise.all([
       getHeroSlides(),
       getManufacturersWithCounts(),
       getRugsSpotlight(),
       getFeaturedProducts(),
+      getCategoryImages(),
     ]);
+
+  const categoryImages = Object.fromEntries(
+    categoryImagesList.map(({ slug, image }) => [slug, image])
+  );
 
   return (
     <div className="min-h-screen bg-cream">
       <HeroSlideshow slides={slides} />
-      <TrustSignalStrip />
       <ManufacturerSection manufacturers={manufacturers} />
-      <CategoryGrid />
+      <CategoryGrid categoryImages={categoryImages} />
+      <TrustSignalStrip />
       <RugsSpotlight products={rugProducts} />
       <FeaturedProducts products={featuredProducts} />
       <PromoBanner />

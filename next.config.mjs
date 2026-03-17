@@ -19,6 +19,11 @@ const nextConfig = {
       { protocol: "https", hostname: "nationwidefd.com", pathname: "/**" },
       { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
       { protocol: "https", hostname: "lh3.googleusercontent.com", pathname: "/**" },
+      { protocol: "https", hostname: "www.acmecorp.com", pathname: "/**" },
+      { protocol: "https", hostname: "acmecorp.com", pathname: "/**" },
+      { protocol: "https", hostname: "www.zinatexrugs.com", pathname: "/**" },
+      { protocol: "https", hostname: "zinatexrugs.com", pathname: "/**" },
+      { protocol: "https", hostname: "d28fw8vtnbt3jx.cloudfront.net", pathname: "/**" },
     ],
   },
   async headers() {

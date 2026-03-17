@@ -15,6 +15,7 @@ export interface Product {
   review_count: number;
   tags: string[];
   created_at: string;
+  manufacturer?: string | null;
 }
 
 export interface CartItem {

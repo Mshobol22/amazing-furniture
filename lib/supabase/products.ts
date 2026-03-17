@@ -19,6 +19,7 @@ export function mapRowToProduct(row: Record<string, unknown>): Product {
     review_count: Number(row.review_count ?? 0),
     tags: (row.tags as string[]) ?? [],
     created_at: row.created_at as string,
+    manufacturer: row.manufacturer != null ? (row.manufacturer as string) : null,
   };
 }
 
@@ -203,31 +204,63 @@ export interface ManufacturerWithCount {
 export async function getManufacturersWithCounts(): Promise<ManufacturerWithCount[]> {
   const supabase = createAdminClient();
 
-  const [{ data: mfrs }, { data: counts }] = await Promise.all([
-    supabase
-      .from("manufacturers")
-      .select("name, slug, description, is_active")
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true }),
-    supabase
-      .from("products")
-      .select("manufacturer")
-      .not("manufacturer", "is", null),
-  ]);
+  const { data: mfrs } = await supabase
+    .from("manufacturers")
+    .select("name, slug, description, is_active")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
 
-  const countMap = new Map<string, number>();
-  for (const row of counts ?? []) {
-    const m = row.manufacturer as string;
-    countMap.set(m, (countMap.get(m) ?? 0) + 1);
-  }
+  if (!mfrs || mfrs.length === 0) return [];
 
-  return (mfrs ?? []).map((m) => ({
-    name: m.name as string,
-    slug: m.slug as string,
-    description: m.description as string,
-    count: countMap.get(m.name as string) ?? 0,
-    comingSoon: countMap.get(m.name as string) === 0,
-  }));
+  // Use per-manufacturer count queries to avoid Supabase's 1000-row default limit
+  const countResults = await Promise.all(
+    mfrs.map((m) =>
+      supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("manufacturer", m.name as string)
+    )
+  );
+
+  return mfrs.map((m, i) => {
+    const count = countResults[i].count ?? 0;
+    return {
+      name: m.name as string,
+      slug: m.slug as string,
+      description: m.description as string,
+      count,
+      comingSoon: count === 0,
+    };
+  });
+}
+
+export interface CategoryImage {
+  slug: string;
+  image: string | null;
+}
+
+export async function getCategoryImages(): Promise<CategoryImage[]> {
+  const supabase = createAdminClient();
+  const categorySlugs = ["sofa", "bed", "chair", "table", "cabinet", "tv-stand", "rug"];
+
+  const results = await Promise.all(
+    categorySlugs.map((slug) =>
+      supabase
+        .from("products")
+        .select("images")
+        .eq("category", slug)
+        .not("images", "is", null)
+        .limit(1)
+        .single()
+    )
+  );
+
+  return categorySlugs.map((slug, i) => {
+    const row = results[i].data;
+    const images = row?.images as string[] | null;
+    const image = Array.isArray(images) && images.length > 0 ? images[0] : null;
+    return { slug, image };
+  });
 }
 
 export interface SpotlightProduct {

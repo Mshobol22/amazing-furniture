@@ -2,9 +2,9 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 export const metadata = {
-  title: "Returns Policy",
+  title: "Sales Policy",
   description:
-    "Returns and exchange policy at Amazing Home Furniture. Contact us for assistance.",
+    "Sales policy at Amazing Home Furniture. All sales are final.",
 };
 
 export default function ReturnsPage() {
@@ -16,42 +16,36 @@ export default function ReturnsPage() {
             Home
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-charcoal">Returns</span>
+          <span className="text-charcoal">Sales Policy</span>
         </nav>
 
         <h1 className="mb-8 font-display text-3xl font-semibold text-charcoal">
-          Returns Policy
+          Sales Policy
         </h1>
 
         <div className="prose prose-charcoal max-w-none space-y-6 text-warm-gray">
           <section>
             <h2 className="font-display text-lg font-semibold text-charcoal">
-              Our Policy
+              All Sales Are Final
             </h2>
             <p>
-              We want you to love your furniture. If you have any concerns with
-              your order, please contact our team and we&apos;ll work with you
-              to make it right.
+              All purchases made at Amazing Home Furniture are final. We do not
+              accept returns, exchanges, or cancellations once an order has been
+              placed and confirmed. Please review your order carefully before
+              completing your purchase.
             </p>
           </section>
 
           <section>
             <h2 className="font-display text-lg font-semibold text-charcoal">
-              Return Conditions
+              Damaged or Defective Items
             </h2>
             <p>
-              Items eligible for return must be unused, unassembled, and in
-              original packaging. Clearance and custom items are final sale.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
-              Damaged on Arrival
-            </h2>
-            <p>
-              Contact us within 48 hours of delivery with photos — we&apos;ll
-              replace or refund at no cost to you.
+              If your item arrives damaged or with a manufacturing defect,
+              contact us within 48 hours of delivery with clear photos of the
+              damage. We will assess the claim and, at our sole discretion,
+              arrange a replacement or store credit for verified manufacturing
+              defects only.
             </p>
           </section>
 
@@ -60,8 +54,21 @@ export default function ReturnsPage() {
               2-Year Manufacturer Warranty
             </h2>
             <p>
-              All products are covered by a 2-year manufacturer warranty against
-              defects in materials and workmanship.
+              All products are backed by a 2-year manufacturer warranty against
+              defects in materials and workmanship under normal use. This
+              warranty does not cover damage resulting from misuse, accidents,
+              modifications, or normal wear and tear.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-display text-lg font-semibold text-charcoal">
+              Order Cancellations
+            </h2>
+            <p>
+              Orders cannot be cancelled once submitted. If you have entered
+              incorrect shipping information, contact us immediately and we will
+              do our best to assist before the order ships.
             </p>
           </section>
 

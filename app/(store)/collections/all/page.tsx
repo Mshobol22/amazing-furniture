@@ -1,14 +1,13 @@
-import { getProducts } from "@/lib/supabase/products";
-import { getTotalProductCount } from "@/lib/supabase/products";
+import { getProducts, getTotalProductCount, getManufacturersWithCounts } from "@/lib/supabase/products";
 import ShopAllContent from "@/components/shop/ShopAllContent";
 import type { Metadata } from "next";
 
-const CATEGORY_COUNT = 6;
+const CATEGORY_COUNT = 7;
 
 export const metadata: Metadata = {
   title: "Shop All Furniture",
   description:
-    "Shop 291 premium furniture pieces across sofas, beds, chairs, cabinets, tables and TV stands. Free shipping over $299.",
+    "Shop premium furniture across sofas, beds, chairs, cabinets, tables, TV stands, and rugs. Free shipping over $299.",
   openGraph: {
     title: "Shop All Furniture | Amazing Home Furniture",
     url: "https://amazinghomefurniturestore.com/collections/all",
@@ -18,11 +17,29 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function ShopAllPage() {
-  const [products, totalCount] = await Promise.all([
+interface ShopAllPageProps {
+  searchParams: Promise<{ manufacturer?: string }>;
+}
+
+export default async function ShopAllPage({ searchParams }: ShopAllPageProps) {
+  const params = await searchParams;
+  const requestedManufacturer = params.manufacturer?.trim() ?? null;
+
+  const [products, totalCount, manufacturersList] = await Promise.all([
     getProducts("all"),
     getTotalProductCount(),
+    getManufacturersWithCounts(),
   ]);
+
+  // Only allow valid manufacturer names from the DB
+  const validManufacturers = manufacturersList
+    .filter((m) => !m.comingSoon)
+    .map((m) => m.name);
+
+  const initialManufacturer =
+    requestedManufacturer && validManufacturers.includes(requestedManufacturer)
+      ? requestedManufacturer
+      : null;
 
   return (
     <div className="min-h-screen bg-[#FAF8F5]">
@@ -32,12 +49,16 @@ export default async function ShopAllPage() {
           Shop All Furniture
         </h1>
       </div>
-      <div className="px-4 py-12 sm:px-6 lg:px-8">
+      <div className="px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <p className="mb-8 text-sm text-warm-gray">
+          <p className="mb-6 text-sm text-warm-gray">
             {totalCount} products across {CATEGORY_COUNT} categories
           </p>
-          <ShopAllContent products={products} />
+          <ShopAllContent
+            products={products}
+            initialManufacturer={initialManufacturer}
+            manufacturers={validManufacturers}
+          />
         </div>
       </div>
     </div>

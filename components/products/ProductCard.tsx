@@ -69,8 +69,18 @@ export default function ProductCard({ product, className }: ProductCardProps) {
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           />
         </div>
+        {/* Hover overlay CTA */}
+        <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-200 group-hover:translate-y-0">
+          <Button
+            onClick={handleAddToCart}
+            className="w-full rounded-none bg-gray-900 text-white hover:bg-gray-800 py-2.5 text-sm"
+          >
+            <ShoppingCart className="mr-2 h-4 w-4" />
+            Add to Cart
+          </Button>
+        </div>
       </div>
-      <div className="flex flex-col gap-2 p-4">
+      <div className="flex flex-col gap-1.5 p-3">
         {sku && (
           <span className="text-xs uppercase tracking-wide text-gray-400">
             {sku}
@@ -79,7 +89,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         <h3 className="line-clamp-2 text-sm font-medium text-gray-900">
           {product.name}
         </h3>
-        <p className="text-lg font-semibold text-gray-900">
+        <p className="text-base font-semibold text-gray-900">
           {product.on_sale && product.sale_price != null ? (
             <>
               <span style={{ color: "#DC2626" }}>
@@ -101,13 +111,6 @@ export default function ProductCard({ product, className }: ProductCardProps) {
             </>
           )}
         </p>
-        <Button
-          onClick={handleAddToCart}
-          className="mt-2 w-full bg-gray-900 text-white hover:bg-gray-800"
-        >
-          <ShoppingCart className="mr-2 h-4 w-4" />
-          Add to Cart
-        </Button>
       </div>
     </Link>
   );

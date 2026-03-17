@@ -19,15 +19,15 @@ export default function RugsSpotlight({ products }: RugsSpotlightProps) {
   if (!products.length) return null;
 
   return (
-    <section className="bg-forest px-4 py-20 sm:px-6 lg:px-8">
+    <section className="bg-forest px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-12 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <p className="mb-2 text-sm font-medium uppercase tracking-[0.2em] text-cream/60">
               Zinatex Collection
             </p>
             <h2 className="font-display text-3xl font-semibold text-cream sm:text-4xl">
-              Artisan Rugs
+              Premium Rugs by Zinatex
             </h2>
             <p className="mt-3 max-w-md text-cream/75">
               Handwoven area rugs that bring warmth, texture, and character to

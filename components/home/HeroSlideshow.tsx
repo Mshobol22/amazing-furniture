@@ -59,7 +59,7 @@ export default function HeroSlideshow({ slides }: HeroSlideshowProps) {
   const slide = slides[current];
 
   return (
-    <section className="relative flex min-h-[90vh] w-full items-center justify-center overflow-hidden bg-forest-dark">
+    <section className="relative w-full overflow-hidden bg-forest-dark h-[60vh] lg:h-[85vh]">
       {/* Slides */}
       {slides.map((s, i) => (
         <div
@@ -80,41 +80,41 @@ export default function HeroSlideshow({ slides }: HeroSlideshowProps) {
             blurDataURL={BLUR_DATA}
           />
           <div
-            className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/60"
+            className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10"
             aria-hidden
           />
           <NoiseOverlay opacity={0.03} />
         </div>
       ))}
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center px-4 text-center">
+      {/* Content — bottom-left */}
+      <div className="absolute bottom-0 left-0 right-0 z-10 px-6 pb-10 sm:px-10 lg:px-16 lg:pb-16 lg:max-w-3xl">
         <div
           key={current}
-          className="flex max-w-3xl flex-col items-center gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700"
+          className="flex flex-col items-start gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700"
         >
-          <span className="text-sm font-medium uppercase tracking-[0.3em] text-white/80">
+          <span className="text-xs font-medium uppercase tracking-[0.3em] text-white/70">
             Amazing Home Furniture
           </span>
-          <h1 className="font-display text-5xl font-semibold leading-tight text-white sm:text-6xl lg:text-7xl">
+          <h1 className="font-display text-4xl font-semibold leading-tight text-white sm:text-5xl lg:text-6xl">
             {slide.headline}
           </h1>
           {slide.subheading && (
-            <p className="max-w-xl text-lg text-white/85 sm:text-xl">
+            <p className="max-w-lg text-base text-white/80 sm:text-lg">
               {slide.subheading}
             </p>
           )}
-          <div className="flex flex-col gap-4 sm:flex-row">
+          <div className="flex flex-wrap gap-3 pt-1">
             <Button
               asChild
-              className="bg-forest text-cream hover:bg-forest-light px-8 py-3 text-base"
+              className="bg-forest text-cream hover:bg-forest-light px-6 py-2.5 text-sm"
             >
               <Link href={slide.cta_href}>{slide.cta_label}</Link>
             </Button>
             <Button
               asChild
               variant="outline"
-              className="border-2 border-white bg-transparent text-white hover:bg-white/10 hover:text-white px-8 py-3 text-base"
+              className="border border-white/60 bg-transparent text-white hover:bg-white/10 hover:text-white px-6 py-2.5 text-sm"
             >
               <Link href="/collections/all">Browse All</Link>
             </Button>
