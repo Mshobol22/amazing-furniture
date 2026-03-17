@@ -22,16 +22,17 @@ export default function ManufacturerSection({ manufacturers }: ManufacturerSecti
           </span>
           {manufacturers.map((m) =>
             m.comingSoon ? (
-              <span
+              <Link
                 key={m.slug}
-                className="shrink-0 rounded-full border border-white/10 px-4 py-1.5 text-sm font-medium text-white/30"
+                href={`/brands/${m.slug}`}
+                className="shrink-0 rounded-full border border-white/10 px-4 py-1.5 text-sm font-medium text-white/30 transition-colors hover:border-white/20 hover:text-white/50"
               >
                 {m.name}
-              </span>
+              </Link>
             ) : (
               <Link
                 key={m.slug}
-                href={`/collections/all?manufacturer=${encodeURIComponent(m.name)}`}
+                href={`/brands/${m.slug}`}
                 className="shrink-0 rounded-full border border-white/20 px-4 py-1.5 text-sm font-medium text-white/70 transition-colors hover:border-white/50 hover:text-white"
               >
                 {m.name}

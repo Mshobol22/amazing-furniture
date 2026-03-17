@@ -263,6 +263,76 @@ export async function getCategoryImages(): Promise<CategoryImage[]> {
   });
 }
 
+// ── Brand page data fetchers ──────────────────────────────────────────────
+
+export interface Manufacturer {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  logo_url: string | null;
+  is_active: boolean;
+}
+
+export async function getManufacturerBySlug(slug: string): Promise<Manufacturer | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("manufacturers")
+    .select("id, name, slug, description, logo_url, is_active")
+    .eq("slug", slug)
+    .single();
+
+  if (error || !data) return null;
+  return data as Manufacturer;
+}
+
+export async function getProductsByManufacturer(
+  manufacturerName: string,
+  category?: string,
+  limit = 24,
+  offset = 0
+): Promise<{ products: Product[]; total: number }> {
+  const supabase = createAdminClient();
+
+  let query = supabase
+    .from("products")
+    .select("*", { count: "exact" })
+    .eq("manufacturer", manufacturerName)
+    .order("name", { ascending: true })
+    .range(offset, offset + limit - 1);
+
+  if (category && category !== "all") {
+    query = query.eq("category", category);
+  }
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    console.error("getProductsByManufacturer error:", error);
+    return { products: [], total: 0 };
+  }
+
+  return {
+    products: (data ?? []).map(mapRowToProduct),
+    total: count ?? 0,
+  };
+}
+
+export async function getManufacturerCategories(
+  manufacturerName: string
+): Promise<string[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("category")
+    .eq("manufacturer", manufacturerName);
+
+  if (error || !data) return [];
+
+  const unique = Array.from(new Set(data.map((r) => r.category as string))).sort();
+  return unique;
+}
+
 export interface SpotlightProduct {
   id: string;
   name: string;
