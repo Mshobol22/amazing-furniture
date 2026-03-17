@@ -92,8 +92,8 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
           {categoryLabel}
         </h1>
       </div>
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <p className="mb-8 text-sm text-warm-gray">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <p className="mb-4 text-sm text-warm-gray">
           {products.length} products
         </p>
         <CollectionWithSort products={products} />

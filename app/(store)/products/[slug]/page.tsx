@@ -78,26 +78,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
     product.category.slice(1).replace("-", " ");
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#FAF8F5] px-4 pt-4 pb-20 sm:px-6 sm:py-8 lg:px-8">
       <div className="mx-auto max-w-7xl">
         {/* Breadcrumb */}
-        <nav className="mb-8 flex items-center gap-2 text-sm text-warm-gray">
+        <nav className="mb-4 flex items-center gap-1.5 text-xs text-warm-gray">
           <Link href="/" className="hover:text-charcoal">
             Home
           </Link>
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-3 w-3" />
           <Link
-            href={`/products?category=${product.category}`}
+            href={`/collections/${product.category}`}
             className="hover:text-charcoal"
           >
             {categoryLabel}
           </Link>
-          <ChevronRight className="h-4 w-4" />
-          <span className="text-charcoal">{product.name}</span>
+          <ChevronRight className="h-3 w-3" />
+          <span className="truncate text-charcoal">{product.name}</span>
         </nav>
 
         {/* Main layout: 55% image, 45% info */}
-        <div className="mb-16 grid gap-12 lg:grid-cols-[55%_1fr]">
+        <div className="mb-8 grid gap-6 lg:grid-cols-[55%_1fr]">
           {/* Image gallery */}
           <div className="space-y-4">
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-50 p-3 shadow-lg">
@@ -200,23 +200,22 @@ export default async function ProductPage({ params }: ProductPageProps) {
               )}
             </div>
 
-            {/* Description */}
-            <p className="mt-6 text-warm-gray">{product.description}</p>
-
-            {/* Quantity + Add to Cart (client component) */}
+            {/* Quantity + Add to Cart + collapsible description (client) */}
             <ProductDetailClient product={product} />
           </div>
         </div>
 
-        {/* You May Also Like */}
+        {/* You May Also Like — horizontal scroll */}
         {relatedProducts.length > 0 && (
-          <section>
-            <h2 className="mb-8 font-serif text-2xl font-semibold text-charcoal text-center border-b border-[#2D4A3E]/30 pb-2 w-fit mx-auto">
+          <section className="mt-8">
+            <h2 className="mb-4 text-base font-semibold text-charcoal">
               You May Also Like
             </h2>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {relatedProducts.map((p) => (
-                <ProductCard key={p.id} product={p} />
+                <div key={p.id} className="w-52 shrink-0">
+                  <ProductCard product={p} />
+                </div>
               ))}
             </div>
           </section>

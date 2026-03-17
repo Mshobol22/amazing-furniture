@@ -49,9 +49,9 @@ export default async function ShopAllPage({ searchParams }: ShopAllPageProps) {
           Shop All Furniture
         </h1>
       </div>
-      <div className="px-4 py-8 sm:px-6 lg:px-8">
+      <div className="px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <p className="mb-6 text-sm text-warm-gray">
+          <p className="mb-4 text-sm text-warm-gray">
             {totalCount} products across {CATEGORY_COUNT} categories
           </p>
           <ShopAllContent

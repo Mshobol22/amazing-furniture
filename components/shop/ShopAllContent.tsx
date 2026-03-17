@@ -103,6 +103,24 @@ export default function ShopAllContent({
         </div>
       )}
 
+      {/* Active filter chip */}
+      {activeManufacturer !== "all" && (
+        <div className="mb-4 flex items-center gap-2">
+          <span className="text-sm text-warm-gray">Filtering by:</span>
+          <button
+            type="button"
+            onClick={() => handleManufacturerClick(activeManufacturer)}
+            className="flex items-center gap-1.5 rounded-full bg-[#1C1C1C] px-3 py-1 text-sm font-medium text-white hover:bg-[#2a2a2a]"
+          >
+            Brand: {activeManufacturer}
+            <span className="ml-0.5 text-white/60">×</span>
+          </button>
+          <span className="text-xs text-warm-gray">
+            {filteredProducts.length} products
+          </span>
+        </div>
+      )}
+
       <ProductGrid products={filteredProducts} />
     </div>
   );

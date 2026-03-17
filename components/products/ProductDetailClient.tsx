@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
@@ -14,6 +14,7 @@ export default function ProductDetailClient({
   product,
 }: ProductDetailClientProps) {
   const [quantity, setQuantity] = useState(1);
+  const [descOpen, setDescOpen] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
 
   const handleAddToCart = () => {
@@ -22,16 +23,66 @@ export default function ProductDetailClient({
   };
 
   return (
-    <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
-      <div className="flex items-center gap-2">
-        <label htmlFor="quantity" className="text-sm font-medium text-charcoal">
-          Quantity:
-        </label>
+    <>
+      {/* Collapsible description */}
+      {product.description && (
+        <div className="mt-4 border-t border-gray-100 pt-4">
+          <button
+            type="button"
+            onClick={() => setDescOpen((o) => !o)}
+            className="flex w-full items-center justify-between text-sm font-medium text-charcoal"
+          >
+            <span>Description</span>
+            <ChevronDown
+              className={`h-4 w-4 text-warm-gray transition-transform duration-200 ${
+                descOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+          {descOpen && (
+            <p className="mt-3 text-sm leading-relaxed text-warm-gray">
+              {product.description}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Quantity + Add to Cart — desktop */}
+      <div className="mt-6 hidden sm:flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <label htmlFor="quantity" className="text-sm font-medium text-charcoal">
+            Quantity:
+          </label>
+          <select
+            id="quantity"
+            value={quantity}
+            onChange={(e) => setQuantity(Number(e.target.value))}
+            className="rounded-md border border-warm-gray/30 bg-cream px-3 py-2 text-charcoal"
+          >
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+        <Button
+          onClick={handleAddToCart}
+          disabled={!product.in_stock}
+          className="w-fit bg-[#1C1C1C] text-white hover:bg-[#2a2a2a] disabled:opacity-50"
+        >
+          <ShoppingCart className="mr-2 h-4 w-4 text-[#2D4A3E]" />
+          Add to Cart
+        </Button>
+      </div>
+
+      {/* Sticky CTA — mobile only */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 flex items-center gap-3 border-t border-gray-200 bg-white px-4 py-3 sm:hidden">
         <select
-          id="quantity"
           value={quantity}
           onChange={(e) => setQuantity(Number(e.target.value))}
-          className="rounded-md border border-warm-gray/30 bg-cream px-3 py-2 text-charcoal"
+          className="rounded-md border border-gray-200 bg-white px-2 py-2 text-sm text-charcoal"
+          aria-label="Quantity"
         >
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
             <option key={n} value={n}>
@@ -39,15 +90,15 @@ export default function ProductDetailClient({
             </option>
           ))}
         </select>
+        <Button
+          onClick={handleAddToCart}
+          disabled={!product.in_stock}
+          className="flex-1 bg-[#1C1C1C] text-white hover:bg-[#2a2a2a] disabled:opacity-50"
+        >
+          <ShoppingCart className="mr-2 h-4 w-4 text-[#2D4A3E]" />
+          {product.in_stock ? "Add to Cart" : "Out of Stock"}
+        </Button>
       </div>
-      <Button
-        onClick={handleAddToCart}
-        disabled={!product.in_stock}
-        className="w-fit bg-[#1C1C1C] text-white hover:bg-[#2a2a2a] disabled:opacity-50"
-      >
-        <ShoppingCart className="mr-2 h-4 w-4 text-[#2D4A3E]" />
-        Add to Cart
-      </Button>
-    </div>
+    </>
   );
 }
