@@ -189,26 +189,40 @@ export default function Navbar() {
 
   const isHomepage = pathname === "/";
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 60);
+    const handleScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 60);
+      // Hide on scroll down, show on scroll up (desktop only)
+      if (y > 120 && y > lastScrollY.current) {
+        setHidden(true);
+      } else {
+        setHidden(false);
+      }
+      lastScrollY.current = y;
+    };
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const navTransparent = isHomepage && !scrolled;
-  const iconColor = navTransparent ? "text-white" : "text-[#1C1C1C]";
-  const logoColor = navTransparent ? "text-white" : "text-[#1C1C1C]";
-  const iconHover = navTransparent ? "hover:bg-white/10" : "hover:bg-black/5";
+  const iconColor = navTransparent ? "text-white" : "text-cream";
+  const logoColor = navTransparent ? "text-white" : "text-cream";
+  const iconHover = navTransparent ? "hover:bg-white/10" : "hover:bg-white/10";
 
   return (
     <>
       <header
         className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
+          hidden ? "-translate-y-full" : "translate-y-0"
+        } ${
           navTransparent
             ? "bg-transparent"
-            : "border-b border-[#1C1C1C]/10 bg-[#FAF8F5]/95 shadow-sm backdrop-blur-md"
+            : "border-b border-[#2D4A3E]/20 bg-[#2D4A3E]/95 shadow-sm backdrop-blur-md"
         }`}
       >
         {/* Row 1 */}
@@ -374,7 +388,7 @@ export default function Navbar() {
         {/* Row 2 - Desktop only, hidden on mobile */}
         <div
           className={`hidden overflow-hidden border-b lg:flex ${
-            navTransparent ? "border-white/20 bg-transparent" : "border-[#ede8e3] bg-white"
+            navTransparent ? "border-white/20 bg-transparent" : "border-[#2D4A3E]/30 bg-[#1E3329]"
           }`}
         >
           <div className="mx-auto flex h-10 max-w-7xl items-center justify-center gap-0 overflow-hidden px-4">
@@ -388,11 +402,11 @@ export default function Navbar() {
                 <Link
                   href={`/collections/${cat.slug}`}
                   className={`block px-3 py-2 text-sm font-medium cursor-pointer whitespace-nowrap ${
-                    navTransparent ? "text-white/90 hover:text-white" : "text-[#1C1C1C]"
+                    navTransparent ? "text-white/90 hover:text-white" : "text-cream/90 hover:text-cream"
                   } ${
                     isCollectionActive(cat.slug)
-                      ? "border-b-2 border-[#2D4A3E]"
-                      : "hover:border-b-2 hover:border-[#2D4A3E]"
+                      ? "border-b-2 border-cream"
+                      : "hover:border-b-2 hover:border-cream/60"
                   }`}
                 >
                   {cat.name}
