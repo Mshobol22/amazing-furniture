@@ -197,6 +197,7 @@ export interface ManufacturerWithCount {
   name: string;
   slug: string;
   description: string;
+  logo_url: string | null;
   count: number;
   comingSoon: boolean;
 }
@@ -206,7 +207,7 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
 
   const { data: mfrs } = await supabase
     .from("manufacturers")
-    .select("name, slug, description, is_active")
+    .select("name, slug, description, logo_url, is_active")
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
 
@@ -224,10 +225,14 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
 
   return mfrs.map((m, i) => {
     const count = countResults[i].count ?? 0;
+    const logoUrl = typeof m.logo_url === "string" && (m.logo_url as string).startsWith("https://")
+      ? (m.logo_url as string)
+      : null;
     return {
       name: m.name as string,
       slug: m.slug as string,
       description: m.description as string,
+      logo_url: logoUrl,
       count,
       comingSoon: count === 0,
     };
