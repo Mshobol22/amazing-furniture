@@ -1,126 +1,127 @@
-# Amazing Furniture — Claude Code Project Bible
+# Amazing Home Furniture Store — CLAUDE.md
+> Last updated: March 2026 | Read this fully before touching any code.
 
-## Project Overview
-Premium home furniture ecommerce store. Live at: https://amazing-furniture.vercel.app  
-Goal: Build a world-class, conversion-optimized furniture shopping experience that competes with top-tier brands like Article, Floyd, and Hem.
+## Project
+- **Site:** https://www.amazinghomefurniturestore.com
+- **Repo:** github.com/Mshobol22/amazing-furniture (branch: main)
+- **Local:** C:\Users\mshob\OneDrive\Desktop\amazing furniture\
+- **Deploy:** Vercel (auto-deploy on push to main)
 
----
+## Stack
+- Next.js 14 App Router, TypeScript, Tailwind CSS
+- Supabase (auth + DB) — Auth is Supabase Auth with Google OAuth. NOT Clerk.
+- Stripe (payments + webhooks), Resend (email), shadcn/ui
+- Deployed on Vercel
 
-## Tech Stack
-- **Framework**: Next.js 15 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Database**: Supabase (PostgreSQL)
-- **Auth**: Supabase Auth (NOT Clerk). Google OAuth via Supabase PKCE flow. Use `supabase.auth.getUser()` server-side and `supabase.auth.getSession()` client-side. Never use Clerk packages.
-- **Payments**: Stripe
-- **UI Components**: shadcn/ui
-- **Deployment**: Vercel
+## Key IDs
+- Supabase project: `exppyvqjqnnowtjgumfc`
+- Vercel project: `prj_8tvkzfngOaapp5tmzasa4gqK9eC9`
+- Vercel team: `team_pZsX8SevXweyB2MNyjBjYiD0`
 
----
+## Brand Colors
+- Cream: `#FAF8F5` | Charcoal: `#1C1C1C`
+- Forest Green: `#2D4A3E` (primary accent — replaces all brown/walnut)
+- Forest Light: `#3B5E4F` | Forest Dark: `#1E3329`
 
-## Design Direction
-- **Aesthetic**: Luxury/editorial — clean, warm, and refined. Think high-end furniture magazine.
-- **Color Palette**: Warm whites, cream, charcoal, with muted earth tone accents
-- **Typography**: Distinctive display font for headings (e.g. Cormorant Garamond or Playfair Display), clean sans-serif for body
-- **Feel**: Spacious layouts, generous whitespace, large product photography, subtle animations
-- **Mobile**: Fully responsive — mobile experience is as important as desktop
-- **NO**: Generic AI aesthetics, purple gradients, overused fonts like Inter or Roboto
+## Database — Key Tables
+- `products` — name, slug, price, sale_price, on_sale, images (TEXT[]),
+  manufacturer, category, sku, in_stock, description, color, material,
+  collection, dimensions (JSONB), compare_at_price, warranty
+- `orders` — id, user_id, items (JSONB), subtotal, shipping, total,
+  tax_amount, tax_rate, status, stripe_payment_intent_id,
+  customer_name, customer_email, shipping_address (JSONB)
+- `manufacturers` — id, name, slug, description, logo_url,
+  is_active, sort_order
+- `hero_slides` — id, title, subtitle, image_url, product_id,
+  product_slug, cta_text, is_active, sort_order
+- `carts` — id, user_id, session_id, items (JSONB)
+- `newsletter_subscribers` — id, email, subscribed_at, source, is_active
+- `newsletter_attempts` — rate limiting table
+- `banners` — announcement bar content
+- `promotions` — category-level promotions
 
----
+## Manufacturers (in products.manufacturer column)
+- `Nationwide FD` | `United Furniture` | `ACME` | `Zinatex`
+- `Artisan` | `Interpraise` (coming soon — no products yet)
 
-## Prioritized Feature Roadmap
-Work through these in order:
+## Pricing Rules
+- ACME: west_price × 2.5 + $300 (covers free shipping cost)
+- United Furniture: MAP price as listed
+- Nationwide FD: price as listed
+- Zinatex: MSRP as listed
+- Illinois sales tax: 10.25% applied server-side at checkout
 
-### 🔴 Priority 1 — In Progress
-1. **Branded loading screen** — animated logo reveal with brand colors, smooth transition into homepage
-2. **Room inspiration cross-sell section** — "Shop the Look" editorial grid showing full room setups with tagged products
-3. **Editorial copy improvements** — replace placeholder text with premium brand voice copy throughout
+## Auth Rules
+- Supabase Auth only — Google OAuth via PKCE flow
+- Server-side: `supabase.auth.getUser()`
+- Client-side: `supabase.auth.getSession()`
+- Admin check: `isAdmin(user)` function — verify server-side on ALL admin routes
+- NEVER use Clerk — it is not installed
 
-### 🟡 Priority 2 — Next Up
-4. **Product filtering & search** — filter by category, material, color, price range
-5. **Wishlist / Save for later** — user can save products (requires Supabase Auth)
-6. **Product image gallery** — multi-image viewer with zoom on product detail page
+## Stripe
+- Webhook endpoint: `https://www.amazinghomefurniturestore.com/api/webhooks/stripe`
+- Webhook event: `payment_intent.succeeded`
+- CRITICAL: Webhook must use www domain — non-www causes 307 redirect
+  and Stripe does not follow redirects
+- Raw body required: use `request.arrayBuffer()` not `request.json()`
+- Order flow: checkout creates pending order → Stripe fires webhook →
+  webhook updates order to paid + sends Resend confirmation email
 
-### 🟢 Priority 3 — Future
-7. **Reviews & ratings system** — verified purchase reviews on product pages
-8. **AR preview** — "See in your room" feature using device camera
-9. **Admin dashboard** — product management, order tracking, inventory
+## Security Rules (Non-Negotiable)
+- All API keys in .env only — never hardcoded
+- Tax calculated server-side only — never trust client
+- All admin routes verify isAdmin() server-side before any operation
+- Supabase writes use SERVICE_ROLE_KEY — reads use ANON_KEY
+- All image URLs validated as https:// before storing or rendering
+- Use next/image for ALL images — never raw <img> tags
+- Parameterized queries only — no string concatenation into SQL
+- RLS enabled on all tables
 
----
+## Image Domains (next.config.mjs remotePatterns)
+- `lh3.googleusercontent.com` (Google avatars)
+- `img.clerk.com` (legacy — keep for safety)
+- `zinatexrugs.com` (Zinatex rug images)
+- `d28fw8vtnbt3jx.cloudfront.net` (United Furniture CDN)
+- `www.acmecorp.com` (ACME product images)
+- Nationwide FD images go through `/api/image-proxy` route
 
-## Security Standards (Non-Negotiable)
-All code must follow these rules — no exceptions:
+## Homepage Section Order (zero gaps between sections)
+1. HeroSlideshow (85vh, real product images, DB-controlled)
+2. TrustBar (Free Shipping $299+ | Financing | Illinois Business)
+3. ManufacturerSection "Shop by Brand" (charcoal bg, logo cards)
+4. CategoryGrid (edge-to-edge tiles, real product images, text overlay)
+5. SaleSection (only renders if on_sale products exist)
+6. RugsSpotlight "Premium Rugs by Zinatex" (forest green bg)
+7. FinancingSection (Synchrony + Koalafi external links only)
+8. NewsletterSection
 
-- **Secrets**: API keys and credentials go in `.env` ONLY. Never hardcoded. `.env` always in `.gitignore`
-- **Never expose** secret keys to the client/frontend side
-- **Input validation**: Sanitize ALL user inputs on both client AND server side
-- **SQL**: Parameterized queries only — no string concatenation
-- **Auth**: Verify permissions on every protected route, not just existence of user
-- **Dependencies**: No packages with known CVEs. Pin versions.
-- **Error messages**: Must not reveal system information or stack traces to users
-- **OWASP Top 10**: All code must be protected against the full OWASP Top 10:
-  - Injection (SQL, XSS, command injection)
-  - Broken authentication
-  - Sensitive data exposure
-  - Security misconfiguration
-  - Vulnerable & outdated components
-  - Insufficient logging & monitoring
+## Policies
+- Returns: ALL SALES FINAL after delivery/installation
+  Damaged items: report within 48 hours with photos
+- No 30-day returns — remove any reference found
+- No 2-year warranty — remove any reference found
+- Financing partners: Synchrony and Koalafi ONLY (not Snap Finance)
+- Free shipping on all orders over $299
 
-### After every major feature, run this internal security check:
-1. Any hardcoded secrets or API keys? → Remove immediately
-2. All user inputs validated and sanitized? → Both client + server
-3. SQL injection protection on all queries?
-4. Auth checks on every protected route?
-5. Dependencies up to date with no known CVEs?
-6. Error messages safe — not revealing system info?
+## CSV Source Files (for re-imports)
+- Nationwide FD: `C:\Users\mshob\OneDrive\csv for AHF\NFD datasheet.xlsx`
+- United Furniture: `C:\Users\mshob\OneDrive\csv for AHF\united datasheet.csv`
+- ACME: `C:\Users\mshob\OneDrive\csv for AHF\acme datasheet.xlsx`
+- Zinatex main: `C:\Users\mshob\OneDrive\csv for AHF\zinat datasheet.csv`
+- Zinatex inventory: `C:\Users\mshob\OneDrive\csv for AHF\zinat sku and inventory number.csv`
 
----
+## Known Bugs Still Pending (run in this order)
+1. Cart merge — guest cart disappears on sign-in
+2. Homepage combined fixes — Unsplash images, manufacturer counts,
+   returns page, Zinatex title, duplicate products
+3. Brand logos + sale section — logo cards, On Sale Now section
+4. Rug image fix + immersive gallery — missing images, zoom/spin
+5. Prompt 8 — brand landing pages /brands/[slug]
 
-## Code Conventions
-- **Components**: Go in `/components` folder, one file per component
-- **Pages**: Use Next.js App Router conventions (`/app` directory)
-- **Naming**: PascalCase for components, camelCase for functions/variables
-- **Styling**: Tailwind utility classes only — no custom CSS files unless absolutely necessary
-- **Types**: TypeScript strict mode — no `any` types
-- **Images**: Always use Next.js `<Image>` component for optimization
-- **Commits**: Descriptive commit messages — explain what changed and why
-
----
-
-## Environment Variables Needed
-```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-STRIPE_SECRET_KEY=
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
-STRIPE_WEBHOOK_SECRET=
-RESEND_API_KEY=
-```
-Ask the user for these values when ready to connect services. Never assume or hardcode them.
-
----
-
-## Development Workflow
-1. Always run `npm run dev` to start the dev server
-2. After making changes, run `npm run build` to catch type errors before deploying
-3. Fix ALL build errors before moving to the next feature
-4. Test on mobile viewport before marking any UI feature complete
-5. Deploy to Vercel via `git push` — auto-deploys on main branch
-
----
-
-## Inspiration Sites
-These sites set the design bar we're aiming for:
-- article.com — clean product photography, editorial feel
-- floydHome.com — minimal, story-driven
-- hem.com — Scandinavian luxury, typography-first
-
----
-
-## Current Session Context
-- Project is live on Vercel at amazing-furniture.vercel.app
-- Transitioning workflow from Cursor → Claude Code + VS Code
-- Owner operates as the business/product lead; Claude Code handles all development execution
-- Claude.ai (separate chat) acts as CTO — providing strategy, prompts, and direction
-- Start each session by reading this file fully before writing any code
+## Conventions
+- Slugs: lowercase, hyphens, append -[manufacturer_code]-[sku]
+  e.g. `king-bed-nfd-b101`, `motion-recliner-acme-00626`
+- Migrations: `supabase/migrations/[timestamp]_description.sql`
+- Admin routes: `app/(admin)/admin/[feature]/page.tsx`
+- Store routes: `app/(store)/[feature]/page.tsx`
+- API routes: `app/api/[feature]/route.ts`

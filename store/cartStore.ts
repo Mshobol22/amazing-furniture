@@ -5,6 +5,68 @@ import type { CartItem, Product } from "@/types";
 export const getEffectivePrice = (p: Product) =>
   p.on_sale && p.sale_price != null ? p.sale_price : p.price;
 
+const GUEST_CART_KEY = "guest_cart";
+
+/** Validate a single cart item before restoring from localStorage */
+function isValidCartItem(item: unknown): item is CartItem {
+  if (!item || typeof item !== "object") return false;
+  const obj = item as Record<string, unknown>;
+  if (!obj.product || typeof obj.product !== "object") return false;
+  const prod = obj.product as Record<string, unknown>;
+  // product_id must be UUID format
+  if (
+    typeof prod.id !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      prod.id
+    )
+  )
+    return false;
+  if (typeof prod.price !== "number" || prod.price <= 0) return false;
+  // quantity must be positive integer, max 99
+  if (
+    typeof obj.quantity !== "number" ||
+    !Number.isInteger(obj.quantity) ||
+    obj.quantity < 1 ||
+    obj.quantity > 99
+  )
+    return false;
+  return true;
+}
+
+/** Write validated items to guest_cart localStorage */
+function saveGuestCart(items: CartItem[]) {
+  try {
+    const slim = items.map((i) => ({
+      product: i.product,
+      quantity: i.quantity,
+    }));
+    localStorage.setItem(GUEST_CART_KEY, JSON.stringify(slim));
+  } catch {
+    // localStorage full or unavailable — silently ignore
+  }
+}
+
+/** Read and validate guest_cart from localStorage */
+export function readGuestCart(): CartItem[] {
+  try {
+    const raw = localStorage.getItem(GUEST_CART_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isValidCartItem);
+  } catch {
+    return [];
+  }
+}
+
+export function clearGuestCart() {
+  try {
+    localStorage.removeItem(GUEST_CART_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 interface CartStore {
   items: CartItem[];
   isOpen: boolean;
@@ -12,6 +74,7 @@ interface CartStore {
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  setItems: (items: CartItem[]) => void;
   openCart: () => void;
   closeCart: () => void;
 }
@@ -62,6 +125,8 @@ const useCartStoreBase = create<CartStore>()(
 
       clearCart: () => set({ items: [] }),
 
+      setItems: (items: CartItem[]) => set({ items }),
+
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
     }),
@@ -71,6 +136,13 @@ const useCartStoreBase = create<CartStore>()(
     }
   )
 );
+
+// Sync cart → guest_cart localStorage on every change
+useCartStoreBase.subscribe((state) => {
+  if (typeof window !== "undefined") {
+    saveGuestCart(state.items);
+  }
+});
 
 // Computed selectors
 export const useCartTotal = () =>

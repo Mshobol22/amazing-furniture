@@ -250,16 +250,20 @@ export async function getCategoryImages(): Promise<CategoryImage[]> {
         .select("images")
         .eq("category", slug)
         .not("images", "is", null)
-        .limit(1)
-        .single()
+        .limit(20)
     )
   );
 
   return categorySlugs.map((slug, i) => {
-    const row = results[i].data;
-    const images = row?.images as string[] | null;
-    const image = Array.isArray(images) && images.length > 0 ? images[0] : null;
-    return { slug, image };
+    const rows = results[i].data ?? [];
+    // Find first product whose lead image is a valid https:// URL
+    for (const row of rows) {
+      const images = row.images as string[] | null;
+      if (Array.isArray(images) && images.length > 0 && images[0].startsWith("https://")) {
+        return { slug, image: images[0] };
+      }
+    }
+    return { slug, image: null };
   });
 }
 

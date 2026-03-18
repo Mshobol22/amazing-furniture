@@ -20,7 +20,8 @@ export default function CategoryGrid({ categoryImages }: CategoryGridProps) {
     <section className="w-full">
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-0">
         {CATEGORY_META.map((cat) => {
-          const img = categoryImages[cat.slug] ?? null;
+          const raw = categoryImages[cat.slug] ?? null;
+          const img = raw?.startsWith("https://") ? raw : null;
           return (
             <Link
               key={cat.slug}
