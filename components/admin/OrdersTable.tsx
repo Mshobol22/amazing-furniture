@@ -14,6 +14,9 @@ interface OrderRow {
   id: string;
   customer_name: string;
   customer_email: string;
+  subtotal?: number;
+  shipping?: number;
+  tax_amount?: number;
   total: number;
   status: string;
   shipping_address: Record<string, unknown>;
@@ -196,6 +199,33 @@ function OrdersTableInner({ orders }: { orders: OrderRow[] }) {
                               </li>
                             ))}
                           </ul>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          <h3 className="text-xs font-medium uppercase text-warm-gray">
+                            Totals
+                          </h3>
+                          {selectedOrder.subtotal != null && (
+                            <div className="flex justify-between text-charcoal">
+                              <span>Subtotal</span>
+                              <span>${Number(selectedOrder.subtotal).toFixed(2)}</span>
+                            </div>
+                          )}
+                          {selectedOrder.shipping != null && (
+                            <div className="flex justify-between text-charcoal">
+                              <span>Shipping</span>
+                              <span>{selectedOrder.shipping === 0 ? "FREE" : `$${Number(selectedOrder.shipping).toFixed(2)}`}</span>
+                            </div>
+                          )}
+                          {selectedOrder.tax_amount != null && selectedOrder.tax_amount > 0 && (
+                            <div className="flex justify-between text-charcoal">
+                              <span>Tax (10.25%)</span>
+                              <span>${Number(selectedOrder.tax_amount).toFixed(2)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between font-semibold text-charcoal border-t border-gray-100 pt-1">
+                            <span>Total</span>
+                            <span>${Number(selectedOrder.total).toFixed(2)}</span>
+                          </div>
                         </div>
                         <div>
                           <h3 className="text-xs font-medium uppercase text-warm-gray">

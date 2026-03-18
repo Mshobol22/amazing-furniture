@@ -5,8 +5,8 @@ import {
   getProductBySlug,
   getProducts,
 } from "@/lib/supabase/products";
-import { ProductImage } from "@/components/ui/ProductImage";
 import ProductDetailClient from "@/components/products/ProductDetailClient";
+import ProductImageGallery from "@/components/products/ProductImageGallery";
 import ProductCard from "@/components/products/ProductCard";
 import type { Metadata } from "next";
 
@@ -99,44 +99,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {/* Main layout: 55% image, 45% info */}
         <div className="mb-8 grid gap-6 lg:grid-cols-[55%_1fr]">
           {/* Image gallery */}
-          <div className="space-y-4">
-            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-50 p-3 shadow-lg">
-              {product.on_sale && product.sale_price != null && (
-                <span
-                  className="absolute left-3 top-3 z-10 rounded px-2 py-0.5 text-xs font-semibold text-white"
-                  style={{ backgroundColor: "#DC2626" }}
-                >
-                  SALE
-                </span>
-              )}
-              <ProductImage
-                src={product.images[0]}
-                alt={product.name}
-                fill
-                className="object-contain"
-                priority
-                sizes="(max-width: 1024px) 100vw, 55vw"
-              />
-            </div>
-            {product.images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {product.images.map((img, i) => (
-                  <div
-                    key={i}
-                    className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md border-2 border-transparent bg-gray-50 p-1 hover:border-walnut"
-                  >
-                    <ProductImage
-                      src={img}
-                      alt={`${product.name} ${i + 1}`}
-                      fill
-                      className="object-contain"
-                      sizes="80px"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <ProductImageGallery
+            rawImages={product.images}
+            productName={product.name}
+            onSale={product.on_sale}
+            salePrice={product.sale_price}
+          />
 
           {/* Product info */}
           <div>
