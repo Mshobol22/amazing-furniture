@@ -267,6 +267,26 @@ export async function getCategoryImages(): Promise<CategoryImage[]> {
   });
 }
 
+// ── Sale products ─────────────────────────────────────────────────────────
+
+export async function getSaleProducts(limit = 8): Promise<Product[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("on_sale", true)
+    .not("sale_price", "is", null)
+    .gt("sale_price", 0)
+    .order("price", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+
+  return data
+    .map(mapRowToProduct)
+    .filter((p) => p.sale_price != null && p.sale_price < p.price);
+}
+
 // ── Brand page data fetchers ──────────────────────────────────────────────
 
 export interface Manufacturer {

@@ -6,11 +6,13 @@ import FinancingSection from "@/components/home/FinancingSection";
 import HeroSlideshow from "@/components/home/HeroSlideshow";
 import ManufacturerSection from "@/components/home/ManufacturerSection";
 import RugsSpotlight from "@/components/home/RugsSpotlight";
+import SaleSection from "@/components/home/SaleSection";
 import {
   getHeroSlides,
   getManufacturersWithCounts,
   getRugsSpotlight,
   getCategoryImages,
+  getSaleProducts,
 } from "@/lib/supabase/products";
 
 export const metadata: Metadata = {
@@ -46,12 +48,13 @@ export const metadata: Metadata = {
 };
 
 export default async function StorePage() {
-  const [slides, manufacturers, rugProducts, categoryImagesList] =
+  const [slides, manufacturers, rugProducts, categoryImagesList, saleProducts] =
     await Promise.all([
       getHeroSlides(),
       getManufacturersWithCounts(),
       getRugsSpotlight(),
       getCategoryImages(),
+      getSaleProducts(8),
     ]);
 
   const categoryImages = Object.fromEntries(
@@ -63,6 +66,7 @@ export default async function StorePage() {
       <HeroSlideshow slides={slides} />
       <ManufacturerSection manufacturers={manufacturers} />
       <CategoryGrid categoryImages={categoryImages} />
+      <SaleSection products={saleProducts} />
       <TrustSignalStrip />
       <FinancingSection />
       <RugsSpotlight products={rugProducts} />
