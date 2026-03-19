@@ -136,10 +136,13 @@ export default async function CollectionPage({
   return (
     <div className="min-h-screen bg-[#FAF8F5]">
       {/* Slim hero bar */}
-      <div className="flex h-20 items-center justify-center bg-[#1C1C1C]">
+      <div className="flex flex-col items-center justify-center gap-1 bg-[#1C1C1C] py-5">
         <h1 className="font-display text-xl font-semibold text-white md:text-2xl">
           {categoryLabel}
         </h1>
+        <p className="text-xs text-white/50">
+          {total.toLocaleString()} product{total !== 1 ? "s" : ""}
+        </p>
       </div>
 
       {/* Two-column layout */}
