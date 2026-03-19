@@ -8,7 +8,7 @@ import CollectionSidebar, {
 } from "@/components/collections/CollectionSidebar";
 import Pagination from "@/components/brands/Pagination";
 import type { Product } from "@/types";
-import type { ManufacturerCount } from "@/lib/supabase/products";
+import type { ManufacturerCount, SubcategoryCount } from "@/lib/supabase/products";
 
 interface CollectionClientProps {
   slug: string;
@@ -18,6 +18,7 @@ interface CollectionClientProps {
   availableCollections: string[];
   availableColors: string[];
   availableSizes: string[];
+  availableSubcategories: SubcategoryCount[];
 }
 
 const SORT_OPTIONS = [
@@ -36,6 +37,7 @@ function parseArray(v: string | null): string[] {
 
 function filtersFromParams(params: URLSearchParams): CollectionFilters {
   return {
+    types: parseArray(params.get("type")),
     manufacturers: parseArray(params.get("manufacturers")),
     collections: parseArray(params.get("collections")),
     colors: parseArray(params.get("colors")),
@@ -52,6 +54,7 @@ function buildSearchParams(
   page: number
 ): URLSearchParams {
   const p = new URLSearchParams();
+  if (filters.types.length > 0) p.set("type", filters.types.join(","));
   if (filters.manufacturers.length > 0)
     p.set("manufacturers", filters.manufacturers.join(","));
   if (filters.collections.length > 0)
@@ -74,6 +77,7 @@ export default function CollectionClient({
   availableCollections,
   availableColors,
   availableSizes,
+  availableSubcategories,
 }: CollectionClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -140,6 +144,7 @@ export default function CollectionClient({
   };
 
   const activeFilterCount =
+    filters.types.length +
     filters.manufacturers.length +
     filters.collections.length +
     filters.colors.length +
@@ -161,6 +166,7 @@ export default function CollectionClient({
           availableCollections={availableCollections}
           availableColors={availableColors}
           availableSizes={availableSizes}
+          availableSubcategories={availableSubcategories}
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />

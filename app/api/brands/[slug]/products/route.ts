@@ -9,6 +9,11 @@ function sanitize(value: string): string {
   return value.replace(/[^a-zA-Z0-9 ,.\-]/g, "").trim();
 }
 
+// Type/subcategory values may contain & (e.g. "Accent & End Tables")
+function sanitizeType(value: string): string {
+  return value.replace(/[^a-zA-Z0-9 &\-]/g, "").trim();
+}
+
 function parseStringArray(param: string | null): string[] {
   if (!param) return [];
   return param
@@ -40,6 +45,10 @@ export async function GET(
   const collections = parseStringArray(url.get("collections"));
   const colors = parseStringArray(url.get("colors"));
   const sizes = parseStringArray(url.get("sizes"));
+  const types = (url.get("type") ?? "")
+    .split(",")
+    .map(sanitizeType)
+    .filter((t) => t.length > 0);
   const inStockOnly = url.get("inStock") === "true";
   const priceMin = parseNumber(url.get("priceMin"));
   const priceMax = parseNumber(url.get("priceMax"));
@@ -55,6 +64,7 @@ export async function GET(
     collections: collections.length > 0 ? collections : undefined,
     colors: colors.length > 0 ? colors : undefined,
     sizes: sizes.length > 0 ? sizes : undefined,
+    subcategories: types.length > 0 ? types : undefined,
     inStockOnly,
     priceMin,
     priceMax,

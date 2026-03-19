@@ -398,6 +398,11 @@ export interface ManufacturerCount {
   count: number;
 }
 
+export interface SubcategoryCount {
+  name: string;
+  count: number;
+}
+
 export async function getCategoryManufacturerCounts(
   category: string
 ): Promise<ManufacturerCount[]> {
@@ -504,6 +509,56 @@ export async function getCategorySizes(category: string): Promise<string[]> {
   return Array.from(sizes).sort();
 }
 
+export async function getCategorySubcategories(
+  category: string
+): Promise<SubcategoryCount[]> {
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("products")
+    .select("subcategory")
+    .not("subcategory", "is", null);
+
+  if (category !== "all") {
+    query = query.eq("category", category);
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  const counts: Record<string, number> = {};
+  for (const row of data) {
+    const sub = row.subcategory as string;
+    if (sub) counts[sub] = (counts[sub] ?? 0) + 1;
+  }
+
+  return Object.entries(counts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+export async function getManufacturerSubcategories(
+  manufacturerName: string
+): Promise<SubcategoryCount[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("subcategory")
+    .eq("manufacturer", manufacturerName)
+    .not("subcategory", "is", null);
+
+  if (error || !data) return [];
+
+  const counts: Record<string, number> = {};
+  for (const row of data) {
+    const sub = row.subcategory as string;
+    if (sub) counts[sub] = (counts[sub] ?? 0) + 1;
+  }
+
+  return Object.entries(counts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
 export async function getManufacturerCollections(
   manufacturerName: string
 ): Promise<string[]> {
@@ -569,6 +624,7 @@ export interface FilteredProductsParams {
   collections?: string[];
   colors?: string[];
   sizes?: string[];
+  subcategories?: string[];
   inStockOnly?: boolean;
   priceMin?: number;
   priceMax?: number;
@@ -607,6 +663,11 @@ export async function getFilteredProducts(
   // Color filter
   if (params.colors && params.colors.length > 0) {
     query = query.in("color", params.colors);
+  }
+
+  // Subcategory (type) filter
+  if (params.subcategories && params.subcategories.length > 0) {
+    query = query.in("subcategory", params.subcategories);
   }
 
   // In-stock filter

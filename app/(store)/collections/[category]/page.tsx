@@ -7,6 +7,7 @@ import {
   getCategoryCollections,
   getCategoryColors,
   getCategorySizes,
+  getCategorySubcategories,
 } from "@/lib/supabase/products";
 import { getCategoryDisplayName } from "@/lib/collection-utils";
 import CollectionClient from "@/components/collections/CollectionClient";
@@ -125,12 +126,14 @@ export default async function CollectionPage({
     availableCollections,
     availableColors,
     availableSizes,
+    availableSubcategories,
   ] = await Promise.all([
     getInitialCollectionProducts(category),
     getCategoryManufacturerCounts(category),
     isRug ? Promise.resolve([]) : getCategoryCollections(category),
     getCategoryColors(category),
     isRug ? getCategorySizes(category) : Promise.resolve([]),
+    getCategorySubcategories(category),
   ]);
 
   return (
@@ -163,6 +166,7 @@ export default async function CollectionPage({
             availableCollections={availableCollections}
             availableColors={availableColors}
             availableSizes={availableSizes}
+            availableSubcategories={availableSubcategories}
           />
         </Suspense>
       </div>

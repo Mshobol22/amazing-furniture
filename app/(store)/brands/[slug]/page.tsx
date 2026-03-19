@@ -7,6 +7,7 @@ import {
   getManufacturerCollections,
   getManufacturerColors,
   getManufacturerSizes,
+  getManufacturerSubcategories,
 } from "@/lib/supabase/products";
 import BrandProductGrid from "@/components/brands/BrandProductGrid";
 import BrandNotifyForm from "@/components/brands/BrandNotifyForm";
@@ -66,12 +67,14 @@ export default async function BrandPage({ params }: BrandPageProps) {
     collections,
     colors,
     sizes,
+    subcategories,
   ] = await Promise.all([
     getProductsByManufacturer(manufacturer.name, "all", 24, 0),
     getManufacturerCategories(manufacturer.name),
     getManufacturerCollections(manufacturer.name),
     getManufacturerColors(manufacturer.name),
     isZinatex ? getManufacturerSizes(manufacturer.name) : Promise.resolve([]),
+    getManufacturerSubcategories(manufacturer.name),
   ]);
 
   return (
@@ -105,6 +108,7 @@ export default async function BrandPage({ params }: BrandPageProps) {
           availableCollections={collections}
           availableColors={colors}
           availableSizes={sizes}
+          availableSubcategories={subcategories}
           isZinatex={isZinatex}
         />
       </div>

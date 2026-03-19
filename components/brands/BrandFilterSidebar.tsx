@@ -5,6 +5,7 @@ import {
   COLOR_HEX,
   ColorSwatchGrid,
 } from "@/components/ui/filter-helpers";
+import type { SubcategoryCount } from "@/lib/supabase/products";
 
 const CATEGORY_LABELS: Record<string, string> = {
   sofa: "Sofas",
@@ -17,6 +18,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export interface BrandFilters {
+  types: string[];
   categories: string[];
   collections: string[];
   colors: string[];
@@ -32,6 +34,7 @@ interface BrandFilterSidebarProps {
   availableCollections: string[];
   availableColors: string[];
   availableSizes: string[];
+  availableSubcategories: SubcategoryCount[];
   filters: BrandFilters;
   onFiltersChange: (filters: BrandFilters) => void;
   isZinatex: boolean;
@@ -107,6 +110,7 @@ export default function BrandFilterSidebar({
   availableCollections,
   availableColors,
   availableSizes,
+  availableSubcategories,
   filters,
   onFiltersChange,
   isZinatex,
@@ -116,6 +120,7 @@ export default function BrandFilterSidebar({
   };
 
   const activeCount =
+    filters.types.length +
     filters.categories.length +
     filters.collections.length +
     filters.colors.length +
@@ -131,6 +136,7 @@ export default function BrandFilterSidebar({
           type="button"
           onClick={() =>
             onFiltersChange({
+              types: [],
               categories: [],
               collections: [],
               colors: [],
@@ -145,6 +151,38 @@ export default function BrandFilterSidebar({
         >
           Clear all filters ({activeCount})
         </button>
+      )}
+
+      {/* Type (subcategory) — show when more than one option */}
+      {availableSubcategories.length > 1 && (
+        <FilterSection title="Type">
+          <div className="space-y-2 max-h-[200px] overflow-y-auto">
+            {availableSubcategories.map(({ name, count }) => (
+              <label
+                key={name}
+                className="flex cursor-pointer items-center justify-between gap-2 text-sm text-[#1C1C1C]/80 hover:text-[#1C1C1C]"
+              >
+                <span className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={filters.types.includes(name)}
+                    onChange={() => {
+                      const newTypes = filters.types.includes(name)
+                        ? filters.types.filter((t) => t !== name)
+                        : [...filters.types, name];
+                      update({ types: newTypes });
+                    }}
+                    className="h-4 w-4 rounded border-[#1C1C1C]/20 text-[#2D4A3E] focus:ring-[#2D4A3E]"
+                  />
+                  {name}
+                </span>
+                <span className="text-xs text-[#1C1C1C]/40">
+                  {count.toLocaleString()}
+                </span>
+              </label>
+            ))}
+          </div>
+        </FilterSection>
       )}
 
       {/* Categories */}

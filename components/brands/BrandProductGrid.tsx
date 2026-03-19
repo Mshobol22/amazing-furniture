@@ -8,6 +8,7 @@ import BrandFilterSidebar, {
 } from "@/components/brands/BrandFilterSidebar";
 import Pagination from "@/components/brands/Pagination";
 import type { Product } from "@/types";
+import type { SubcategoryCount } from "@/lib/supabase/products";
 
 interface BrandProductGridProps {
   slug: string;
@@ -17,6 +18,7 @@ interface BrandProductGridProps {
   availableCollections: string[];
   availableColors: string[];
   availableSizes: string[];
+  availableSubcategories: SubcategoryCount[];
   isZinatex: boolean;
 }
 
@@ -34,6 +36,7 @@ function parseArrayParam(value: string | null): string[] {
 
 function filtersFromParams(params: URLSearchParams): BrandFilters {
   return {
+    types: parseArrayParam(params.get("type")),
     categories: parseArrayParam(params.get("categories")),
     collections: parseArrayParam(params.get("collections")),
     colors: parseArrayParam(params.get("colors")),
@@ -47,6 +50,8 @@ function filtersFromParams(params: URLSearchParams): BrandFilters {
 
 function filtersToParams(filters: BrandFilters, page: number): URLSearchParams {
   const params = new URLSearchParams();
+  if (filters.types.length > 0)
+    params.set("type", filters.types.join(","));
   if (filters.categories.length > 0)
     params.set("categories", filters.categories.join(","));
   if (filters.collections.length > 0)
@@ -72,6 +77,7 @@ export default function BrandProductGrid({
   availableCollections,
   availableColors,
   availableSizes,
+  availableSubcategories,
   isZinatex,
 }: BrandProductGridProps) {
   const router = useRouter();
@@ -141,6 +147,7 @@ export default function BrandProductGrid({
   };
 
   const activeFilterCount =
+    filters.types.length +
     filters.categories.length +
     filters.collections.length +
     filters.colors.length +
@@ -158,6 +165,7 @@ export default function BrandProductGrid({
           availableCollections={availableCollections}
           availableColors={availableColors}
           availableSizes={availableSizes}
+          availableSubcategories={availableSubcategories}
           filters={filters}
           onFiltersChange={handleFiltersChange}
           isZinatex={isZinatex}

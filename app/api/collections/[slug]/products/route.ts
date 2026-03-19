@@ -18,6 +18,11 @@ function sanitize(value: string): string {
   return value.replace(/[^a-zA-Z0-9 ,.\-]/g, "").trim();
 }
 
+// Type/subcategory values may contain & (e.g. "Accent & End Tables")
+function sanitizeType(value: string): string {
+  return value.replace(/[^a-zA-Z0-9 &\-]/g, "").trim();
+}
+
 function parseStringArray(param: string | null): string[] {
   if (!param) return [];
   return param
@@ -58,6 +63,10 @@ export async function GET(
   const collections = parseStringArray(url.get("collections"));
   const colors = parseStringArray(url.get("colors"));
   const sizes = parseStringArray(url.get("sizes"));
+  const types = (url.get("type") ?? "")
+    .split(",")
+    .map(sanitizeType)
+    .filter((t) => t.length > 0);
   const inStockOnly = url.get("inStock") === "true";
   const priceMin = parsePrice(url.get("priceMin"));
   const priceMax = parsePrice(url.get("priceMax"));
@@ -99,6 +108,11 @@ export async function GET(
     } else {
       query = query.in("color", colors);
     }
+  }
+
+  // Subcategory (type) filter
+  if (types.length > 0) {
+    query = query.in("subcategory", types);
   }
 
   // In-stock filter
