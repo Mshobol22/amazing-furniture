@@ -121,9 +121,14 @@ export function ColorSwatchGrid({
     }
   };
 
+  // Only render colors that have a known hex mapping — skip unmapped/blank circles
+  const renderableColors = colors.filter(
+    (c) => COLOR_HEX[c] !== undefined && COLOR_HEX[c] !== ""
+  );
+
   return (
     <div className="grid grid-cols-6 gap-2">
-      {colors.map((color) => {
+      {renderableColors.map((color) => {
         const hex = COLOR_HEX[color];
         const isSelected = selected.includes(color);
         const isMulticolor = color === "Multicolor";
@@ -141,7 +146,7 @@ export function ColorSwatchGrid({
             style={{
               background: isMulticolor
                 ? "conic-gradient(red, orange, yellow, green, blue, purple, red)"
-                : hex ?? "#ccc",
+                : hex,
             }}
           />
         );

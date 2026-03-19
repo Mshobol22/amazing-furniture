@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import {
+  COLOR_HEX,
+  ColorSwatchGrid,
+} from "@/components/ui/filter-helpers";
 
 const CATEGORY_LABELS: Record<string, string> = {
   sofa: "Sofas",
@@ -10,31 +14,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   cabinet: "Cabinets",
   "tv-stand": "TV Stands",
   rug: "Rugs",
-};
-
-const COLOR_HEX: Record<string, string> = {
-  Grey: "#808080",
-  Beige: "#D4C5A9",
-  Black: "#1C1C1C",
-  Red: "#B22222",
-  Navy: "#1B2951",
-  Blue: "#2E5090",
-  Brown: "#5C3A1E",
-  Green: "#2D4A3E",
-  Ivory: "#FFFFF0",
-  Gold: "#C5A04E",
-  Cream: "#FAF8F5",
-  Orange: "#CC5500",
-  Rust: "#B7410E",
-  Teal: "#008080",
-  White: "#F5F5F5",
-  Yellow: "#D4A017",
-  Purple: "#6A0DAD",
-  Pink: "#D4657E",
-  Silver: "#C0C0C0",
-  Charcoal: "#36454F",
-  Terracotta: "#C26B4E",
-  Multicolor: "conic-gradient(red, orange, yellow, green, blue, purple, red)",
 };
 
 export interface BrandFilters {
@@ -122,51 +101,6 @@ function CheckboxGroup({
   );
 }
 
-function ColorSwatchGrid({
-  colors,
-  selected,
-  onChange,
-}: {
-  colors: string[];
-  selected: string[];
-  onChange: (values: string[]) => void;
-}) {
-  const toggle = (color: string) => {
-    if (selected.includes(color)) {
-      onChange(selected.filter((c) => c !== color));
-    } else {
-      onChange([...selected, color]);
-    }
-  };
-
-  return (
-    <div className="grid grid-cols-6 gap-2">
-      {colors.map((color) => {
-        const hex = COLOR_HEX[color];
-        const isSelected = selected.includes(color);
-        const isMulticolor = color === "Multicolor";
-        return (
-          <button
-            key={color}
-            type="button"
-            title={color}
-            onClick={() => toggle(color)}
-            className={`h-7 w-7 rounded-full border-2 transition-all ${
-              isSelected
-                ? "border-[#2D4A3E] ring-2 ring-[#2D4A3E]/30"
-                : "border-[#1C1C1C]/15 hover:border-[#2D4A3E]/50"
-            }`}
-            style={{
-              background: isMulticolor
-                ? "conic-gradient(red, orange, yellow, green, blue, purple, red)"
-                : hex ?? "#ccc",
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
 
 export default function BrandFilterSidebar({
   availableCategories,
@@ -236,14 +170,44 @@ export default function BrandFilterSidebar({
         </FilterSection>
       )}
 
-      {/* Colors — Zinatex */}
-      {isZinatex && availableColors.length > 0 && (
+      {/* Colors — swatches for Zinatex, checkboxes with dot for all other brands */}
+      {availableColors.length > 0 && (
         <FilterSection title="Color">
-          <ColorSwatchGrid
-            colors={availableColors}
-            selected={filters.colors}
-            onChange={(colors) => update({ colors })}
-          />
+          {isZinatex ? (
+            <ColorSwatchGrid
+              colors={availableColors}
+              selected={filters.colors}
+              onChange={(colors) => update({ colors })}
+            />
+          ) : (
+            <div className="max-h-[200px] space-y-2 overflow-y-auto">
+              {availableColors.map((color) => (
+                <label
+                  key={color}
+                  className="flex cursor-pointer items-center gap-2 text-sm text-[#1C1C1C]/80 hover:text-[#1C1C1C]"
+                >
+                  <input
+                    type="checkbox"
+                    checked={filters.colors.includes(color)}
+                    onChange={() => {
+                      const newColors = filters.colors.includes(color)
+                        ? filters.colors.filter((c) => c !== color)
+                        : [...filters.colors, color];
+                      update({ colors: newColors });
+                    }}
+                    className="h-4 w-4 rounded border-[#1C1C1C]/20 text-[#2D4A3E] focus:ring-[#2D4A3E]"
+                  />
+                  {COLOR_HEX[color] && (
+                    <span
+                      className="h-3 w-3 shrink-0 rounded-full border border-gray-300"
+                      style={{ background: COLOR_HEX[color] }}
+                    />
+                  )}
+                  <span>{color}</span>
+                </label>
+              ))}
+            </div>
+          )}
         </FilterSection>
       )}
 

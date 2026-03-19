@@ -5,6 +5,7 @@ import {
   FilterSection,
   CheckboxGroup,
   ColorSwatchGrid,
+  COLOR_HEX,
 } from "@/components/ui/filter-helpers";
 import type { ManufacturerCount } from "@/lib/supabase/products";
 
@@ -126,7 +127,7 @@ export default function CollectionSidebar({
         </FilterSection>
       )}
 
-      {/* Color — swatches for rugs, checkboxes for furniture */}
+      {/* Color — swatches (filtered by COLOR_HEX) for rugs, checkboxes with dot for furniture */}
       {availableColors.length > 0 && (
         <FilterSection title="Color" defaultOpen={!isRug}>
           {isRug ? (
@@ -136,11 +137,33 @@ export default function CollectionSidebar({
               onChange={(colors) => update({ colors })}
             />
           ) : (
-            <CheckboxGroup
-              options={availableColors}
-              selected={filters.colors}
-              onChange={(colors) => update({ colors })}
-            />
+            <div className="max-h-[220px] space-y-2 overflow-y-auto">
+              {availableColors.map((color) => (
+                <label
+                  key={color}
+                  className="flex cursor-pointer items-center gap-2 text-sm text-[#1C1C1C]/80 hover:text-[#1C1C1C]"
+                >
+                  <input
+                    type="checkbox"
+                    checked={filters.colors.includes(color)}
+                    onChange={() => {
+                      const newColors = filters.colors.includes(color)
+                        ? filters.colors.filter((c) => c !== color)
+                        : [...filters.colors, color];
+                      update({ colors: newColors });
+                    }}
+                    className="h-4 w-4 rounded border-[#1C1C1C]/20 text-[#2D4A3E] focus:ring-[#2D4A3E]"
+                  />
+                  {COLOR_HEX[color] && (
+                    <span
+                      className="h-3 w-3 shrink-0 rounded-full border border-gray-300"
+                      style={{ background: COLOR_HEX[color] }}
+                    />
+                  )}
+                  <span>{color}</span>
+                </label>
+              ))}
+            </div>
           )}
         </FilterSection>
       )}

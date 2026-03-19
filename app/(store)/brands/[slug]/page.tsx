@@ -70,7 +70,7 @@ export default async function BrandPage({ params }: BrandPageProps) {
     getProductsByManufacturer(manufacturer.name, "all", 24, 0),
     getManufacturerCategories(manufacturer.name),
     getManufacturerCollections(manufacturer.name),
-    isZinatex ? getManufacturerColors(manufacturer.name) : Promise.resolve([]),
+    getManufacturerColors(manufacturer.name),
     isZinatex ? getManufacturerSizes(manufacturer.name) : Promise.resolve([]),
   ]);
 
