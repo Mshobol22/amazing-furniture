@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingCart, ChevronDown } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
@@ -14,7 +14,6 @@ export default function ProductDetailClient({
   product,
 }: ProductDetailClientProps) {
   const [quantity, setQuantity] = useState(1);
-  const [descOpen, setDescOpen] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
 
   const handleAddToCart = () => {
@@ -24,26 +23,12 @@ export default function ProductDetailClient({
 
   return (
     <>
-      {/* Collapsible description */}
+      {/* Description — always visible */}
       {product.description && (
         <div className="mt-4 border-t border-gray-100 pt-4">
-          <button
-            type="button"
-            onClick={() => setDescOpen((o) => !o)}
-            className="flex w-full items-center justify-between text-sm font-medium text-charcoal"
-          >
-            <span>Description</span>
-            <ChevronDown
-              className={`h-4 w-4 text-warm-gray transition-transform duration-200 ${
-                descOpen ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-          {descOpen && (
-            <p className="mt-3 text-sm leading-relaxed text-warm-gray">
-              {product.description}
-            </p>
-          )}
+          <p className="text-sm leading-relaxed text-warm-gray">
+            {product.description}
+          </p>
         </div>
       )}
 

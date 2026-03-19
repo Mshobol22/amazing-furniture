@@ -86,6 +86,11 @@ const CATEGORIES: Record<
     slug: "tv-stand",
     subcategories: [{ label: "All TV Stands" }],
   },
+  rug: {
+    name: "Rugs",
+    slug: "rug",
+    subcategories: [{ label: "All Rugs" }],
+  },
 };
 
 function useDebounce<T>(value: T, delay: number): T {
