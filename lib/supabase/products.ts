@@ -362,6 +362,307 @@ export async function getManufacturerCategories(
   return unique;
 }
 
+// ── Collection page initial product fetch ─────────────────────────────────
+
+export async function getInitialCollectionProducts(
+  category: string
+): Promise<{ products: Product[]; total: number }> {
+  const supabase = createAdminClient();
+
+  let query = supabase
+    .from("products")
+    .select("*", { count: "exact" })
+    .order("name", { ascending: true })
+    .range(0, 23);
+
+  if (category !== "all") {
+    query = query.eq("category", category);
+  }
+
+  const { data, count, error } = await query;
+  if (error) {
+    console.error("getInitialCollectionProducts error:", error);
+    return { products: [], total: 0 };
+  }
+
+  return {
+    products: (data ?? []).map(mapRowToProduct),
+    total: count ?? 0,
+  };
+}
+
+// ── Collection page filter data fetchers ──────────────────────────────────
+
+export interface ManufacturerCount {
+  name: string;
+  count: number;
+}
+
+export async function getCategoryManufacturerCounts(
+  category: string
+): Promise<ManufacturerCount[]> {
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("products")
+    .select("manufacturer")
+    .not("manufacturer", "is", null);
+
+  if (category !== "all") {
+    query = query.eq("category", category);
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  const counts = new Map<string, number>();
+  for (const row of data) {
+    const name = row.manufacturer as string;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+export async function getCategoryCollections(
+  category: string
+): Promise<string[]> {
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("products")
+    .select("collection")
+    .not("collection", "is", null);
+
+  if (category !== "all") {
+    query = query.eq("category", category);
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  const unique = Array.from(
+    new Set(data.map((r) => r.collection as string).filter(Boolean))
+  ).sort();
+  return unique;
+}
+
+export async function getCategoryColors(category: string): Promise<string[]> {
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("products")
+    .select("color")
+    .not("color", "is", null);
+
+  if (category !== "all") {
+    query = query.eq("category", category);
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  if (category === "rug") {
+    // Rug colors are comma-separated — extract individual color names
+    const colors = new Set<string>();
+    for (const row of data) {
+      const raw = row.color as string;
+      raw.split(",").forEach((c) => {
+        const trimmed = c.trim();
+        if (trimmed) colors.add(trimmed);
+      });
+    }
+    return Array.from(colors).sort();
+  }
+
+  const unique = Array.from(
+    new Set(data.map((r) => r.color as string).filter(Boolean))
+  ).sort();
+  return unique;
+}
+
+export async function getCategorySizes(category: string): Promise<string[]> {
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("products")
+    .select("dimensions")
+    .not("dimensions", "is", null);
+
+  if (category !== "all") {
+    query = query.eq("category", category);
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  const sizes = new Set<string>();
+  for (const row of data) {
+    const dims = row.dimensions as Record<string, unknown> | null;
+    if (dims && typeof dims.size === "string") {
+      sizes.add(dims.size);
+    }
+  }
+  return Array.from(sizes).sort();
+}
+
+export async function getManufacturerCollections(
+  manufacturerName: string
+): Promise<string[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("collection")
+    .eq("manufacturer", manufacturerName)
+    .not("collection", "is", null);
+
+  if (error || !data) return [];
+
+  const unique = Array.from(
+    new Set(data.map((r) => r.collection as string).filter(Boolean))
+  ).sort();
+  return unique;
+}
+
+export async function getManufacturerColors(
+  manufacturerName: string
+): Promise<string[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("color")
+    .eq("manufacturer", manufacturerName)
+    .not("color", "is", null);
+
+  if (error || !data) return [];
+
+  const unique = Array.from(
+    new Set(data.map((r) => r.color as string).filter(Boolean))
+  ).sort();
+  return unique;
+}
+
+export async function getManufacturerSizes(
+  manufacturerName: string
+): Promise<string[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("dimensions")
+    .eq("manufacturer", manufacturerName)
+    .not("dimensions", "is", null);
+
+  if (error || !data) return [];
+
+  const sizes = new Set<string>();
+  for (const row of data) {
+    const dims = row.dimensions as Record<string, unknown> | null;
+    if (dims && typeof dims.size === "string") {
+      sizes.add(dims.size);
+    }
+  }
+  return Array.from(sizes).sort();
+}
+
+export interface FilteredProductsParams {
+  manufacturerName: string;
+  category?: string;
+  categories?: string[];
+  collections?: string[];
+  colors?: string[];
+  sizes?: string[];
+  inStockOnly?: boolean;
+  priceMin?: number;
+  priceMax?: number;
+  limit?: number;
+  offset?: number;
+  sort?: string;
+}
+
+export async function getFilteredProducts(
+  params: FilteredProductsParams
+): Promise<{ products: Product[]; total: number }> {
+  const supabase = createAdminClient();
+  const limit = params.limit ?? 24;
+  const offset = params.offset ?? 0;
+
+  let query = supabase
+    .from("products")
+    .select("*", { count: "exact" })
+    .eq("manufacturer", params.manufacturerName);
+
+  // Single category filter (backward compat)
+  if (params.category && params.category !== "all") {
+    query = query.eq("category", params.category);
+  }
+
+  // Multi-category filter
+  if (params.categories && params.categories.length > 0) {
+    query = query.in("category", params.categories);
+  }
+
+  // Collection filter
+  if (params.collections && params.collections.length > 0) {
+    query = query.in("collection", params.collections);
+  }
+
+  // Color filter
+  if (params.colors && params.colors.length > 0) {
+    query = query.in("color", params.colors);
+  }
+
+  // In-stock filter
+  if (params.inStockOnly) {
+    query = query.eq("in_stock", true);
+  }
+
+  // Price range
+  if (params.priceMin != null && params.priceMin > 0) {
+    query = query.gte("price", params.priceMin);
+  }
+  if (params.priceMax != null && params.priceMax > 0) {
+    query = query.lte("price", params.priceMax);
+  }
+
+  // Sort
+  switch (params.sort) {
+    case "price-asc":
+      query = query.order("price", { ascending: true });
+      break;
+    case "price-desc":
+      query = query.order("price", { ascending: false });
+      break;
+    case "newest":
+      query = query.order("created_at", { ascending: false });
+      break;
+    default:
+      query = query.order("name", { ascending: true });
+  }
+
+  query = query.range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    console.error("getFilteredProducts error:", error);
+    return { products: [], total: 0 };
+  }
+
+  // Handle sizes filter client-side (JSONB field)
+  let products = (data ?? []).map(mapRowToProduct);
+  if (params.sizes && params.sizes.length > 0) {
+    const sizeSet = new Set(params.sizes);
+    products = products.filter((p) => {
+      const raw = (data ?? []).find((d) => d.id === p.id);
+      const dims = raw?.dimensions as Record<string, unknown> | null;
+      return dims && typeof dims.size === "string" && sizeSet.has(dims.size);
+    });
+  }
+
+  return {
+    products,
+    total: params.sizes && params.sizes.length > 0 ? products.length : (count ?? 0),
+  };
+}
+
 export interface SpotlightProduct {
   id: string;
   name: string;

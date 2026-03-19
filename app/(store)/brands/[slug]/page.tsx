@@ -4,6 +4,9 @@ import {
   getManufacturerBySlug,
   getProductsByManufacturer,
   getManufacturerCategories,
+  getManufacturerCollections,
+  getManufacturerColors,
+  getManufacturerSizes,
 } from "@/lib/supabase/products";
 import BrandProductGrid from "@/components/brands/BrandProductGrid";
 import BrandNotifyForm from "@/components/brands/BrandNotifyForm";
@@ -54,22 +57,29 @@ export default async function BrandPage({ params }: BrandPageProps) {
     return <ComingSoonBrand manufacturer={manufacturer} />;
   }
 
-  // Active brand — fetch products and categories
-  const [{ products, total: totalCount }, categories] = await Promise.all([
+  const isZinatex = manufacturer.slug === "zinatex";
+
+  // Fetch initial products + all filter options in parallel
+  const [
+    { products, total: totalCount },
+    categories,
+    collections,
+    colors,
+    sizes,
+  ] = await Promise.all([
     getProductsByManufacturer(manufacturer.name, "all", 24, 0),
     getManufacturerCategories(manufacturer.name),
+    getManufacturerCollections(manufacturer.name),
+    isZinatex ? getManufacturerColors(manufacturer.name) : Promise.resolve([]),
+    isZinatex ? getManufacturerSizes(manufacturer.name) : Promise.resolve([]),
   ]);
-
-  const isZinatex = manufacturer.slug === "zinatex";
 
   return (
     <div className="min-h-screen bg-[#FAF8F5]">
       {/* Hero banner */}
       <div
         className={`flex flex-col items-center justify-center px-4 py-12 text-center ${
-          isZinatex
-            ? "bg-[#2D4A3E]"
-            : "bg-[#1C1C1C]"
+          isZinatex ? "bg-[#2D4A3E]" : "bg-[#1C1C1C]"
         }`}
       >
         <h1 className="font-display text-3xl font-semibold text-white sm:text-4xl">
@@ -85,12 +95,17 @@ export default async function BrandPage({ params }: BrandPageProps) {
         </p>
       </div>
 
-      {/* Product grid */}
+      {/* Product grid with filters */}
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <BrandProductGrid
-          products={products}
-          categories={categories}
-          totalCount={totalCount}
+          slug={slug}
+          initialProducts={products}
+          initialTotal={totalCount}
+          availableCategories={categories}
+          availableCollections={collections}
+          availableColors={colors}
+          availableSizes={sizes}
+          isZinatex={isZinatex}
         />
       </div>
     </div>
