@@ -198,6 +198,7 @@ export default function CollectionClient({
               availableCollections={availableCollections}
               availableColors={availableColors}
               availableSizes={availableSizes}
+              availableSubcategories={availableSubcategories}
               filters={filters}
               onFiltersChange={handleFiltersChange}
             />

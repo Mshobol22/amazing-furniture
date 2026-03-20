@@ -198,6 +198,7 @@ export default function BrandProductGrid({
                 availableCollections={availableCollections}
                 availableColors={availableColors}
                 availableSizes={availableSizes}
+                availableSubcategories={availableSubcategories}
                 filters={filters}
                 onFiltersChange={handleFiltersChange}
                 isZinatex={isZinatex}

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { mapRowToProduct } from "@/lib/supabase/products";
+import {
+  mapRowToProduct,
+  applyAcmePlaceholderImageFilter,
+  isHiddenAcmePlaceholderProduct,
+} from "@/lib/supabase/products";
 
 const ALLOWED_SLUGS = new Set([
   "bed",
@@ -82,6 +86,9 @@ export async function GET(
     .from("products")
     .select("*", { count: "exact" });
 
+  // Hidden ACME placeholders (images[1]) should never appear in collection browsing.
+  query = applyAcmePlaceholderImageFilter(query);
+
   // Category filter — skip for 'all'
   if (slug !== "all") {
     query = query.eq("category", slug);
@@ -153,6 +160,11 @@ export async function GET(
   }
 
   let products = (data ?? []).map(mapRowToProduct);
+
+  // Ensure ACME placeholder products are never returned to the UI.
+  products = products.filter((p) =>
+    !isHiddenAcmePlaceholderProduct({ images: p.images })
+  );
 
   // Rug size filter — applied post-fetch (dimensions is JSONB)
   if (sizes.length > 0) {

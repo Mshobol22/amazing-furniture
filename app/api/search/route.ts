@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  applyAcmePlaceholderImageFilter,
+  isHiddenAcmePlaceholderProduct,
+} from "@/lib/supabase/products";
 
 // Category keyword mapping — user types natural language, we map to DB category
 const CATEGORY_MAP: Record<string, string> = {
@@ -90,7 +94,7 @@ export async function GET(request: NextRequest) {
     let categoryResults: Record<string, unknown>[] = [];
 
     if (tsQuery) {
-      const ftQuery = supabase
+      let ftQuery = supabase
         .from("products")
         .select("id, name, slug, price, sale_price, images, category, in_stock")
         .textSearch("search_vector", tsQuery, {
@@ -100,28 +104,38 @@ export async function GET(request: NextRequest) {
         .eq("in_stock", true)
         .limit(limit);
 
+      ftQuery = applyAcmePlaceholderImageFilter(ftQuery);
+
       const { data } = await ftQuery;
       ftResults = (data ?? []) as Record<string, unknown>[];
     }
 
     if (detectedCategory && ftResults.length < 5) {
-      const { data } = await supabase
+      let categoryQuery = supabase
         .from("products")
         .select("id, name, slug, price, sale_price, images, category, in_stock")
         .eq("category", detectedCategory)
         .eq("in_stock", true)
         .limit(limit);
+
+      categoryQuery = applyAcmePlaceholderImageFilter(categoryQuery);
+
+      const { data } = await categoryQuery;
       categoryResults = (data ?? []) as Record<string, unknown>[];
     }
 
     let fuzzyResults: Record<string, unknown>[] = [];
     if (ftResults.length < 3) {
-      const { data } = await supabase
+      let fuzzyQuery = supabase
         .from("products")
         .select("id, name, slug, price, sale_price, images, category, in_stock")
         .ilike("name", `%${query}%`)
         .eq("in_stock", true)
         .limit(limit);
+
+      fuzzyQuery = applyAcmePlaceholderImageFilter(fuzzyQuery);
+
+      const { data } = await fuzzyQuery;
       fuzzyResults = (data ?? []) as Record<string, unknown>[];
     }
 
@@ -136,29 +150,47 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const visible = merged.filter((p) =>
+      !isHiddenAcmePlaceholderProduct({
+        images: (p.images as string[]) ?? [],
+      })
+    );
+
     return NextResponse.json(
-      merged.slice(0, limit).map((p) => ({
+      visible.slice(0, limit).map((p) => ({
         id: p.id,
         name: p.name,
         slug: p.slug,
         price: (p.sale_price ?? p.price) as number,
         originalPrice: p.price as number,
-        onSale: !!(p.sale_price && (p.sale_price as number) < (p.price as number)),
+        onSale: !!(
+          p.sale_price && (p.sale_price as number) < (p.price as number)
+        ),
         image: (p.images as string[])?.[0] ?? null,
         category: p.category,
       }))
     );
   } catch (err) {
     console.error("Search error:", err);
-    const { data } = await supabase
+    let fallbackQuery = supabase
       .from("products")
       .select("id, name, slug, price, sale_price, images, category")
       .ilike("name", `%${query}%`)
       .eq("in_stock", true)
       .limit(limit);
 
+    fallbackQuery = applyAcmePlaceholderImageFilter(fallbackQuery);
+
+    const { data } = await fallbackQuery;
+
+    const visible = (data ?? []).filter((p) =>
+      !isHiddenAcmePlaceholderProduct({
+        images: (p.images as string[]) ?? [],
+      })
+    );
+
     return NextResponse.json(
-      (data ?? []).map((p) => ({
+      visible.map((p) => ({
         id: p.id,
         name: p.name,
         slug: p.slug,

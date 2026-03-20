@@ -23,6 +23,28 @@ export function mapRowToProduct(row: Record<string, unknown>): Product {
   };
 }
 
+// Hide ACME placeholder/coming-soon products from all public store browsing.
+// These products have placeholder text inside `images[1]` (JS index) URLs
+// such as "coming-soon" / "PHOTO-Coming-Soon" / "placeholder", but they
+// should not appear in collection/category listings, search results, or
+// homepage carousels until real ACME images are loaded.
+const ACME_PLACEHOLDER_IMAGE_MARKERS = ["coming-soon", "placeholder"];
+
+export function isHiddenAcmePlaceholderProduct(product: Pick<Product, "images">): boolean {
+  const leadImageUrl = product.images?.[1] ?? "";
+  const urlLower = typeof leadImageUrl === "string" ? leadImageUrl.toLowerCase() : "";
+  return ACME_PLACEHOLDER_IMAGE_MARKERS.some((m) => urlLower.includes(m));
+}
+
+export function applyAcmePlaceholderImageFilter(query: any): any {
+  // Intentionally no-op.
+  //
+  // Attempting to filter `images[2]` at the PostgREST layer causes query
+  // parsing/type errors with supabase-js. Instead, all store queries
+  // filter ACME placeholder products in JS via `isHiddenAcmePlaceholderProduct()`.
+  return query;
+}
+
 export async function getProducts(category?: string): Promise<Product[]> {
   const supabase = createAdminClient();
 
@@ -36,6 +58,8 @@ export async function getProducts(category?: string): Promise<Product[]> {
     query = query.eq("category", category);
   }
 
+  query = applyAcmePlaceholderImageFilter(query);
+
   const { data, error } = await query;
 
   if (error) {
@@ -43,7 +67,9 @@ export async function getProducts(category?: string): Promise<Product[]> {
     return [];
   }
 
-  return (data ?? []).map(mapRowToProduct);
+  return (data ?? [])
+    .map(mapRowToProduct)
+    .filter((p) => !isHiddenAcmePlaceholderProduct(p));
 }
 
 export async function getProductsInCategory(
@@ -51,28 +77,38 @@ export async function getProductsInCategory(
   limit: number
 ): Promise<Product[]> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("products")
     .select("*")
     .eq("category", category)
     .order("name", { ascending: true })
     .limit(limit);
 
+  query = applyAcmePlaceholderImageFilter(query);
+
+  const { data, error } = await query;
+
   if (error) {
     console.error("getProductsInCategory error:", error);
     return [];
   }
-  return (data ?? []).map(mapRowToProduct);
+  return (data ?? [])
+    .map(mapRowToProduct)
+    .filter((p) => !isHiddenAcmePlaceholderProduct(p));
 }
 
 export async function getProductCountByCategory(
   category: string
 ): Promise<number> {
   const supabase = createAdminClient();
-  const { count, error } = await supabase
+  let query = supabase
     .from("products")
     .select("*", { count: "exact", head: true })
     .eq("category", category);
+
+  query = applyAcmePlaceholderImageFilter(query);
+
+  const { count, error } = await query;
 
   if (error) {
     console.error("getProductCountByCategory error:", error);
@@ -83,9 +119,13 @@ export async function getProductCountByCategory(
 
 export async function getTotalProductCount(): Promise<number> {
   const supabase = createAdminClient();
-  const { count, error } = await supabase
+  let query = supabase
     .from("products")
     .select("*", { count: "exact", head: true });
+
+  query = applyAcmePlaceholderImageFilter(query);
+
+  const { count, error } = await query;
 
   if (error) {
     console.error("getTotalProductCount error:", error);
@@ -117,12 +157,16 @@ export async function getFeaturedProducts(): Promise<Product[]> {
   const products: Product[] = [];
 
   for (const category of categories) {
-    const { data, error } = await supabase
+    let query = supabase
       .from("products")
       .select("*")
       .eq("category", category)
       .order("price", { ascending: false })
       .limit(2);
+
+    query = applyAcmePlaceholderImageFilter(query);
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("[getFeaturedProducts] Supabase error for category", category, ":", error.message, error.details);
@@ -130,7 +174,11 @@ export async function getFeaturedProducts(): Promise<Product[]> {
     }
 
     if (data && data.length > 0) {
-      products.push(...data.map(mapRowToProduct));
+      products.push(
+        ...data
+          .map(mapRowToProduct)
+          .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+      );
     }
   }
 
@@ -149,23 +197,28 @@ export async function searchProducts(query: string): Promise<Product[]> {
   );
 
   if (!rpcError && Array.isArray(rpcData)) {
-    return (rpcData as Record<string, unknown>[]).map(mapRowToProduct);
+    return (rpcData as Record<string, unknown>[]).map(mapRowToProduct)
+      .filter((p) => !isHiddenAcmePlaceholderProduct(p));
   }
 
   // Fallback: ilike on name (when search_vector/RPC not yet deployed)
-  const { data, error } = await supabase
+  let queryBuilder = supabase
     .from("products")
     .select("*")
     .ilike("name", `%${query.trim()}%`)
     .order("created_at", { ascending: false })
     .limit(12);
 
+  queryBuilder = applyAcmePlaceholderImageFilter(queryBuilder);
+
+  const { data, error } = await queryBuilder;
+
   if (error) {
     console.error("searchProducts error:", error);
     return [];
   }
 
-  return (data ?? []).map(mapRowToProduct);
+  return (data ?? []).map(mapRowToProduct).filter((p) => !isHiddenAcmePlaceholderProduct(p));
 }
 
 // ── Homepage data fetchers ─────────────────────────────────────────────────
@@ -216,10 +269,12 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
   // Use per-manufacturer count queries to avoid Supabase's 1000-row default limit
   const countResults = await Promise.all(
     mfrs.map((m) =>
-      supabase
+      applyAcmePlaceholderImageFilter(
+        supabase
         .from("products")
         .select("id", { count: "exact", head: true })
         .eq("manufacturer", m.name as string)
+      )
     )
   );
 
@@ -250,12 +305,14 @@ export async function getCategoryImages(): Promise<CategoryImage[]> {
 
   const results = await Promise.all(
     categorySlugs.map((slug) =>
-      supabase
+      applyAcmePlaceholderImageFilter(
+        supabase
         .from("products")
         .select("images")
         .eq("category", slug)
         .not("images", "is", null)
         .limit(20)
+      )
     )
   );
 
@@ -264,7 +321,12 @@ export async function getCategoryImages(): Promise<CategoryImage[]> {
     // Find first product whose lead image is a valid https:// URL
     for (const row of rows) {
       const images = row.images as string[] | null;
-      if (Array.isArray(images) && images.length > 0 && images[0].startsWith("https://")) {
+      if (!Array.isArray(images) || images.length === 0) continue;
+
+      // Hide ACME placeholder products until real images are available.
+      if (isHiddenAcmePlaceholderProduct({ images })) continue;
+
+      if (images[0].startsWith("https://")) {
         return { slug, image: images[0] };
       }
     }
@@ -276,7 +338,7 @@ export async function getCategoryImages(): Promise<CategoryImage[]> {
 
 export async function getSaleProducts(limit = 8): Promise<Product[]> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("products")
     .select("*")
     .eq("on_sale", true)
@@ -285,11 +347,20 @@ export async function getSaleProducts(limit = 8): Promise<Product[]> {
     .order("price", { ascending: false })
     .limit(limit);
 
+  query = applyAcmePlaceholderImageFilter(query);
+
+  const { data, error } = await query;
+
   if (error || !data) return [];
 
   return data
     .map(mapRowToProduct)
-    .filter((p) => p.sale_price != null && p.sale_price < p.price);
+    .filter(
+      (p) =>
+        !isHiddenAcmePlaceholderProduct(p) &&
+        p.sale_price != null &&
+        p.sale_price < p.price
+    );
 }
 
 // ── Brand page data fetchers ──────────────────────────────────────────────
@@ -334,6 +405,8 @@ export async function getProductsByManufacturer(
     query = query.eq("category", category);
   }
 
+  query = applyAcmePlaceholderImageFilter(query);
+
   const { data, error, count } = await query;
 
   if (error) {
@@ -342,7 +415,9 @@ export async function getProductsByManufacturer(
   }
 
   return {
-    products: (data ?? []).map(mapRowToProduct),
+    products: (data ?? [])
+      .map(mapRowToProduct)
+      .filter((p) => !isHiddenAcmePlaceholderProduct(p)),
     total: count ?? 0,
   };
 }
@@ -351,10 +426,14 @@ export async function getManufacturerCategories(
   manufacturerName: string
 ): Promise<string[]> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("products")
     .select("category")
     .eq("manufacturer", manufacturerName);
+
+  query = applyAcmePlaceholderImageFilter(query);
+
+  const { data, error } = await query;
 
   if (error || !data) return [];
 
@@ -379,6 +458,8 @@ export async function getInitialCollectionProducts(
     query = query.eq("category", category);
   }
 
+  query = applyAcmePlaceholderImageFilter(query);
+
   const { data, count, error } = await query;
   if (error) {
     console.error("getInitialCollectionProducts error:", error);
@@ -386,7 +467,9 @@ export async function getInitialCollectionProducts(
   }
 
   return {
-    products: (data ?? []).map(mapRowToProduct),
+    products: (data ?? [])
+      .map(mapRowToProduct)
+      .filter((p) => !isHiddenAcmePlaceholderProduct(p)),
     total: count ?? 0,
   };
 }
@@ -416,6 +499,8 @@ export async function getCategoryManufacturerCounts(
     query = query.eq("category", category);
   }
 
+  query = applyAcmePlaceholderImageFilter(query);
+
   const { data, error } = await query;
   if (error || !data) return [];
 
@@ -443,6 +528,8 @@ export async function getCategoryCollections(
     query = query.eq("category", category);
   }
 
+  query = applyAcmePlaceholderImageFilter(query);
+
   const { data, error } = await query;
   if (error || !data) return [];
 
@@ -462,6 +549,8 @@ export async function getCategoryColors(category: string): Promise<string[]> {
   if (category !== "all") {
     query = query.eq("category", category);
   }
+
+  query = applyAcmePlaceholderImageFilter(query);
 
   const { data, error } = await query;
   if (error || !data) return [];
@@ -496,6 +585,8 @@ export async function getCategorySizes(category: string): Promise<string[]> {
     query = query.eq("category", category);
   }
 
+  query = applyAcmePlaceholderImageFilter(query);
+
   const { data, error } = await query;
   if (error || !data) return [];
 
@@ -522,6 +613,8 @@ export async function getCategorySubcategories(
     query = query.eq("category", category);
   }
 
+  query = applyAcmePlaceholderImageFilter(query);
+
   const { data, error } = await query;
   if (error || !data) return [];
 
@@ -540,11 +633,15 @@ export async function getManufacturerSubcategories(
   manufacturerName: string
 ): Promise<SubcategoryCount[]> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("products")
     .select("subcategory")
     .eq("manufacturer", manufacturerName)
     .not("subcategory", "is", null);
+
+  query = applyAcmePlaceholderImageFilter(query);
+
+  const { data, error } = await query;
 
   if (error || !data) return [];
 
@@ -563,11 +660,15 @@ export async function getManufacturerCollections(
   manufacturerName: string
 ): Promise<string[]> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("products")
     .select("collection")
     .eq("manufacturer", manufacturerName)
     .not("collection", "is", null);
+
+  query = applyAcmePlaceholderImageFilter(query);
+
+  const { data, error } = await query;
 
   if (error || !data) return [];
 
@@ -581,11 +682,15 @@ export async function getManufacturerColors(
   manufacturerName: string
 ): Promise<string[]> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("products")
     .select("color")
     .eq("manufacturer", manufacturerName)
     .not("color", "is", null);
+
+  query = applyAcmePlaceholderImageFilter(query);
+
+  const { data, error } = await query;
 
   if (error || !data) return [];
 
@@ -599,11 +704,15 @@ export async function getManufacturerSizes(
   manufacturerName: string
 ): Promise<string[]> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("products")
     .select("dimensions")
     .eq("manufacturer", manufacturerName)
     .not("dimensions", "is", null);
+
+  query = applyAcmePlaceholderImageFilter(query);
+
+  const { data, error } = await query;
 
   if (error || !data) return [];
 
@@ -644,6 +753,8 @@ export async function getFilteredProducts(
     .from("products")
     .select("*", { count: "exact" })
     .eq("manufacturer", params.manufacturerName);
+
+  query = applyAcmePlaceholderImageFilter(query);
 
   // Single category filter (backward compat)
   if (params.category && params.category !== "all") {
@@ -708,7 +819,9 @@ export async function getFilteredProducts(
   }
 
   // Handle sizes filter client-side (JSONB field)
-  let products = (data ?? []).map(mapRowToProduct);
+  let products = (data ?? [])
+    .map(mapRowToProduct)
+    .filter((p) => !isHiddenAcmePlaceholderProduct(p));
   if (params.sizes && params.sizes.length > 0) {
     const sizeSet = new Set(params.sizes);
     products = products.filter((p) => {
@@ -734,22 +847,32 @@ export interface SpotlightProduct {
 
 export async function getRugsSpotlight(): Promise<SpotlightProduct[]> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("products")
     .select("id, name, slug, price, images")
     .eq("category", "rug")
     .eq("in_stock", true)
     .order("rating", { ascending: false })
     .limit(4);
+
+  query = applyAcmePlaceholderImageFilter(query);
+
+  const { data, error } = await query;
   if (error) {
     console.error("getRugsSpotlight error:", error);
     return [];
   }
-  return (data ?? []).map((r) => ({
-    id: r.id as string,
-    name: r.name as string,
-    slug: r.slug as string,
-    price: Number(r.price),
-    images: (r.images as string[]) ?? [],
-  }));
+  return (data ?? [])
+    .filter((r) =>
+      !isHiddenAcmePlaceholderProduct({
+        images: (r.images as string[]) ?? [],
+      })
+    )
+    .map((r) => ({
+      id: r.id as string,
+      name: r.name as string,
+      slug: r.slug as string,
+      price: Number(r.price),
+      images: (r.images as string[]) ?? [],
+    }));
 }
