@@ -30,7 +30,7 @@ interface SearchResult {
 
 const CATEGORIES: Record<
   string,
-  { name: string; slug: string; subcategories: { label: string; filter?: string }[] }
+  { name: string; slug: string; subcategories: { label: string; filter?: string; href?: string; dividerTop?: boolean }[] }
 > = {
   bed: {
     name: "Beds & Bedroom",
@@ -70,26 +70,50 @@ const CATEGORIES: Record<
   table: {
     name: "Dining & Tables",
     slug: "table",
-    subcategories: [{ label: "All Tables" }],
+    subcategories: [
+      { label: "Dining Tables", href: "/collections/table?type=Dining+Tables" },
+      { label: "Coffee Tables", href: "/collections/table?type=Coffee+Tables" },
+      { label: "Accent & End Tables", href: "/collections/table?type=Accent+%26+End+Tables" },
+      { label: "Bar & Pub Tables", href: "/collections/table?type=Bar+%26+Pub+Tables" },
+      { label: "All Tables", href: "/collections/table", dividerTop: true },
+    ],
   },
   cabinet: {
     name: "Dressers & Cabinets",
     slug: "cabinet",
     subcategories: [
-      { label: "All Storage" },
-      { label: "Dressers", filter: "dresser" },
-      { label: "Chest of Drawers", filter: "drawer" },
+      { label: "Dressers", href: "/collections/cabinet?type=Dressers" },
+      { label: "Mirrors", href: "/collections/cabinet?type=Mirrors" },
+      { label: "Chests & Dressers", href: "/collections/cabinet?type=Chests+%26+Dressers" },
+      { label: "Nightstands", href: "/collections/cabinet?type=Nightstands" },
+      { label: "Cabinets & Storage", href: "/collections/cabinet?type=Cabinets+%26+Storage" },
+      { label: "All Cabinets", href: "/collections/cabinet", dividerTop: true },
     ],
   },
   "tv-stand": {
     name: "TV Stands",
     slug: "tv-stand",
-    subcategories: [{ label: "All TV Stands" }],
+    subcategories: [
+      { label: "TV Stands", href: "/collections/tv-stand?type=TV+Stands" },
+      { label: "Entertainment Centers", href: "/collections/tv-stand?type=Entertainment+Centers" },
+      { label: "TV Stands with Fireplace", href: "/collections/tv-stand?type=TV+Stands+with+Fireplace" },
+      { label: "All TV Stands", href: "/collections/tv-stand", dividerTop: true },
+    ],
   },
   rug: {
     name: "Rugs",
     slug: "rug",
-    subcategories: [{ label: "All Rugs" }],
+    subcategories: [
+      { label: "Area Rugs", href: "/collections/rug?type=Area+Rugs" },
+      { label: "Shag Rugs", href: "/collections/rug?type=Shag+Rugs" },
+      { label: "Runners", href: "/collections/rug?type=Runners" },
+      { label: "Round Rugs", href: "/collections/rug?type=Round+Rugs" },
+      { label: "Large Rugs", href: "/collections/rug?type=Large+Rugs" },
+      { label: "Medium Rugs", href: "/collections/rug?type=Medium+Rugs" },
+      { label: "Small Rugs", href: "/collections/rug?type=Small+Rugs" },
+      { label: "Bohemian & Tribal", href: "/collections/rug?type=Bohemian+%26+Tribal" },
+      { label: "All Rugs", href: "/collections/rug", dividerTop: true },
+    ],
   },
 };
 
@@ -424,14 +448,18 @@ export default function Navbar() {
                     onMouseLeave={handleDropdownLeave}
                   >
                     {cat.subcategories.map((sub) => {
-                      const href = sub.filter
+                      const href = sub.href
+                        ? sub.href
+                        : sub.filter
                         ? `/collections/${cat.slug}?filter=${encodeURIComponent(sub.filter)}`
                         : `/collections/${cat.slug}`;
                       return (
                         <Link
                           key={sub.label}
                           href={href}
-                          className="block py-1.5 text-sm text-[#1C1C1C] hover:text-[#2D4A3E] hover:underline"
+                          className={`block py-1.5 text-sm text-[#1C1C1C] hover:text-[#2D4A3E] hover:underline ${
+                            sub.dividerTop ? "mt-2 border-t border-[#ede8e3] pt-3" : ""
+                          }`}
                           onClick={() => setActiveDropdown(null)}
                         >
                           {sub.label}
@@ -516,7 +544,9 @@ export default function Navbar() {
                   {expandedMobileCategory === key && (
                     <div className="bg-gray-50/50 pb-2 pl-4">
                       {cat.subcategories.map((sub) => {
-                        const href = sub.filter
+                        const href = sub.href
+                          ? sub.href
+                          : sub.filter
                           ? `/collections/${cat.slug}?filter=${encodeURIComponent(sub.filter)}`
                           : `/collections/${cat.slug}`;
                         return (
@@ -527,7 +557,9 @@ export default function Navbar() {
                               setMobileMenuOpen(false);
                               setExpandedMobileCategory(null);
                             }}
-                            className="block py-2 text-sm text-[#6B6560] hover:text-[#2D4A3E]"
+                            className={`block py-2 text-sm text-[#6B6560] hover:text-[#2D4A3E] ${
+                              sub.dividerTop ? "mt-2 border-t border-[#ede8e3] pt-3" : ""
+                            }`}
                           >
                             {sub.label}
                           </Link>

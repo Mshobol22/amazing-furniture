@@ -326,35 +326,71 @@ export async function getCategoryImages(): Promise<CategoryImage[]> {
   const supabase = createAdminClient();
   const categorySlugs = ["sofa", "bed", "chair", "table", "cabinet", "tv-stand", "rug"];
 
-  const results = await Promise.all(
-    categorySlugs.map((slug) =>
-      applyAcmePlaceholderImageFilter(
-        supabase
-        .from("products")
-        .select("images")
-        .eq("category", slug)
-        .not("images", "is", null)
-        .limit(20)
-      )
-    )
-  );
+  async function getLeadImageForCategory(
+    slug: string,
+    options?: {
+      includeManufacturer?: string;
+      excludeManufacturer?: string;
+    }
+  ): Promise<string | null> {
+    let query = supabase
+      .from("products")
+      .select("images")
+      .eq("category", slug)
+      .eq("in_stock", true)
+      .not("images", "is", null)
+      .not("images", "eq", "{}")
+      .limit(20);
 
-  return categorySlugs.map((slug, i) => {
-    const rows = results[i].data ?? [];
+    if (options?.includeManufacturer) {
+      query = query.eq("manufacturer", options.includeManufacturer);
+    }
+    if (options?.excludeManufacturer) {
+      query = query.neq("manufacturer", options.excludeManufacturer);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("getCategoryImages query error:", error);
+      return null;
+    }
+
     // Find first product whose lead image is a valid https:// URL
-    for (const row of rows) {
+    for (const row of data ?? []) {
       const images = row.images as string[] | null;
       if (!Array.isArray(images) || images.length === 0) continue;
 
-      // Hide ACME placeholder products until real images are available.
+      // Hide placeholder/coming-soon lead images.
       if (isHiddenAcmePlaceholderProduct({ images })) continue;
 
       if (images[0].startsWith("https://")) {
-        return { slug, image: images[0] };
+        return images[0];
       }
     }
-    return { slug, image: null };
-  });
+
+    return null;
+  }
+
+  const imagesBySlug = await Promise.all(
+    categorySlugs.map(async (slug) => {
+      if (slug === "bed") {
+        const preferred = await getLeadImageForCategory(slug, { excludeManufacturer: "ACME" });
+        if (preferred) return { slug, image: preferred };
+        const fallback = await getLeadImageForCategory(slug);
+        return { slug, image: fallback };
+      }
+
+      if (slug === "rug") {
+        const zinatexImage = await getLeadImageForCategory(slug, { includeManufacturer: "Zinatex" });
+        return { slug, image: zinatexImage };
+      }
+
+      const defaultImage = await getLeadImageForCategory(slug);
+      return { slug, image: defaultImage };
+    })
+  );
+
+  return imagesBySlug;
 }
 
 // ── Sale products ─────────────────────────────────────────────────────────
