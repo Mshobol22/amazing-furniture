@@ -24,24 +24,34 @@ export function mapRowToProduct(row: Record<string, unknown>): Product {
 }
 
 // Hide ACME placeholder/coming-soon products from all public store browsing.
-// These products have placeholder text inside `images[1]` (JS index) URLs
+// These products have placeholder text inside lead image URLs
 // such as "coming-soon" / "PHOTO-Coming-Soon" / "placeholder", but they
 // should not appear in collection/category listings, search results, or
 // homepage carousels until real ACME images are loaded.
 const ACME_PLACEHOLDER_IMAGE_MARKERS = ["coming-soon", "placeholder"];
 
 export function isHiddenAcmePlaceholderProduct(product: Pick<Product, "images">): boolean {
-  const leadImageUrl = product.images?.[1] ?? "";
+  const leadImageUrl = product.images?.[0] ?? "";
   const urlLower = typeof leadImageUrl === "string" ? leadImageUrl.toLowerCase() : "";
   return ACME_PLACEHOLDER_IMAGE_MARKERS.some((m) => urlLower.includes(m));
+}
+
+function hasValidLeadImage(images: string[] | null | undefined): boolean {
+  if (!Array.isArray(images) || images.length === 0) return false;
+  const leadImageUrl = images[0];
+  if (typeof leadImageUrl !== "string" || leadImageUrl.length === 0) return false;
+  const urlLower = leadImageUrl.toLowerCase();
+  return !ACME_PLACEHOLDER_IMAGE_MARKERS.some((m) => urlLower.includes(m));
+}
+
+function filterRowsWithValidLeadImage<T extends { images?: string[] | null }>(rows: T[]): T[] {
+  return rows.filter((row) => hasValidLeadImage(row.images));
 }
 
 export function applyAcmePlaceholderImageFilter(query: any): any {
   return query
     .not("images", "is", null)
-    .not("images", "eq", "{}")
-    .not("images[1]", "ilike", "%coming-soon%")
-    .not("images[1]", "ilike", "%placeholder%");
+    .not("images", "eq", "{}");
 }
 
 export async function getProducts(category?: string): Promise<Product[]> {
@@ -102,35 +112,35 @@ export async function getProductCountByCategory(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("*", { count: "exact", head: true })
+    .select("images")
     .eq("category", category);
 
   query = applyAcmePlaceholderImageFilter(query);
 
-  const { count, error } = await query;
+  const { data, error } = await query;
 
   if (error) {
     console.error("getProductCountByCategory error:", error);
     return 0;
   }
-  return count ?? 0;
+  return filterRowsWithValidLeadImage((data ?? []) as { images?: string[] | null }[]).length;
 }
 
 export async function getTotalProductCount(): Promise<number> {
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("*", { count: "exact", head: true });
+    .select("images");
 
   query = applyAcmePlaceholderImageFilter(query);
 
-  const { count, error } = await query;
+  const { data, error } = await query;
 
   if (error) {
     console.error("getTotalProductCount error:", error);
     return 0;
   }
-  return count ?? 0;
+  return filterRowsWithValidLeadImage((data ?? []) as { images?: string[] | null }[]).length;
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
@@ -173,8 +183,9 @@ export async function getFeaturedProducts(): Promise<Product[]> {
     }
 
     if (data && data.length > 0) {
+      const filteredRows = filterRowsWithValidLeadImage(data as { images?: string[] | null }[]);
       products.push(
-        ...data
+        ...filteredRows
           .map(mapRowToProduct)
           .filter((p) => !isHiddenAcmePlaceholderProduct(p))
       );
@@ -196,7 +207,13 @@ export async function searchProducts(query: string): Promise<Product[]> {
   );
 
   if (!rpcError && Array.isArray(rpcData)) {
-    return (rpcData as Record<string, unknown>[]).map(mapRowToProduct)
+    const filteredRows = filterRowsWithValidLeadImage(
+      (rpcData as Record<string, unknown>[]).map((r) => ({
+        ...r,
+        images: (r.images as string[] | null | undefined) ?? [],
+      }))
+    );
+    return filteredRows.map(mapRowToProduct)
       .filter((p) => !isHiddenAcmePlaceholderProduct(p));
   }
 
@@ -270,15 +287,17 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
     mfrs.map((m) =>
       applyAcmePlaceholderImageFilter(
         supabase
-        .from("products")
-        .select("id", { count: "exact", head: true })
-        .eq("manufacturer", m.name as string)
+          .from("products")
+          .select("images")
+          .eq("manufacturer", m.name as string)
       )
     )
   );
 
   return mfrs.map((m, i) => {
-    const count = countResults[i].count ?? 0;
+    const count = filterRowsWithValidLeadImage(
+      ((countResults[i].data ?? []) as { images?: string[] | null }[])
+    ).length;
     const logoUrl = typeof m.logo_url === "string" && (m.logo_url as string).startsWith("https://")
       ? (m.logo_url as string)
       : null;
@@ -413,11 +432,12 @@ export async function getProductsByManufacturer(
     return { products: [], total: 0 };
   }
 
+  const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { images?: string[] | null }[]);
   return {
-    products: (data ?? [])
+    products: filteredRows
       .map(mapRowToProduct)
       .filter((p) => !isHiddenAcmePlaceholderProduct(p)),
-    total: count ?? 0,
+    total: filteredRows.length,
   };
 }
 
@@ -427,7 +447,7 @@ export async function getManufacturerCategories(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("category")
+    .select("category, images")
     .eq("manufacturer", manufacturerName);
 
   query = applyAcmePlaceholderImageFilter(query);
@@ -436,7 +456,8 @@ export async function getManufacturerCategories(
 
   if (error || !data) return [];
 
-  const unique = Array.from(new Set(data.map((r) => r.category as string))).sort();
+  const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { category?: string; images?: string[] | null }[]);
+  const unique = Array.from(new Set(filteredRows.map((r) => r.category as string))).sort();
   return unique;
 }
 
@@ -465,11 +486,12 @@ export async function getInitialCollectionProducts(
     return { products: [], total: 0 };
   }
 
+  const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { images?: string[] | null }[]);
   return {
-    products: (data ?? [])
+    products: filteredRows
       .map(mapRowToProduct)
       .filter((p) => !isHiddenAcmePlaceholderProduct(p)),
-    total: count ?? 0,
+    total: filteredRows.length,
   };
 }
 
@@ -491,7 +513,7 @@ export async function getCategoryManufacturerCounts(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("manufacturer")
+    .select("manufacturer, images")
     .not("manufacturer", "is", null);
 
   if (category !== "all") {
@@ -503,8 +525,9 @@ export async function getCategoryManufacturerCounts(
   const { data, error } = await query;
   if (error || !data) return [];
 
+  const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { manufacturer?: string; images?: string[] | null }[]);
   const counts = new Map<string, number>();
-  for (const row of data) {
+  for (const row of filteredRows) {
     const name = row.manufacturer as string;
     counts.set(name, (counts.get(name) ?? 0) + 1);
   }
@@ -520,7 +543,7 @@ export async function getCategoryCollections(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("collection")
+    .select("collection, images")
     .not("collection", "is", null);
 
   if (category !== "all") {
@@ -532,8 +555,9 @@ export async function getCategoryCollections(
   const { data, error } = await query;
   if (error || !data) return [];
 
+  const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { collection?: string; images?: string[] | null }[]);
   const unique = Array.from(
-    new Set(data.map((r) => r.collection as string).filter(Boolean))
+    new Set(filteredRows.map((r) => r.collection as string).filter(Boolean))
   ).sort();
   return unique;
 }
@@ -542,7 +566,7 @@ export async function getCategoryColors(category: string): Promise<string[]> {
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("color")
+    .select("color, images")
     .not("color", "is", null);
 
   if (category !== "all") {
@@ -557,7 +581,8 @@ export async function getCategoryColors(category: string): Promise<string[]> {
   if (category === "rug") {
     // Rug colors are comma-separated — extract individual color names
     const colors = new Set<string>();
-    for (const row of data) {
+    const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { color?: string; images?: string[] | null }[]);
+    for (const row of filteredRows) {
       const raw = row.color as string;
       raw.split(",").forEach((c) => {
         const trimmed = c.trim();
@@ -568,7 +593,11 @@ export async function getCategoryColors(category: string): Promise<string[]> {
   }
 
   const unique = Array.from(
-    new Set(data.map((r) => r.color as string).filter(Boolean))
+    new Set(
+      filterRowsWithValidLeadImage((data ?? []) as { color?: string; images?: string[] | null }[])
+        .map((r) => r.color as string)
+        .filter(Boolean)
+    )
   ).sort();
   return unique;
 }
@@ -577,7 +606,7 @@ export async function getCategorySizes(category: string): Promise<string[]> {
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("dimensions")
+    .select("dimensions, images")
     .not("dimensions", "is", null);
 
   if (category !== "all") {
@@ -590,7 +619,8 @@ export async function getCategorySizes(category: string): Promise<string[]> {
   if (error || !data) return [];
 
   const sizes = new Set<string>();
-  for (const row of data) {
+  const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { dimensions?: Record<string, unknown> | null; images?: string[] | null }[]);
+  for (const row of filteredRows) {
     const dims = row.dimensions as Record<string, unknown> | null;
     if (dims && typeof dims.size === "string") {
       sizes.add(dims.size);
@@ -605,7 +635,7 @@ export async function getCategorySubcategories(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("subcategory")
+    .select("subcategory, images")
     .not("subcategory", "is", null);
 
   if (category !== "all") {
@@ -617,8 +647,9 @@ export async function getCategorySubcategories(
   const { data, error } = await query;
   if (error || !data) return [];
 
+  const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { subcategory?: string; images?: string[] | null }[]);
   const counts: Record<string, number> = {};
-  for (const row of data) {
+  for (const row of filteredRows) {
     const sub = row.subcategory as string;
     if (sub) counts[sub] = (counts[sub] ?? 0) + 1;
   }
@@ -634,7 +665,7 @@ export async function getManufacturerSubcategories(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("subcategory")
+    .select("subcategory, images")
     .eq("manufacturer", manufacturerName)
     .not("subcategory", "is", null);
 
@@ -644,8 +675,9 @@ export async function getManufacturerSubcategories(
 
   if (error || !data) return [];
 
+  const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { subcategory?: string; images?: string[] | null }[]);
   const counts: Record<string, number> = {};
-  for (const row of data) {
+  for (const row of filteredRows) {
     const sub = row.subcategory as string;
     if (sub) counts[sub] = (counts[sub] ?? 0) + 1;
   }
@@ -661,7 +693,7 @@ export async function getManufacturerCollections(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("collection")
+    .select("collection, images")
     .eq("manufacturer", manufacturerName)
     .not("collection", "is", null);
 
@@ -671,8 +703,9 @@ export async function getManufacturerCollections(
 
   if (error || !data) return [];
 
+  const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { collection?: string; images?: string[] | null }[]);
   const unique = Array.from(
-    new Set(data.map((r) => r.collection as string).filter(Boolean))
+    new Set(filteredRows.map((r) => r.collection as string).filter(Boolean))
   ).sort();
   return unique;
 }
@@ -683,7 +716,7 @@ export async function getManufacturerColors(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("color")
+    .select("color, images")
     .eq("manufacturer", manufacturerName)
     .not("color", "is", null);
 
@@ -693,8 +726,9 @@ export async function getManufacturerColors(
 
   if (error || !data) return [];
 
+  const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { color?: string; images?: string[] | null }[]);
   const unique = Array.from(
-    new Set(data.map((r) => r.color as string).filter(Boolean))
+    new Set(filteredRows.map((r) => r.color as string).filter(Boolean))
   ).sort();
   return unique;
 }
@@ -705,7 +739,7 @@ export async function getManufacturerSizes(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("dimensions")
+    .select("dimensions, images")
     .eq("manufacturer", manufacturerName)
     .not("dimensions", "is", null);
 
@@ -716,7 +750,8 @@ export async function getManufacturerSizes(
   if (error || !data) return [];
 
   const sizes = new Set<string>();
-  for (const row of data) {
+  const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { dimensions?: Record<string, unknown> | null; images?: string[] | null }[]);
+  for (const row of filteredRows) {
     const dims = row.dimensions as Record<string, unknown> | null;
     if (dims && typeof dims.size === "string") {
       sizes.add(dims.size);
@@ -818,7 +853,8 @@ export async function getFilteredProducts(
   }
 
   // Handle sizes filter client-side (JSONB field)
-  let products = (data ?? [])
+  const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { images?: string[] | null }[]);
+  let products = filteredRows
     .map(mapRowToProduct)
     .filter((p) => !isHiddenAcmePlaceholderProduct(p));
   if (params.sizes && params.sizes.length > 0) {
@@ -832,7 +868,7 @@ export async function getFilteredProducts(
 
   return {
     products,
-    total: params.sizes && params.sizes.length > 0 ? products.length : (count ?? 0),
+    total: products.length,
   };
 }
 
@@ -861,12 +897,8 @@ export async function getRugsSpotlight(): Promise<SpotlightProduct[]> {
     console.error("getRugsSpotlight error:", error);
     return [];
   }
-  return (data ?? [])
-    .filter((r) =>
-      !isHiddenAcmePlaceholderProduct({
-        images: (r.images as string[]) ?? [],
-      })
-    )
+  const rows = (data ?? []) as Array<Record<string, unknown> & { images?: string[] | null }>;
+  return filterRowsWithValidLeadImage(rows)
     .map((r) => ({
       id: r.id as string,
       name: r.name as string,
