@@ -37,12 +37,11 @@ export function isHiddenAcmePlaceholderProduct(product: Pick<Product, "images">)
 }
 
 export function applyAcmePlaceholderImageFilter(query: any): any {
-  // Intentionally no-op.
-  //
-  // Attempting to filter `images[2]` at the PostgREST layer causes query
-  // parsing/type errors with supabase-js. Instead, all store queries
-  // filter ACME placeholder products in JS via `isHiddenAcmePlaceholderProduct()`.
-  return query;
+  return query
+    .not("images", "is", null)
+    .not("images", "eq", "{}")
+    .not("images[1]", "ilike", "%coming-soon%")
+    .not("images[1]", "ilike", "%placeholder%");
 }
 
 export async function getProducts(category?: string): Promise<Product[]> {
