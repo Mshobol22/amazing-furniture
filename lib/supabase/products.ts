@@ -282,22 +282,25 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
 
   if (!mfrs || mfrs.length === 0) return [];
 
-  // Use per-manufacturer count queries to avoid Supabase's 1000-row default limit
   const countResults = await Promise.all(
-    mfrs.map((m) =>
-      applyAcmePlaceholderImageFilter(
-        supabase
-          .from("products")
-          .select("images")
-          .eq("manufacturer", m.name as string)
-      )
-    )
+    mfrs.map(async (mfr) => {
+      const { count, error } = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("manufacturer", mfr.name as string)
+        .eq("in_stock", true);
+
+      if (error) {
+        console.error("getManufacturersWithCounts count error:", error);
+        return 0;
+      }
+
+      return count ?? 0;
+    })
   );
 
   return mfrs.map((m, i) => {
-    const count = filterRowsWithValidLeadImage(
-      ((countResults[i].data ?? []) as { images?: string[] | null }[])
-    ).length;
+    const count = countResults[i];
     const logoUrl = typeof m.logo_url === "string" && (m.logo_url as string).startsWith("https://")
       ? (m.logo_url as string)
       : null;
