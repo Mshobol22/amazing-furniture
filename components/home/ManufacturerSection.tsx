@@ -37,7 +37,7 @@ export default function ManufacturerSection({
         </h2>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {manufacturers.filter(m => m.is_active && m.count > 0).map((m) => {
+          {manufacturers.filter(m => m.is_active && (m.count ?? 0) > 0).map((m) => {
             const isComing =
               m.comingSoon || COMING_SOON.includes(m.name);
             const bgColor = BRAND_COLORS[m.name] ?? "#1C1C1C";
