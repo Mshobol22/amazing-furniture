@@ -50,7 +50,31 @@ export default function ContactPage() {
             <p className="text-sm text-warm-gray">
               support@amazinghomefurniture.com
             </p>
-            <p className="mt-1 text-sm text-warm-gray">(312) 555-0199</p>
+            <p className="mt-1 text-sm text-warm-gray">
+              <a href="tel:+17086255757" className="hover:text-charcoal hover:underline">
+                +1 (708) 625-5757
+              </a>
+            </p>
+            <p className="mt-1 text-sm text-warm-gray">
+              <a
+                href="https://www.google.com/maps/search/?api=1&query=6639+N+Clark+St,+Chicago,+IL+60626"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-charcoal hover:underline"
+              >
+                6639 N Clark St, Chicago, IL 60626
+              </a>
+            </p>
+            <p className="mt-2 text-sm">
+              <a
+                href="https://www.google.com/maps/dir/?api=1&destination=6639+N+Clark+St,+Chicago,+IL+60626"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-[#2D4A3E] hover:underline"
+              >
+                Get Directions
+              </a>
+            </p>
             <div className="mt-6">
               <h3 className="text-sm font-medium text-charcoal">Hours</h3>
               <p className="mt-1 text-sm text-warm-gray">
