@@ -22,10 +22,9 @@ interface CollectionClientProps {
 }
 
 const SORT_OPTIONS = [
-  { value: "name-asc", label: "Name (A-Z)" },
-  { value: "price-asc", label: "Price: Low to High" },
   { value: "price-desc", label: "Price: High to Low" },
-  { value: "newest", label: "Newest" },
+  { value: "price-asc", label: "Price: Low to High" },
+  { value: "name-asc", label: "Name: A to Z" },
 ];
 
 const LIMIT = 24;
@@ -45,7 +44,7 @@ function filtersFromParams(params: URLSearchParams): CollectionFilters {
     inStockOnly: params.get("inStock") === "true",
     priceMin: params.get("priceMin") || "",
     priceMax: params.get("priceMax") || "",
-    sort: params.get("sort") || "name-asc",
+    sort: params.get("sort") || "price-desc",
   };
 }
 
@@ -64,7 +63,7 @@ function buildSearchParams(
   if (filters.inStockOnly) p.set("inStock", "true");
   if (filters.priceMin) p.set("priceMin", filters.priceMin);
   if (filters.priceMax) p.set("priceMax", filters.priceMax);
-  if (filters.sort && filters.sort !== "name-asc") p.set("sort", filters.sort);
+  if (filters.sort && filters.sort !== "price-desc") p.set("sort", filters.sort);
   if (page > 1) p.set("page", String(page));
   return p;
 }

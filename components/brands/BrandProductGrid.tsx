@@ -23,10 +23,9 @@ interface BrandProductGridProps {
 }
 
 const SORT_OPTIONS = [
-  { value: "name-asc", label: "Name (A-Z)" },
-  { value: "price-asc", label: "Price: Low to High" },
   { value: "price-desc", label: "Price: High to Low" },
-  { value: "newest", label: "Newest" },
+  { value: "price-asc", label: "Price: Low to High" },
+  { value: "name-asc", label: "Name: A to Z" },
 ];
 
 function parseArrayParam(value: string | null): string[] {
@@ -44,7 +43,7 @@ function filtersFromParams(params: URLSearchParams): BrandFilters {
     inStockOnly: params.get("inStock") === "true",
     priceMin: params.get("priceMin") || "",
     priceMax: params.get("priceMax") || "",
-    sort: params.get("sort") || "name-asc",
+    sort: params.get("sort") || "price-desc",
   };
 }
 
@@ -63,7 +62,7 @@ function filtersToParams(filters: BrandFilters, page: number): URLSearchParams {
   if (filters.inStockOnly) params.set("inStock", "true");
   if (filters.priceMin) params.set("priceMin", filters.priceMin);
   if (filters.priceMax) params.set("priceMax", filters.priceMax);
-  if (filters.sort && filters.sort !== "name-asc")
+  if (filters.sort && filters.sort !== "price-desc")
     params.set("sort", filters.sort);
   if (page > 1) params.set("page", String(page));
   return params;
