@@ -286,7 +286,7 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
     mfrs.map(async (mfr) => {
       const { count, error } = await supabase
         .from("products")
-        .select("id", { count: "exact", head: true })
+        .select("*", { count: "exact", head: true })
         .eq("manufacturer", mfr.name as string)
         .eq("in_stock", true);
 
