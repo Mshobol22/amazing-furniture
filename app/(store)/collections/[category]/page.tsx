@@ -23,6 +23,17 @@ const ALLOWED_SLUGS = new Set([
   "all",
 ]);
 
+const CATEGORY_BG: Record<string, string> = {
+  sofa: "#1C3A5E",
+  bed: "#2C3E50",
+  chair: "#3D2B1F",
+  table: "#1E3A2F",
+  cabinet: "#2D2416",
+  "tv-stand": "#1A1A2E",
+  rug: "#2D4A3E",
+  all: "#1C1C1C",
+};
+
 const categoryMeta: Record<string, { title: string; description: string }> = {
   all: {
     title: "All Furniture | Amazing Home Furniture",
@@ -104,6 +115,7 @@ export default async function CollectionPage({
   params,
 }: CollectionPageProps) {
   const { category } = await params;
+  const heroBg = CATEGORY_BG[category] ?? "#1C1C1C";
 
   // Validate slug against allowed list — reject anything else
   if (!ALLOWED_SLUGS.has(category)) {
@@ -139,11 +151,14 @@ export default async function CollectionPage({
   return (
     <div className="min-h-screen bg-[#FAF8F5]">
       {/* Slim hero bar */}
-      <div className="flex flex-col items-center justify-center gap-1 bg-[#1C1C1C] py-5">
-        <h1 className="font-display text-xl font-semibold text-white md:text-2xl">
+      <div
+        className="flex flex-col items-center justify-center gap-1 py-5"
+        style={{ backgroundColor: heroBg }}
+      >
+        <h1 className="font-display text-xl font-semibold text-[#FAF8F5] md:text-2xl">
           {categoryLabel}
         </h1>
-        <p className="text-xs text-white/50">
+        <p className="text-xs text-[#FAF8F5]">
           {total.toLocaleString()} product{total !== 1 ? "s" : ""}
         </p>
       </div>

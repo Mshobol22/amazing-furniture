@@ -12,6 +12,13 @@ import {
 import BrandProductGrid from "@/components/brands/BrandProductGrid";
 import BrandNotifyForm from "@/components/brands/BrandNotifyForm";
 
+const BRAND_BG: Record<string, string> = {
+  "nationwide-fd": "#1B3A6B",
+  "united-furniture": "#5C3A1E",
+  acme: "#2D2D2D",
+  zinatex: "#2D4A3E",
+};
+
 interface BrandPageProps {
   params: Promise<{ slug: string }>;
 }
@@ -59,6 +66,7 @@ export default async function BrandPage({ params }: BrandPageProps) {
   }
 
   const isZinatex = manufacturer.slug === "zinatex";
+  const heroBg = BRAND_BG[slug] ?? "#1C1C1C";
 
   // Fetch initial products + all filter options in parallel
   const [
@@ -81,19 +89,18 @@ export default async function BrandPage({ params }: BrandPageProps) {
     <div className="min-h-screen bg-[#FAF8F5]">
       {/* Hero banner */}
       <div
-        className={`flex flex-col items-center justify-center px-4 py-12 text-center ${
-          isZinatex ? "bg-[#2D4A3E]" : "bg-[#1C1C1C]"
-        }`}
+        className="flex flex-col items-center justify-center px-4 py-12 text-center"
+        style={{ backgroundColor: heroBg }}
       >
-        <h1 className="font-display text-3xl font-semibold text-white sm:text-4xl">
+        <h1 className="font-display text-3xl font-semibold text-[#FAF8F5] sm:text-4xl">
           {isZinatex ? "Luxury Rugs & Floor Coverings" : manufacturer.name}
         </h1>
         {manufacturer.description && (
-          <p className="mt-3 max-w-lg text-sm text-white/70">
+          <p className="mt-3 max-w-lg text-sm text-[#FAF8F5]">
             {manufacturer.description}
           </p>
         )}
-        <p className="mt-2 text-xs text-white/50">
+        <p className="mt-2 text-xs text-[#FAF8F5]">
           {totalCount} product{totalCount !== 1 ? "s" : ""}
         </p>
       </div>

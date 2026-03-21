@@ -26,7 +26,10 @@ export default function ProductDetailClient({
       {/* Description — always visible */}
       {product.description && (
         <div className="mt-4 border-t border-gray-100 pt-4">
-          <p className="text-sm leading-relaxed text-warm-gray">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#2D4A3E] mb-2">
+            About This Product
+          </p>
+          <p className="text-[#1C1C1C] font-medium text-base leading-relaxed">
             {product.description}
           </p>
         </div>
