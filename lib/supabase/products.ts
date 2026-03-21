@@ -267,6 +267,7 @@ export interface ManufacturerWithCount {
   slug: string;
   description: string;
   logo_url: string | null;
+  is_active: boolean;
   count: number;
   comingSoon: boolean;
 }
@@ -309,6 +310,7 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
       slug: m.slug as string,
       description: m.description as string,
       logo_url: logoUrl,
+      is_active: Boolean(m.is_active),
       count,
       comingSoon: count === 0,
     };
