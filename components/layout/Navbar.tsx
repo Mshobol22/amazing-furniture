@@ -465,11 +465,7 @@ export default function Navbar() {
                     onMouseLeave={handleDropdownLeave}
                   >
                     {cat.subcategories.map((sub) => {
-                      const href = sub.href
-                        ? sub.href
-                        : sub.filter
-                        ? `/collections/${cat.slug}?filter=${encodeURIComponent(sub.filter)}`
-                        : `/collections/${cat.slug}`;
+                      const href = sub.href ?? `/collections/${cat.slug}`;
                       return (
                         <Link
                           key={sub.label}
@@ -561,11 +557,7 @@ export default function Navbar() {
                   {expandedMobileCategory === key && (
                     <div className="bg-gray-50/50 pb-2 pl-4">
                       {cat.subcategories.map((sub) => {
-                        const href = sub.href
-                          ? sub.href
-                          : sub.filter
-                          ? `/collections/${cat.slug}?filter=${encodeURIComponent(sub.filter)}`
-                          : `/collections/${cat.slug}`;
+                        const href = sub.href ?? `/collections/${cat.slug}`;
                         return (
                           <Link
                             key={sub.label}
