@@ -1,90 +1,185 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
   FilterSection,
-  CheckboxGroup,
   ColorSwatchGrid,
   COLOR_HEX,
 } from "@/components/ui/filter-helpers";
-import type { ManufacturerCount, SubcategoryCount } from "@/lib/supabase/products";
-
-export interface CollectionFilters {
-  types: string[];
-  manufacturers: string[];
-  collections: string[];
-  colors: string[];
-  sizes: string[];
-  inStockOnly: boolean;
-  priceMin: string;
-  priceMax: string;
-  sort: string;
-}
+import type { SubcategoryCount } from "@/lib/supabase/products";
 
 interface CollectionSidebarProps {
   slug: string;
-  manufacturerCounts: ManufacturerCount[];
-  availableCollections: string[];
-  availableColors: string[];
-  availableSizes: string[];
   availableSubcategories: SubcategoryCount[];
-  filters: CollectionFilters;
-  onFiltersChange: (filters: CollectionFilters) => void;
+}
+
+function parseArr(v: string | null): string[] {
+  if (!v) return [];
+  return v.split(",").filter(Boolean);
 }
 
 export default function CollectionSidebar({
   slug,
-  manufacturerCounts,
-  availableCollections,
-  availableColors,
-  availableSizes,
   availableSubcategories,
-  filters,
-  onFiltersChange,
 }: CollectionSidebarProps) {
-  const [pendingMin, setPendingMin] = useState(filters.priceMin);
-  const [pendingMax, setPendingMax] = useState(filters.priceMax);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Derive selections from URL (stable string deps for effects)
+  const typeParam = searchParams.get("type") ?? "";
+  const manufacturerParam = searchParams.get("manufacturers") ?? "";
+  const colorsParam = searchParams.get("colors") ?? "";
+  const priceMinParam = searchParams.get("priceMin") ?? "";
+  const priceMaxParam = searchParams.get("priceMax") ?? "";
+
+  const selectedTypes = parseArr(typeParam);
+  const selectedManufacturers = parseArr(manufacturerParam);
+  const selectedColors = parseArr(colorsParam);
+
+  // Dynamic filter options
+  const [manufacturers, setManufacturers] = useState<{ name: string; count: number }[]>([]);
+  const [colors, setColors] = useState<{ color: string; count: number }[]>([]);
+  const [colorsAvailable, setColorsAvailable] = useState(false);
+  const [mfrsLoading, setMfrsLoading] = useState(false);
+  const [colorsLoading, setColorsLoading] = useState(false);
+
+  // Local pending price (synced to URL on Apply)
+  const [pendingMin, setPendingMin] = useState(priceMinParam);
+  const [pendingMax, setPendingMax] = useState(priceMaxParam);
 
   const isRug = slug === "rug";
 
-  const update = (partial: Partial<CollectionFilters>) => {
-    onFiltersChange({ ...filters, ...partial });
+  // ── URL helper ────────────────────────────────────────────────────────────
+
+  const pushParams = useCallback(
+    (updates: Record<string, string | null>) => {
+      const p = new URLSearchParams(searchParams.toString());
+      p.delete("page");
+      for (const [k, v] of Object.entries(updates)) {
+        if (v === null) p.delete(k);
+        else p.set(k, v);
+      }
+      const qs = p.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [searchParams, router, pathname]
+  );
+
+  // ── Toggle handlers ───────────────────────────────────────────────────────
+
+  const toggleType = (name: string) => {
+    const next = selectedTypes.includes(name)
+      ? selectedTypes.filter((t) => t !== name)
+      : [...selectedTypes, name];
+    // Cascade: changing type resets brand + color
+    pushParams({
+      type: next.length > 0 ? next.join(",") : null,
+      manufacturers: null,
+      colors: null,
+    });
   };
+
+  const toggleManufacturer = (name: string) => {
+    const next = selectedManufacturers.includes(name)
+      ? selectedManufacturers.filter((m) => m !== name)
+      : [...selectedManufacturers, name];
+    // Cascade: changing brand resets color
+    pushParams({
+      manufacturers: next.length > 0 ? next.join(",") : null,
+      colors: null,
+    });
+  };
+
+  const toggleColor = (color: string) => {
+    const next = selectedColors.includes(color)
+      ? selectedColors.filter((c) => c !== color)
+      : [...selectedColors, color];
+    pushParams({ colors: next.length > 0 ? next.join(",") : null });
+  };
+
+  const setColorArray = (arr: string[]) => {
+    pushParams({ colors: arr.length > 0 ? arr.join(",") : null });
+  };
+
+  // ── Price ─────────────────────────────────────────────────────────────────
 
   const applyPrice = () => {
-    update({ priceMin: pendingMin, priceMax: pendingMax });
+    pushParams({
+      priceMin: pendingMin || null,
+      priceMax: pendingMax || null,
+    });
   };
 
+  // Sync pending price with URL (e.g. browser back or clearAll)
+  useEffect(() => { setPendingMin(priceMinParam); }, [priceMinParam]);
+  useEffect(() => { setPendingMax(priceMaxParam); }, [priceMaxParam]);
+
+  // ── Clear all ─────────────────────────────────────────────────────────────
+
   const activeCount =
-    filters.types.length +
-    filters.manufacturers.length +
-    filters.collections.length +
-    filters.colors.length +
-    filters.sizes.length +
-    (filters.inStockOnly ? 1 : 0) +
-    (filters.priceMin ? 1 : 0) +
-    (filters.priceMax ? 1 : 0);
+    selectedTypes.length +
+    selectedManufacturers.length +
+    selectedColors.length +
+    (priceMinParam ? 1 : 0) +
+    (priceMaxParam ? 1 : 0);
 
   const clearAll = () => {
     setPendingMin("");
     setPendingMax("");
-    onFiltersChange({
-      types: [],
-      manufacturers: [],
-      collections: [],
-      colors: [],
-      sizes: [],
-      inStockOnly: false,
-      priceMin: "",
-      priceMax: "",
-      sort: filters.sort,
-    });
+    const p = new URLSearchParams();
+    const sort = searchParams.get("sort");
+    if (sort) p.set("sort", sort);
+    const qs = p.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
-  const manufacturerNames = manufacturerCounts.map((m) => m.name);
-  const countMap = Object.fromEntries(
-    manufacturerCounts.map((m) => [m.name, m.count])
-  );
+  // ── Fetch manufacturers when type changes ─────────────────────────────────
+
+  useEffect(() => {
+    if (!typeParam) {
+      setManufacturers([]);
+      setColors([]);
+      setColorsAvailable(false);
+      return;
+    }
+    setMfrsLoading(true);
+    fetch(
+      `/api/collections/${slug}/filter-options?type=${encodeURIComponent(typeParam)}`
+    )
+      .then((r) => r.json())
+      .then((d) => setManufacturers(d.manufacturers ?? []))
+      .catch(() => setManufacturers([]))
+      .finally(() => setMfrsLoading(false));
+  }, [typeParam, slug]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Fetch colors when manufacturer changes ────────────────────────────────
+
+  useEffect(() => {
+    if (!typeParam || !manufacturerParam) {
+      setColors([]);
+      setColorsAvailable(false);
+      return;
+    }
+    setColorsLoading(true);
+    fetch(
+      `/api/collections/${slug}/filter-options?type=${encodeURIComponent(typeParam)}&manufacturer=${encodeURIComponent(manufacturerParam)}`
+    )
+      .then((r) => r.json())
+      .then((d) => {
+        const list: { color: string; count: number }[] = d.colors ?? [];
+        setColors(list);
+        setColorsAvailable(list.length > 0);
+      })
+      .catch(() => {
+        setColors([]);
+        setColorsAvailable(false);
+      })
+      .finally(() => setColorsLoading(false));
+  }, [typeParam, manufacturerParam, slug]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-1">
@@ -98,7 +193,7 @@ export default function CollectionSidebar({
         </button>
       )}
 
-      {/* Type (subcategory) — show when more than one option */}
+      {/* Step 1 — Type: always shown when multiple options exist */}
       {availableSubcategories.length > 1 && (
         <FilterSection title="Type">
           <div className="max-h-[220px] space-y-2 overflow-y-auto">
@@ -110,13 +205,8 @@ export default function CollectionSidebar({
                 <span className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    checked={filters.types.includes(name)}
-                    onChange={() => {
-                      const newTypes = filters.types.includes(name)
-                        ? filters.types.filter((t) => t !== name)
-                        : [...filters.types, name];
-                      update({ types: newTypes });
-                    }}
+                    checked={selectedTypes.includes(name)}
+                    onChange={() => toggleType(name)}
                     className="h-4 w-4 rounded border-[#1C1C1C]/20 text-[#2D4A3E] focus:ring-[#2D4A3E]"
                   />
                   {name}
@@ -130,65 +220,61 @@ export default function CollectionSidebar({
         </FilterSection>
       )}
 
-      {/* Manufacturer — hidden for rugs (show size/color instead) */}
-      {!isRug && manufacturerCounts.length > 0 && (
-        <FilterSection title="Manufacturer">
-          <CheckboxGroup
-            options={manufacturerNames}
-            selected={filters.manufacturers}
-            onChange={(manufacturers) => update({ manufacturers })}
-            countMap={countMap}
-          />
+      {/* Step 2 — Brand: only after type is selected */}
+      {selectedTypes.length > 0 && (
+        <FilterSection title="Brand">
+          {mfrsLoading ? (
+            <p className="text-xs text-[#1C1C1C]/40">Loading…</p>
+          ) : manufacturers.length === 0 ? (
+            <p className="text-xs text-[#1C1C1C]/40">No brands found</p>
+          ) : (
+            <div className="max-h-[220px] space-y-2 overflow-y-auto">
+              {manufacturers.map(({ name, count }) => (
+                <label
+                  key={name}
+                  className="flex cursor-pointer items-center justify-between gap-2 text-sm text-[#1C1C1C]/80 hover:text-[#1C1C1C]"
+                >
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedManufacturers.includes(name)}
+                      onChange={() => toggleManufacturer(name)}
+                      className="h-4 w-4 rounded border-[#1C1C1C]/20 text-[#2D4A3E] focus:ring-[#2D4A3E]"
+                    />
+                    {name}
+                  </span>
+                  <span className="text-xs text-[#1C1C1C]/40">
+                    {count.toLocaleString()}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
         </FilterSection>
       )}
 
-      {/* Collection — furniture only */}
-      {!isRug && availableCollections.length > 0 && (
-        <FilterSection title="Collection" defaultOpen={false}>
-          <CheckboxGroup
-            options={availableCollections}
-            selected={filters.collections}
-            onChange={(collections) => update({ collections })}
-          />
-        </FilterSection>
-      )}
-
-      {/* Rug size */}
-      {isRug && availableSizes.length > 0 && (
-        <FilterSection title="Rug Size">
-          <CheckboxGroup
-            options={availableSizes}
-            selected={filters.sizes}
-            onChange={(sizes) => update({ sizes })}
-          />
-        </FilterSection>
-      )}
-
-      {/* Color — swatches (filtered by COLOR_HEX) for rugs, checkboxes with dot for furniture */}
-      {availableColors.length > 0 && (
-        <FilterSection title="Color" defaultOpen={!isRug}>
-          {isRug ? (
+      {/* Step 3 — Color: only after brand selected AND colors exist */}
+      {selectedManufacturers.length > 0 && colorsAvailable && (
+        <FilterSection title="Color">
+          {colorsLoading ? (
+            <p className="text-xs text-[#1C1C1C]/40">Loading…</p>
+          ) : isRug ? (
             <ColorSwatchGrid
-              colors={availableColors}
-              selected={filters.colors}
-              onChange={(colors) => update({ colors })}
+              colors={colors.map((c) => c.color)}
+              selected={selectedColors}
+              onChange={setColorArray}
             />
           ) : (
             <div className="max-h-[220px] space-y-2 overflow-y-auto">
-              {availableColors.map((color) => (
+              {colors.map(({ color }) => (
                 <label
                   key={color}
                   className="flex cursor-pointer items-center gap-2 text-sm text-[#1C1C1C]/80 hover:text-[#1C1C1C]"
                 >
                   <input
                     type="checkbox"
-                    checked={filters.colors.includes(color)}
-                    onChange={() => {
-                      const newColors = filters.colors.includes(color)
-                        ? filters.colors.filter((c) => c !== color)
-                        : [...filters.colors, color];
-                      update({ colors: newColors });
-                    }}
+                    checked={selectedColors.includes(color)}
+                    onChange={() => toggleColor(color)}
                     className="h-4 w-4 rounded border-[#1C1C1C]/20 text-[#2D4A3E] focus:ring-[#2D4A3E]"
                   />
                   {COLOR_HEX[color] && (
@@ -205,20 +291,7 @@ export default function CollectionSidebar({
         </FilterSection>
       )}
 
-      {/* In Stock */}
-      <FilterSection title="Availability">
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-[#1C1C1C]/80">
-          <input
-            type="checkbox"
-            checked={filters.inStockOnly}
-            onChange={(e) => update({ inStockOnly: e.target.checked })}
-            className="h-4 w-4 rounded border-[#1C1C1C]/20 text-[#2D4A3E] focus:ring-[#2D4A3E]"
-          />
-          In stock only
-        </label>
-      </FilterSection>
-
-      {/* Price range with Apply button */}
+      {/* Step 4 — Price: always shown */}
       <FilterSection title="Price">
         <div className="space-y-2">
           <div className="flex items-center gap-2">

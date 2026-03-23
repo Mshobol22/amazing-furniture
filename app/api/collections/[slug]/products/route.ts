@@ -8,12 +8,14 @@ import {
 
 const ALLOWED_SLUGS = new Set([
   "bed",
+  "bedroom-furniture",
   "sofa",
   "chair",
   "table",
   "cabinet",
   "tv-stand",
   "rug",
+  "other",
   "all",
 ]);
 
@@ -75,7 +77,7 @@ export async function GET(
   const priceMin = parsePrice(url.get("priceMin"));
   const priceMax = parsePrice(url.get("priceMax"));
   const page = parsePageNumber(url.get("page"));
-  const sort = sanitize(url.get("sort") || "name-asc");
+  const sort = sanitize(url.get("sort") || "price-desc");
 
   // Clamp offset to max 10000
   const offset = Math.min((page - 1) * LIMIT, 10000);

@@ -1,23 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import ProductGrid from "@/components/products/ProductGrid";
-import CollectionSidebar, {
-  type CollectionFilters,
-} from "@/components/collections/CollectionSidebar";
+import CollectionSidebar from "@/components/collections/CollectionSidebar";
 import Pagination from "@/components/brands/Pagination";
 import type { Product } from "@/types";
-import type { ManufacturerCount, SubcategoryCount } from "@/lib/supabase/products";
+import type { SubcategoryCount } from "@/lib/supabase/products";
 
 interface CollectionClientProps {
   slug: string;
   initialProducts: Product[];
   initialTotal: number;
-  manufacturerCounts: ManufacturerCount[];
-  availableCollections: string[];
-  availableColors: string[];
-  availableSizes: string[];
   availableSubcategories: SubcategoryCount[];
 }
 
@@ -29,53 +23,15 @@ const SORT_OPTIONS = [
 
 const LIMIT = 24;
 
-function parseArray(v: string | null): string[] {
+function parseArr(v: string | null): string[] {
   if (!v) return [];
   return v.split(",").filter(Boolean);
-}
-
-function filtersFromParams(params: URLSearchParams): CollectionFilters {
-  return {
-    types: parseArray(params.get("type")),
-    manufacturers: parseArray(params.get("manufacturers")),
-    collections: parseArray(params.get("collections")),
-    colors: parseArray(params.get("colors")),
-    sizes: parseArray(params.get("sizes")),
-    inStockOnly: params.get("inStock") === "true",
-    priceMin: params.get("priceMin") || "",
-    priceMax: params.get("priceMax") || "",
-    sort: params.get("sort") || "price-desc",
-  };
-}
-
-function buildSearchParams(
-  filters: CollectionFilters,
-  page: number
-): URLSearchParams {
-  const p = new URLSearchParams();
-  if (filters.types.length > 0) p.set("type", filters.types.join(","));
-  if (filters.manufacturers.length > 0)
-    p.set("manufacturers", filters.manufacturers.join(","));
-  if (filters.collections.length > 0)
-    p.set("collections", filters.collections.join(","));
-  if (filters.colors.length > 0) p.set("colors", filters.colors.join(","));
-  if (filters.sizes.length > 0) p.set("sizes", filters.sizes.join(","));
-  if (filters.inStockOnly) p.set("inStock", "true");
-  if (filters.priceMin) p.set("priceMin", filters.priceMin);
-  if (filters.priceMax) p.set("priceMax", filters.priceMax);
-  if (filters.sort && filters.sort !== "price-desc") p.set("sort", filters.sort);
-  if (page > 1) p.set("page", String(page));
-  return p;
 }
 
 export default function CollectionClient({
   slug,
   initialProducts,
   initialTotal,
-  manufacturerCounts,
-  availableCollections,
-  availableColors,
-  availableSizes,
   availableSubcategories,
 }: CollectionClientProps) {
   const router = useRouter();
@@ -87,73 +43,63 @@ export default function CollectionClient({
   const [loading, setLoading] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  const [filters, setFilters] = useState<CollectionFilters>(() =>
-    filtersFromParams(searchParams)
-  );
-  const [page, setPage] = useState(() =>
-    Math.max(1, Number(searchParams.get("page") || "1"))
-  );
-
-  const totalPages = Math.ceil(total / LIMIT);
   const isInitialMount = useRef(true);
 
-  const fetchProducts = useCallback(
-    async (f: CollectionFilters, p: number) => {
-      setLoading(true);
-      try {
-        const params = buildSearchParams(f, p);
-        params.set("page", String(p));
-        params.set("limit", String(LIMIT));
-        const res = await fetch(
-          `/api/collections/${slug}/products?${params.toString()}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setProducts(data.products);
-          setTotal(data.total);
-        }
-      } catch (err) {
-        console.error("Failed to fetch collection products:", err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [slug]
-  );
+  const sort = searchParams.get("sort") || "price-desc";
+  const page = Math.max(1, Number(searchParams.get("page") || "1"));
+  const totalPages = Math.ceil(total / LIMIT);
+  const start = (page - 1) * LIMIT + 1;
+  const end = Math.min(page * LIMIT, total);
+
+  const activeFilterCount =
+    parseArr(searchParams.get("type")).length +
+    parseArr(searchParams.get("manufacturers")).length +
+    parseArr(searchParams.get("colors")).length +
+    (searchParams.get("priceMin") ? 1 : 0) +
+    (searchParams.get("priceMax") ? 1 : 0);
+
+  // ── Fetch products whenever URL changes ──────────────────────────────────
 
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
     }
-    const params = buildSearchParams(filters, page);
-    const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    fetchProducts(filters, page);
-  }, [filters, page, router, pathname, fetchProducts]);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("limit", String(LIMIT));
+    setLoading(true);
+    fetch(`/api/collections/${slug}/products?${params.toString()}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+      .then((data) => {
+        setProducts(data.products);
+        setTotal(data.total);
+      })
+      .catch((err) => console.error("Failed to fetch collection products:", err))
+      .finally(() => setLoading(false));
+  }, [searchParams, slug]);
 
-  const handleFiltersChange = (newFilters: CollectionFilters) => {
-    setFilters(newFilters);
-    setPage(1);
+  // ── Sort ─────────────────────────────────────────────────────────────────
+
+  const handleSortChange = (newSort: string) => {
+    const p = new URLSearchParams(searchParams.toString());
+    p.delete("page");
+    p.set("sort", newSort);
+    const qs = p.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
+  // ── Pagination ───────────────────────────────────────────────────────────
+
   const handlePageChange = (newPage: number) => {
-    setPage(newPage);
+    const p = new URLSearchParams(searchParams.toString());
+    if (newPage === 1) p.delete("page");
+    else p.set("page", String(newPage));
+    const qs = p.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const activeFilterCount =
-    filters.types.length +
-    filters.manufacturers.length +
-    filters.collections.length +
-    filters.colors.length +
-    filters.sizes.length +
-    (filters.inStockOnly ? 1 : 0) +
-    (filters.priceMin ? 1 : 0) +
-    (filters.priceMax ? 1 : 0);
-
-  const start = (page - 1) * LIMIT + 1;
-  const end = Math.min(page * LIMIT, total);
+  // ── Render ───────────────────────────────────────────────────────────────
 
   return (
     <div className="flex gap-6">
@@ -161,17 +107,11 @@ export default function CollectionClient({
       <aside className="hidden w-64 shrink-0 md:block">
         <CollectionSidebar
           slug={slug}
-          manufacturerCounts={manufacturerCounts}
-          availableCollections={availableCollections}
-          availableColors={availableColors}
-          availableSizes={availableSizes}
           availableSubcategories={availableSubcategories}
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
         />
       </aside>
 
-      {/* Mobile filter drawer (z-40 — navbar stays above at z-50) */}
+      {/* Mobile filter drawer */}
       {mobileFiltersOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div
@@ -193,13 +133,7 @@ export default function CollectionClient({
             </div>
             <CollectionSidebar
               slug={slug}
-              manufacturerCounts={manufacturerCounts}
-              availableCollections={availableCollections}
-              availableColors={availableColors}
-              availableSizes={availableSizes}
               availableSubcategories={availableSubcategories}
-              filters={filters}
-              onFiltersChange={handleFiltersChange}
             />
             <button
               type="button"
@@ -254,10 +188,8 @@ export default function CollectionClient({
 
           {/* Sort */}
           <select
-            value={filters.sort}
-            onChange={(e) =>
-              handleFiltersChange({ ...filters, sort: e.target.value })
-            }
+            value={sort}
+            onChange={(e) => handleSortChange(e.target.value)}
             className="rounded-lg border border-[#1C1C1C]/15 bg-white px-3 py-2 text-sm text-[#1C1C1C] focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]"
           >
             {SORT_OPTIONS.map((opt) => (

@@ -6,18 +6,10 @@ import {
   applyAcmePlaceholderImageFilter,
   mapRowToProduct,
   isHiddenAcmePlaceholderProduct,
+  getCategorySubcategories,
 } from "@/lib/supabase/products";
-import {
-  parseFiltersFromSearchParams,
-  buildSupabaseQuery,
-  buildFilterMeta,
-} from "@/lib/filters";
 import { getCategoryDisplayName } from "@/lib/collection-utils";
-import ProductSidebar from "@/components/store/ProductSidebar";
-import ActiveFilterChips from "@/components/store/ActiveFilterChips";
-import SortDropdown from "@/components/store/SortDropdown";
-import MobileFilterBar from "@/components/store/MobileFilterBar";
-import ProductGrid from "@/components/products/ProductGrid";
+import CollectionClient from "@/components/collections/CollectionClient";
 
 const ALLOWED_SLUGS = new Set([
   "bed",
@@ -98,6 +90,22 @@ const categoryMeta: Record<string, { title: string; description: string }> = {
   },
 };
 
+const LIMIT = 24;
+
+// Sanitizers matching the products route
+function sanitizeType(v: string) {
+  return v.replace(/[^a-zA-Z0-9 &\-]/g, "").trim();
+}
+function sanitize(v: string) {
+  return v.replace(/[^a-zA-Z0-9 ,.\-]/g, "").trim();
+}
+function parsePrice(v: string | undefined): number | undefined {
+  if (!v) return undefined;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 0 || n > 99999) return undefined;
+  return n;
+}
+
 interface CollectionPageProps {
   params: Promise<{ category: string }>;
   searchParams: Promise<Record<string, string | string[]>>;
@@ -146,46 +154,79 @@ export default async function CollectionPage({
   const categoryLabel =
     category === "all" ? "All Products" : getCategoryDisplayName(category);
 
-  const supabase = createAdminClient();
-
-  // ── Fetch filter metadata scoped to this category ──────────────────────
-  let metaQuery = supabase
-    .from("products")
-    .select(
-      "manufacturer, category, color, material, collection, price, in_stock, on_sale, images"
-    )
-    .not("images", "is", null)
-    .not("images", "eq", "{}");
-
-  if (category !== "all") {
-    metaQuery = metaQuery.eq("category", category);
-  }
-
-  const { data: rawMeta } = await metaQuery;
-  const filterMeta = buildFilterMeta(rawMeta ?? []);
-
-  // ── Parse URL filters ──────────────────────────────────────────────────
+  // Flatten multi-value params to single string
   const flat: Record<string, string> = {};
   for (const [k, v] of Object.entries(rawParams)) {
     flat[k] = Array.isArray(v) ? v[0] : v;
   }
-  const urlParams = new URLSearchParams(flat);
-  const filters = parseFiltersFromSearchParams(urlParams);
 
-  // ── Fetch filtered products ────────────────────────────────────────────
-  let productQuery = supabase.from("products").select("*");
+  // ── Server-side data ───────────────────────────────────────────────────────
+
+  const supabase = createAdminClient();
+
+  const [availableSubcategories] = await Promise.all([
+    getCategorySubcategories(category),
+  ]);
+
+  // Parse URL filters for SSR initial products (mirrors the products route logic)
+  const types = (flat["type"] ?? "")
+    .split(",")
+    .map(sanitizeType)
+    .filter(Boolean);
+  const manufacturers = (flat["manufacturers"] ?? "")
+    .split(",")
+    .map(sanitize)
+    .filter(Boolean);
+  const colors = (flat["colors"] ?? "")
+    .split(",")
+    .map(sanitize)
+    .filter(Boolean);
+  const priceMin = parsePrice(flat["priceMin"]);
+  const priceMax = parsePrice(flat["priceMax"]);
+  const sort = sanitize(flat["sort"] || "price-desc");
+  const page = Math.max(1, Math.min(Number(flat["page"] || "1"), 500));
+  const offset = Math.min((page - 1) * LIMIT, 10000);
+
+  let productQuery = supabase
+    .from("products")
+    .select("*", { count: "exact" });
+
+  productQuery = applyAcmePlaceholderImageFilter(productQuery);
 
   if (category !== "all") {
     productQuery = productQuery.eq("category", category);
   }
+  if (types.length > 0) productQuery = productQuery.in("subcategory", types);
+  if (manufacturers.length > 0) productQuery = productQuery.in("manufacturer", manufacturers);
+  if (colors.length > 0) {
+    if (category === "rug") {
+      const colorFilter = colors.map((c) => `color.ilike.%${c}%`).join(",");
+      productQuery = productQuery.or(colorFilter);
+    } else {
+      productQuery = productQuery.in("color", colors);
+    }
+  }
+  if (priceMin != null) productQuery = productQuery.gte("price", priceMin);
+  if (priceMax != null) productQuery = productQuery.lte("price", priceMax);
 
-  productQuery = applyAcmePlaceholderImageFilter(productQuery);
-  productQuery = buildSupabaseQuery(supabase, productQuery, filters);
+  switch (sort) {
+    case "price-asc":
+      productQuery = productQuery.order("price", { ascending: true });
+      break;
+    case "price-desc":
+      productQuery = productQuery.order("price", { ascending: false });
+      break;
+    default:
+      productQuery = productQuery.order("price", { ascending: false });
+  }
 
-  const { data: rawProducts } = await productQuery;
-  const products = (rawProducts ?? [])
+  productQuery = productQuery.range(offset, offset + LIMIT - 1);
+
+  const { data: rawProducts, count } = await productQuery;
+  const initialProducts = (rawProducts ?? [])
     .map(mapRowToProduct)
     .filter((p) => !isHiddenAcmePlaceholderProduct(p));
+  const initialTotal = count ?? 0;
 
   return (
     <div className="min-h-screen bg-[#FAF8F5]">
@@ -198,56 +239,21 @@ export default async function CollectionPage({
           {categoryLabel}
         </h1>
         <p className="text-xs text-[#FAF8F5]/70">
-          {filterMeta.length.toLocaleString()} product
-          {filterMeta.length !== 1 ? "s" : ""}
+          {initialTotal.toLocaleString()} product
+          {initialTotal !== 1 ? "s" : ""}
         </p>
       </div>
 
-      {/* Mobile filter bar */}
-      <Suspense fallback={null}>
-        <MobileFilterBar
-          filterMeta={filterMeta}
-          total={products.length}
-          hideBrand={false}
-          hideCategory={category !== "all"}
-        />
-      </Suspense>
-
-      {/* Two-column layout */}
+      {/* Content */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex gap-8">
-          {/* Desktop sidebar */}
-          <aside className="hidden w-64 shrink-0 md:block">
-            <div className="sticky top-20 max-h-[calc(100vh-100px)] overflow-y-auto pr-2">
-              <Suspense fallback={null}>
-                <ProductSidebar
-                  filterMeta={filterMeta}
-                  hideBrand={false}
-                  hideCategory={category !== "all"}
-                />
-              </Suspense>
-            </div>
-          </aside>
-
-          {/* Main content */}
-          <main className="min-w-0 flex-1">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <Suspense fallback={null}>
-                <ActiveFilterChips />
-              </Suspense>
-              <Suspense fallback={null}>
-                <SortDropdown />
-              </Suspense>
-            </div>
-
-            <p className="mb-4 text-sm text-[#1C1C1C]/60">
-              {products.length.toLocaleString()} product
-              {products.length !== 1 ? "s" : ""}
-            </p>
-
-            <ProductGrid products={products} />
-          </main>
-        </div>
+        <Suspense fallback={null}>
+          <CollectionClient
+            slug={category}
+            initialProducts={initialProducts}
+            initialTotal={initialTotal}
+            availableSubcategories={availableSubcategories}
+          />
+        </Suspense>
       </div>
     </div>
   );
