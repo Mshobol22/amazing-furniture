@@ -1,9 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CartItem, Product } from "@/types";
+import type { CartItem, Product, ProductVariant } from "@/types";
 
 export const getEffectivePrice = (p: Product) =>
   p.on_sale && p.sale_price != null ? p.sale_price : p.price;
+
+export const getCartItemPrice = (item: CartItem) =>
+  item.variant_price ?? getEffectivePrice(item.product);
 
 const GUEST_CART_KEY = "guest_cart";
 
@@ -71,8 +74,9 @@ interface CartStore {
   items: CartItem[];
   isOpen: boolean;
   addItem: (product: Product, quantity?: number) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addVariantItem: (product: Product, variant: ProductVariant, quantity?: number) => void;
+  removeItem: (productId: string, variantId?: string) => void;
+  updateQuantity: (productId: string, quantity: number, variantId?: string) => void;
   clearCart: () => void;
   setItems: (items: CartItem[]) => void;
   openCart: () => void;
@@ -88,12 +92,12 @@ const useCartStoreBase = create<CartStore>()(
       addItem: (product, quantity = 1) =>
         set((state) => {
           const existing = state.items.find(
-            (item) => item.product.id === product.id
+            (item) => item.product.id === product.id && !item.variant_id
           );
           if (existing) {
             return {
               items: state.items.map((item) =>
-                item.product.id === product.id
+                item.product.id === product.id && !item.variant_id
                   ? { ...item, quantity: item.quantity + quantity }
                   : item
               ),
@@ -104,21 +108,58 @@ const useCartStoreBase = create<CartStore>()(
           };
         }),
 
-      removeItem: (productId) =>
-        set((state) => ({
-          items: state.items.filter((item) => item.product.id !== productId),
-        })),
-
-      updateQuantity: (productId, quantity) =>
+      addVariantItem: (product, variant, quantity = 1) =>
         set((state) => {
-          if (quantity <= 0) {
+          const existing = state.items.find(
+            (item) => item.product.id === product.id && item.variant_id === variant.id
+          );
+          if (existing) {
             return {
-              items: state.items.filter((item) => item.product.id !== productId),
+              items: state.items.map((item) =>
+                item.product.id === product.id && item.variant_id === variant.id
+                  ? { ...item, quantity: item.quantity + quantity }
+                  : item
+              ),
             };
           }
           return {
+            items: [
+              ...state.items,
+              {
+                product,
+                quantity,
+                variant_id: variant.id,
+                variant_sku: variant.sku,
+                variant_size: variant.size ?? undefined,
+                variant_color: variant.color ?? undefined,
+                variant_price: variant.price,
+                variant_image: variant.image_url ?? undefined,
+              },
+            ],
+          };
+        }),
+
+      removeItem: (productId, variantId) =>
+        set((state) => ({
+          items: state.items.filter((item) =>
+            variantId
+              ? !(item.product.id === productId && item.variant_id === variantId)
+              : !(item.product.id === productId && !item.variant_id)
+          ),
+        })),
+
+      updateQuantity: (productId, quantity, variantId) =>
+        set((state) => {
+          const matchFn = (item: CartItem) =>
+            variantId
+              ? item.product.id === productId && item.variant_id === variantId
+              : item.product.id === productId && !item.variant_id;
+          if (quantity <= 0) {
+            return { items: state.items.filter((item) => !matchFn(item)) };
+          }
+          return {
             items: state.items.map((item) =>
-              item.product.id === productId ? { ...item, quantity } : item
+              matchFn(item) ? { ...item, quantity } : item
             ),
           };
         }),
@@ -148,7 +189,7 @@ useCartStoreBase.subscribe((state) => {
 export const useCartTotal = () =>
   useCartStoreBase((state) =>
     state.items.reduce(
-      (sum, item) => sum + getEffectivePrice(item.product) * item.quantity,
+      (sum, item) => sum + getCartItemPrice(item) * item.quantity,
       0
     )
   );

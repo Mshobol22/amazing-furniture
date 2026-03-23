@@ -142,6 +142,7 @@ interface ProductImageGalleryProps {
   productName: string;
   onSale?: boolean;
   salePrice?: number | null;
+  primaryImageUrl?: string | null;
 }
 
 export default function ProductImageGallery({
@@ -149,15 +150,21 @@ export default function ProductImageGallery({
   productName,
   onSale,
   salePrice,
+  primaryImageUrl,
 }: ProductImageGalleryProps) {
   const images = getImages(rawImages);
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  useEffect(() => {
+    if (primaryImageUrl) setSelectedIndex(0);
+  }, [primaryImageUrl]);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [zoomOrigin, setZoomOrigin] = useState("center center");
   const [isZoomed, setIsZoomed] = useState(false);
   const touchStartX = useRef(0);
 
   const safe = clampIndex(selectedIndex, images.length);
+  const activeImage = (primaryImageUrl && safe === 0) ? primaryImageUrl : images[safe];
 
   const goPrev = useCallback(() => {
     setSelectedIndex((i) => (i > 0 ? i - 1 : images.length - 1));
@@ -241,7 +248,7 @@ export default function ProductImageGallery({
           )}
 
           <Image
-            src={proxyImage(images[safe])}
+            src={proxyImage(activeImage)}
             alt={productName}
             fill
             className="object-contain transition-transform duration-150"
@@ -316,7 +323,7 @@ export default function ProductImageGallery({
           )}
 
           <Image
-            src={proxyImage(images[safe])}
+            src={proxyImage(activeImage)}
             alt={productName}
             fill
             className="object-contain transition-opacity duration-150"

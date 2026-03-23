@@ -5,10 +5,13 @@ import {
   getProductBySlug,
   getProducts,
 } from "@/lib/supabase/products";
+import { createAdminClient } from "@/lib/supabase/admin";
 import ProductDetailClient from "@/components/products/ProductDetailClient";
 import ProductImageGallery from "@/components/products/ProductImageGallery";
+import ProductVariantPageClient from "@/components/products/ProductVariantPageClient";
 import ProductCard from "@/components/products/ProductCard";
 import type { Metadata } from "next";
+import type { ProductVariant } from "@/types";
 
 function enrichProductTitle(name: string, category: string): string {
   const categoryKeywords: Record<string, string> = {
@@ -68,6 +71,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 
+  // Fetch variants for products that support them (e.g. Zinatex rugs)
+  let variants: ProductVariant[] = [];
+  if (product.has_variants) {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from("product_variants")
+      .select("*")
+      .eq("product_id", product.id)
+      .order("sort_order", { ascending: true })
+      .order("color", { ascending: true });
+    variants = (data ?? []) as ProductVariant[];
+  }
+
   const categoryProducts = await getProducts(product.category);
   const relatedProducts = categoryProducts
     .filter((p) => p.id !== product.id)
@@ -97,81 +113,87 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </nav>
 
         {/* Main layout: 55% image, 45% info */}
-        <div className="mb-8 grid gap-6 lg:grid-cols-[55%_1fr]">
-          {/* Image gallery */}
-          <ProductImageGallery
-            rawImages={product.images}
-            productName={product.name}
-            onSale={product.on_sale}
-            salePrice={product.sale_price}
-          />
+        {product.has_variants && variants.length > 0 ? (
+          /* Variant products (e.g. Zinatex rugs) — client wrapper handles image sync */
+          <ProductVariantPageClient product={product} variants={variants} />
+        ) : (
+          /* Standard products — existing layout unchanged */
+          <div className="mb-8 grid gap-6 lg:grid-cols-[55%_1fr]">
+            {/* Image gallery */}
+            <ProductImageGallery
+              rawImages={product.images}
+              productName={product.name}
+              onSale={product.on_sale}
+              salePrice={product.sale_price}
+            />
 
-          {/* Product info */}
-          <div>
-            <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#1C1C1C]">
-              {product.name}
-            </h1>
+            {/* Product info */}
+            <div>
+              <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#1C1C1C]">
+                {product.name}
+              </h1>
 
-            {/* Price */}
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {product.on_sale && product.sale_price != null ? (
-                <>
-                  <span
-                    className="text-2xl font-semibold"
-                    style={{ color: "#DC2626" }}
-                  >
-                    ${product.sale_price.toLocaleString()}
-                  </span>
-                  <span className="text-lg text-warm-gray line-through">
-                    ${product.price.toLocaleString()}
-                  </span>
-                  <span
-                    className="rounded px-2 py-0.5 text-sm font-semibold text-white"
-                    style={{ backgroundColor: "#DC2626" }}
-                  >
-                    {Math.round(
-                      (1 - product.sale_price / product.price) * 100
-                    )}
-                    % OFF
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className="text-2xl font-semibold text-charcoal">
-                    ${product.price.toLocaleString()}
-                  </span>
-                  {product.compare_price != null &&
-                    product.compare_price > product.price && (
-                      <span className="text-lg text-warm-gray line-through">
-                        ${product.compare_price.toLocaleString()}
-                      </span>
-                    )}
-                </>
+              {/* Price */}
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {product.on_sale && product.sale_price != null ? (
+                  <>
+                    <span
+                      className="text-2xl font-semibold"
+                      style={{ color: "#DC2626" }}
+                    >
+                      ${product.sale_price.toLocaleString()}
+                    </span>
+                    <span className="text-lg text-warm-gray line-through">
+                      ${product.price.toLocaleString()}
+                    </span>
+                    <span
+                      className="rounded px-2 py-0.5 text-sm font-semibold text-white"
+                      style={{ backgroundColor: "#DC2626" }}
+                    >
+                      {Math.round(
+                        (1 - product.sale_price / product.price) * 100
+                      )}
+                      % OFF
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-2xl font-semibold text-charcoal">
+                      ${product.price.toLocaleString()}
+                    </span>
+                    {product.compare_price != null &&
+                      product.compare_price > product.price && (
+                        <span className="text-lg text-warm-gray line-through">
+                          ${product.compare_price.toLocaleString()}
+                        </span>
+                      )}
+                  </>
+                )}
+              </div>
+              {product.on_sale && product.sale_price != null && (
+                <p className="mt-1 text-sm font-medium text-green-700">
+                  You save ${(product.price - product.sale_price).toFixed(2)}
+                </p>
               )}
-            </div>
-            {product.on_sale && product.sale_price != null && (
-              <p className="mt-1 text-sm font-medium text-green-700">
-                You save ${(product.price - product.sale_price).toFixed(2)}
-              </p>
-            )}
 
-            {/* In stock badge - default to In Stock unless explicitly out of stock */}
-            <div className="mt-4">
-              {product.in_stock !== false ? (
-                <span className="inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
-                  In Stock
-                </span>
-              ) : (
-                <span className="inline-block rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800">
-                  Out of Stock
-                </span>
-              )}
-            </div>
+              {/* In stock badge - default to In Stock unless explicitly out of stock */}
+              <div className="mt-4">
+                {product.in_stock !== false ? (
+                  <span className="inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
+                    In Stock
+                  </span>
+                ) : (
+                  <span className="inline-block rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800">
+                    Out of Stock
+                  </span>
+                )}
+              </div>
 
-            {/* Quantity + Add to Cart + collapsible description (client) */}
-            <ProductDetailClient product={product} />
+              {/* Quantity + Add to Cart + collapsible description (client) */}
+              <ProductDetailClient product={product} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* You May Also Like — horizontal scroll */}
         {relatedProducts.length > 0 && (

@@ -16,11 +16,33 @@ export interface Product {
   tags: string[];
   created_at: string;
   manufacturer?: string | null;
+  has_variants?: boolean;
+  variant_type?: string | null;
 }
+
+export type ProductVariant = {
+  id: string;
+  product_id: string;
+  sku: string;
+  size: string | null;
+  color: string | null;
+  price: number;
+  compare_at_price: number | null;
+  stock_qty: number;
+  in_stock: boolean;
+  image_url: string | null;
+  sort_order: number;
+};
 
 export interface CartItem {
   product: Product;
   quantity: number;
+  variant_id?: string;
+  variant_sku?: string;
+  variant_size?: string;
+  variant_color?: string;
+  variant_price?: number;
+  variant_image?: string;
 }
 
 export interface Order {

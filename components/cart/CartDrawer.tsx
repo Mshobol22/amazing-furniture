@@ -4,14 +4,13 @@ import Link from "next/link";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, Plus, Minus, X } from "lucide-react";
-import { useCartStore, useCartItemCount, useCartTotal } from "@/store/cartStore";
+import { useCartStore, useCartItemCount, useCartTotal, getCartItemPrice } from "@/store/cartStore";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { getEffectivePrice } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -76,9 +75,16 @@ export default function CartDrawer() {
             <>
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 <AnimatePresence mode="popLayout">
-                  {items.map((item) => (
+                  {items.map((item) => {
+                    const itemKey = item.variant_id
+                      ? `${item.product.id}-${item.variant_id}`
+                      : item.product.id;
+                    const displayImage =
+                      item.variant_image ?? item.product.images[0];
+                    const unitPrice = getCartItemPrice(item);
+                    return (
                     <motion.div
-                      key={item.product.id}
+                      key={itemKey}
                       layout
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -87,7 +93,7 @@ export default function CartDrawer() {
                     >
                       <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-50 p-1">
                         <ProductImage
-                          src={item.product.images[0]}
+                          src={displayImage}
                           alt={item.product.name}
                           fill
                           className="object-contain"
@@ -98,11 +104,18 @@ export default function CartDrawer() {
                         <p className="text-sm font-medium text-charcoal line-clamp-2 leading-snug">
                           {item.product.name}
                         </p>
+                        {(item.variant_size || item.variant_color) && (
+                          <p className="text-sm text-gray-500">
+                            {item.variant_size}
+                            {item.variant_size && item.variant_color ? " / " : ""}
+                            {item.variant_color}
+                          </p>
+                        )}
                         <p className="text-sm text-warm-gray">
                           {categoryLabel(item.product.category)}
                         </p>
                         <p className="mt-1 text-sm text-warm-gray">
-                          ${getEffectivePrice(item.product).toLocaleString()} each
+                          ${unitPrice.toLocaleString()} each
                         </p>
                         <div className="mt-2 flex items-center gap-2">
                           <Button
@@ -112,7 +125,8 @@ export default function CartDrawer() {
                             onClick={() =>
                               updateQuantity(
                                 item.product.id,
-                                Math.max(1, item.quantity - 1)
+                                Math.max(1, item.quantity - 1),
+                                item.variant_id
                               )
                             }
                           >
@@ -128,7 +142,8 @@ export default function CartDrawer() {
                             onClick={() =>
                               updateQuantity(
                                 item.product.id,
-                                item.quantity + 1
+                                item.quantity + 1,
+                                item.variant_id
                               )
                             }
                           >
@@ -138,20 +153,20 @@ export default function CartDrawer() {
                             variant="ghost"
                             size="icon"
                             className="ml-auto h-7 w-7 text-warm-gray hover:text-charcoal"
-                            onClick={() => removeItem(item.product.id)}
+                            onClick={() =>
+                              removeItem(item.product.id, item.variant_id)
+                            }
                           >
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
                       <p className="shrink-0 font-medium text-charcoal">
-                        $
-                        {(
-                          getEffectivePrice(item.product) * item.quantity
-                        ).toLocaleString()}
+                        ${(unitPrice * item.quantity).toLocaleString()}
                       </p>
                     </motion.div>
-                  ))}
+                    );
+                  })}
                 </AnimatePresence>
               </div>
 
