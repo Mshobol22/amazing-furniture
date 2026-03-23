@@ -6,14 +6,14 @@ const FINANCING_OPTIONS = [
     name: "Synchrony",
     description:
       "0% APR financing for 6–12 months on qualifying purchases. Apply online in minutes.",
-    href: "https://www.synchrony.com/",
+    href: "https://www.mysynchrony.com/mmc/GI235655800",
     cta: "Apply with Synchrony",
   },
   {
     name: "Koalafi",
     description:
       "Lease-to-own financing with flexible payment plans. No credit needed — approval in seconds.",
-    href: "https://www.koalafi.com/",
+    href: "http://dealer.koalafi.com/ApplicationForm/IntroScreen?publicStoreId=828ad4f3-138a-4ccc-ac65-2bf170a430aa&cm=Copy",
     cta: "Apply with Koalafi",
   },
 ];

@@ -339,7 +339,7 @@ export default function Navbar() {
         {searchOpen && (
           <div
             ref={searchContainerRef}
-            className="border-b border-[#1C1C1C]/20 bg-white/95 px-4 py-3 backdrop-blur-sm"
+            className="relative z-[9999] border-b border-[#1C1C1C]/20 bg-white/95 px-4 py-3 backdrop-blur-sm"
           >
             <div className="relative mx-auto max-w-2xl">
               <input
@@ -357,7 +357,7 @@ export default function Navbar() {
                 className="w-full border-0 bg-transparent py-2 pr-10 text-[#1C1C1C] placeholder:text-[#6B6560] outline-none"
               />
               {(searchQuery || searchResults.length > 0) && (
-                <div className="absolute left-0 top-full z-50 mt-1 w-full max-h-80 overflow-y-auto rounded-lg border border-[#ede8e3] bg-white shadow-lg">
+                <div className="absolute left-0 top-full z-[9999] mt-1 w-full max-h-80 overflow-y-auto rounded-lg border border-[#ede8e3] bg-white shadow-lg">
                   {isSearching ? (
                     <div className="p-4 text-sm text-[#6B6560]">Searching...</div>
                   ) : searchResults.length > 0 ? (
@@ -447,7 +447,7 @@ export default function Navbar() {
               >
                 <Link
                   href={`/collections/${cat.slug}`}
-                  className={`block px-3 py-2 text-sm font-medium cursor-pointer whitespace-nowrap ${
+                  className={`block px-3 py-2 text-sm font-semibold cursor-pointer whitespace-nowrap ${
                     navTransparent ? "text-white/90 hover:text-white" : "text-cream/90 hover:text-cream"
                   } ${
                     isCollectionActive(cat.slug)
