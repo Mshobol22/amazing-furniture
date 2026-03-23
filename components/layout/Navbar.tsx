@@ -30,41 +30,52 @@ interface SearchResult {
 
 const CATEGORIES: Record<
   string,
-  { name: string; slug: string; subcategories: { label: string; filter?: string; href?: string; dividerTop?: boolean }[] }
+  { name: string; slug: string; subcategories: { label: string; href?: string; dividerTop?: boolean }[] }
 > = {
   bed: {
-    name: "Beds & Bedroom",
+    name: "Beds",
     slug: "bed",
     subcategories: [
-      { label: "All Beds" },
-      { label: "Twin Beds", filter: "twin" },
-      { label: "Full Beds", filter: "full" },
-      { label: "Queen Beds", filter: "queen" },
-      { label: "King Beds", filter: "king" },
-      { label: "Bunk Beds", filter: "bunk" },
-      { label: "Daybeds", filter: "daybed" },
+      { label: "Beds", href: "/collections/bed?type=Beds" },
+      { label: "Bunk Beds", href: "/collections/bed?type=Bunk+Beds" },
+      { label: "Daybeds", href: "/collections/bed?type=Daybeds" },
+      { label: "Storage Beds", href: "/collections/bed?type=Storage+Beds" },
+      { label: "All Beds", href: "/collections/bed", dividerTop: true },
+    ],
+  },
+  "bedroom-furniture": {
+    name: "Bedroom Furniture",
+    slug: "bedroom-furniture",
+    subcategories: [
+      { label: "Bedroom Sets", href: "/collections/bedroom-furniture?type=Bedroom+Sets" },
+      { label: "Dressers", href: "/collections/bedroom-furniture?type=Dressers" },
+      { label: "Nightstands", href: "/collections/bedroom-furniture?type=Nightstands" },
+      { label: "Chests", href: "/collections/bedroom-furniture?type=Chests" },
+      { label: "Mirrors", href: "/collections/bedroom-furniture?type=Mirrors" },
+      { label: "Vanities", href: "/collections/bedroom-furniture?type=Vanities" },
+      { label: "All Bedroom Furniture", href: "/collections/bedroom-furniture", dividerTop: true },
     ],
   },
   sofa: {
     name: "Sofas & Sectionals",
     slug: "sofa",
     subcategories: [
-      { label: "All Sofas" },
-      { label: "Sectionals", filter: "sectional" },
-      { label: "Reclining Sofas", filter: "reclining" },
-      { label: "Sleeper Sofas", filter: "sleeper" },
-      { label: "Sofa Chaise", filter: "chaise" },
+      { label: "Sofas", href: "/collections/sofa?type=Sofas" },
+      { label: "Sectionals", href: "/collections/sofa?type=Sectionals" },
+      { label: "Loveseats", href: "/collections/sofa?type=Loveseats" },
+      { label: "Reclining Sofas", href: "/collections/sofa?type=Reclining+Sofas" },
+      { label: "All Sofas", href: "/collections/sofa", dividerTop: true },
     ],
   },
   chair: {
     name: "Chairs & Recliners",
     slug: "chair",
     subcategories: [
-      { label: "All Chairs" },
-      { label: "Recliners", filter: "recliner" },
-      { label: "Accent Chairs", filter: "accent" },
-      { label: "Lift Chairs", filter: "lift" },
-      { label: "Power Recliners", filter: "power" },
+      { label: "Accent Chairs", href: "/collections/chair?type=Accent+Chairs" },
+      { label: "Dining Chairs", href: "/collections/chair?type=Dining+Chairs" },
+      { label: "Recliners", href: "/collections/chair?type=Recliners" },
+      { label: "Bar Stools", href: "/collections/chair?type=Bar+Stools" },
+      { label: "All Chairs", href: "/collections/chair", dividerTop: true },
     ],
   },
   table: {
@@ -79,14 +90,12 @@ const CATEGORIES: Record<
     ],
   },
   cabinet: {
-    name: "Dressers & Cabinets",
+    name: "Cabinets & Storage",
     slug: "cabinet",
     subcategories: [
-      { label: "Dressers", href: "/collections/cabinet?type=Dressers" },
-      { label: "Mirrors", href: "/collections/cabinet?type=Mirrors" },
-      { label: "Chests & Dressers", href: "/collections/cabinet?type=Chests+%26+Dressers" },
-      { label: "Nightstands", href: "/collections/cabinet?type=Nightstands" },
       { label: "Cabinets & Storage", href: "/collections/cabinet?type=Cabinets+%26+Storage" },
+      { label: "Buffets & Servers", href: "/collections/cabinet?type=Buffets+%26+Servers" },
+      { label: "Bookcases", href: "/collections/cabinet?type=Bookcases" },
       { label: "All Cabinets", href: "/collections/cabinet", dividerTop: true },
     ],
   },
@@ -109,10 +118,18 @@ const CATEGORIES: Record<
       { label: "Runners", href: "/collections/rug?type=Runners" },
       { label: "Round Rugs", href: "/collections/rug?type=Round+Rugs" },
       { label: "Large Rugs", href: "/collections/rug?type=Large+Rugs" },
-      { label: "Medium Rugs", href: "/collections/rug?type=Medium+Rugs" },
-      { label: "Small Rugs", href: "/collections/rug?type=Small+Rugs" },
       { label: "Bohemian & Tribal", href: "/collections/rug?type=Bohemian+%26+Tribal" },
       { label: "All Rugs", href: "/collections/rug", dividerTop: true },
+    ],
+  },
+  other: {
+    name: "More Furniture",
+    slug: "other",
+    subcategories: [
+      { label: "Benches", href: "/collections/other?type=Benches" },
+      { label: "Desks", href: "/collections/other?type=Desks" },
+      { label: "Ottomans", href: "/collections/other?type=Ottomans" },
+      { label: "All More Furniture", href: "/collections/other", dividerTop: true },
     ],
   },
 };

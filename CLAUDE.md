@@ -40,6 +40,21 @@
 - `banners` — announcement bar content
 - `promotions` — category-level promotions
 
+## Categories (in products.category column) — 9 total
+| Slug | Display Name | Subcategories |
+|------|-------------|---------------|
+| `bed` | Beds | Beds, Bunk Beds, Daybeds, Storage Beds |
+| `bedroom-furniture` | Bedroom Furniture | Bedroom Sets, Dressers, Nightstands, Chests, Mirrors, Vanities |
+| `sofa` | Sofas & Sectionals | Sofas, Sectionals, Loveseats, Reclining Sofas |
+| `chair` | Chairs & Recliners | Accent Chairs, Dining Chairs, Recliners, Bar Stools |
+| `table` | Dining & Tables | Dining Sets, Dining Tables, Coffee Tables, End Tables |
+| `cabinet` | Cabinets & Storage | Cabinets & Storage, Buffets & Servers, Bookcases |
+| `tv-stand` | TV Stands & Entertainment | TV Stands, Entertainment Centers, Floating Shelves |
+| `rug` | Rugs & Floor Coverings | Area Rugs, Runner Rugs, Round Rugs (Zinatex brand) |
+| `other` | More Furniture | Benches, Desks, Ottomans |
+- Route: `/collections/[slug]` — all slugs above plus `all`
+- Subcategory filtering uses `?type=` URL param (e.g. `?type=Sectionals`)
+
 ## Manufacturers (in products.manufacturer column)
 - `Nationwide FD` | `United Furniture` | `ACME` | `Zinatex`
 - `Artisan` | `Interpraise` (coming soon — no products yet)

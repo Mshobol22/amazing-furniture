@@ -21,23 +21,27 @@ import ProductGrid from "@/components/products/ProductGrid";
 
 const ALLOWED_SLUGS = new Set([
   "bed",
+  "bedroom-furniture",
   "sofa",
   "chair",
   "table",
   "cabinet",
   "tv-stand",
   "rug",
+  "other",
   "all",
 ]);
 
 const CATEGORY_BG: Record<string, string> = {
   sofa: "#1C3A5E",
   bed: "#2C3E50",
+  "bedroom-furniture": "#2D3561",
   chair: "#3D2B1F",
   table: "#1E3A2F",
   cabinet: "#2D2416",
   "tv-stand": "#1A1A2E",
   rug: "#2D4A3E",
+  other: "#3A3A3A",
   all: "#1C1C1C",
 };
 
@@ -45,7 +49,7 @@ const categoryMeta: Record<string, { title: string; description: string }> = {
   all: {
     title: "All Furniture | Amazing Home Furniture",
     description:
-      "Shop thousands of premium furniture pieces — sofas, beds, chairs, tables, cabinets, TV stands, and rugs. Free shipping over $299.",
+      "Shop thousands of premium furniture pieces — sofas, beds, bedroom furniture, chairs, tables, cabinets, TV stands, rugs, and more. Free shipping over $299.",
   },
   sofa: {
     title: "Sofas & Sectionals | Amazing Home Furniture",
@@ -53,9 +57,14 @@ const categoryMeta: Record<string, { title: string; description: string }> = {
       "Shop premium sofas and sectionals. Modern, comfortable designs with free shipping over $299.",
   },
   bed: {
-    title: "Beds & Bedroom Furniture | Amazing Home Furniture",
+    title: "Beds | Amazing Home Furniture",
     description:
-      "Shop beds and bedroom furniture sets. Platform beds, upholstered frames, and more. Free shipping over $299.",
+      "Shop beds and bed frames. Platform beds, upholstered frames, bunk beds, and more. Free shipping over $299.",
+  },
+  "bedroom-furniture": {
+    title: "Bedroom Furniture | Amazing Home Furniture",
+    description:
+      "Shop bedroom furniture sets, dressers, nightstands, chests, mirrors, and vanities. Free shipping over $299.",
   },
   chair: {
     title: "Chairs & Recliners | Amazing Home Furniture",
@@ -70,7 +79,7 @@ const categoryMeta: Record<string, { title: string; description: string }> = {
   cabinet: {
     title: "Cabinets & Storage | Amazing Home Furniture",
     description:
-      "Shop cabinets and storage solutions. Dressers, bookcases, and media cabinets. Free shipping over $299.",
+      "Shop cabinets and storage solutions. Buffets, bookcases, and media cabinets. Free shipping over $299.",
   },
   "tv-stand": {
     title: "TV Stands & Entertainment Centers | Amazing Home Furniture",
@@ -81,6 +90,11 @@ const categoryMeta: Record<string, { title: string; description: string }> = {
     title: "Rugs & Floor Coverings | Amazing Home Furniture",
     description:
       "Shop luxury rugs and floor coverings by Zinatex. Area rugs, runners, and more. Free shipping over $299.",
+  },
+  other: {
+    title: "More Furniture | Amazing Home Furniture",
+    description:
+      "Shop benches, desks, ottomans, and more. Free shipping over $299.",
   },
 };
 
@@ -129,13 +143,8 @@ export default async function CollectionPage({
   if (!ALLOWED_SLUGS.has(category)) notFound();
 
   const heroBg = CATEGORY_BG[category] ?? "#1C1C1C";
-  const isRug = category === "rug";
   const categoryLabel =
-    category === "all"
-      ? "All Products"
-      : isRug
-        ? "Rugs & Floor Coverings"
-        : getCategoryDisplayName(category);
+    category === "all" ? "All Products" : getCategoryDisplayName(category);
 
   const supabase = createAdminClient();
 

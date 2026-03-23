@@ -27,22 +27,25 @@ export const metadata: Metadata = {
     template: "%s | Amazing Home Furniture",
   },
   description:
-    "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. Flexible financing available.",
+    "Shop premium sofas, beds, bedroom furniture, chairs, tables, cabinets, TV stands, rugs, and more. Free shipping on orders over $299. Flexible financing available.",
   keywords: [
     "furniture",
     "sofas",
     "sectionals",
     "beds",
+    "bedroom furniture",
     "dining tables",
     "home furniture",
     "recliners",
     "cabinets",
     "TV stands",
+    "rugs",
+    "home office desks",
   ],
   openGraph: {
     title: "Amazing Home Furniture — Premium Furniture for Every Room",
     description:
-      "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. Flexible financing available.",
+      "Shop premium sofas, beds, bedroom furniture, chairs, tables, cabinets, TV stands, rugs, and more. Free shipping on orders over $299. Flexible financing available.",
     url: "https://amazinghomefurniturestore.com",
     siteName: "Amazing Home Furniture",
     type: "website",
@@ -59,7 +62,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Amazing Home Furniture — Premium Furniture for Every Room",
     description:
-      "Shop premium sofas, beds, chairs, tables, cabinets and TV stands. Free shipping on orders over $299. Flexible financing available.",
+      "Shop premium sofas, beds, bedroom furniture, chairs, tables, cabinets, TV stands, rugs, and more. Free shipping on orders over $299. Flexible financing available.",
     images: ["https://amazinghomefurniturestore.com/og-image.png?v=2"],
   },
   alternates: { canonical: "https://amazinghomefurniturestore.com" },

@@ -24,12 +24,14 @@ const PRICE_PRESETS = [
 
 const CATEGORY_LABELS: Record<string, string> = {
   sofa: "Sofas & Sectionals",
-  bed: "Beds & Bedroom",
+  bed: "Beds",
+  "bedroom-furniture": "Bedroom Furniture",
   chair: "Chairs & Recliners",
   table: "Dining & Tables",
-  cabinet: "Dressers & Cabinets",
+  cabinet: "Cabinets & Storage",
   "tv-stand": "TV Stands & Entertainment",
   rug: "Rugs & Floor Coverings",
+  other: "More Furniture",
 };
 
 // ── FilterSection ──────────────────────────────────────────────────────────

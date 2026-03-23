@@ -324,7 +324,7 @@ export interface CategoryImage {
 
 export async function getCategoryImages(): Promise<CategoryImage[]> {
   const supabase = createAdminClient();
-  const categorySlugs = ["sofa", "bed", "chair", "table", "cabinet", "tv-stand", "rug"];
+  const categorySlugs = ["sofa", "bed", "bedroom-furniture", "chair", "table", "cabinet", "tv-stand", "rug", "other"];
 
   async function getLeadImageForCategory(
     slug: string,

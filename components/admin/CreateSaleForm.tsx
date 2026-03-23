@@ -6,21 +6,27 @@ import { useRouter } from "next/navigation";
 const CATEGORY_OPTIONS = [
   { value: "all", label: "All Products" },
   { value: "sofa", label: "Sofas & Sectionals" },
-  { value: "bed", label: "Beds & Bedroom" },
+  { value: "bed", label: "Beds" },
+  { value: "bedroom-furniture", label: "Bedroom Furniture" },
   { value: "table", label: "Dining & Tables" },
   { value: "chair", label: "Chairs & Recliners" },
   { value: "cabinet", label: "Cabinets & Storage" },
   { value: "tv-stand", label: "TV Stands & Media" },
+  { value: "rug", label: "Rugs" },
+  { value: "other", label: "More Furniture" },
 ];
 
 const PRODUCT_COUNTS: Record<string, number> = {
   all: 291,
   sofa: 55,
   bed: 49,
+  "bedroom-furniture": 0,
   table: 100,
   chair: 25,
   cabinet: 53,
   "tv-stand": 9,
+  rug: 0,
+  other: 0,
 };
 
 export default function CreateSaleForm() {

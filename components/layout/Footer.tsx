@@ -8,12 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const CATEGORIES = [
-  { name: "Beds & Bedroom", slug: "bed" },
-  { name: "Chairs & Recliners", slug: "chair" },
+  { name: "Beds", slug: "bed" },
+  { name: "Bedroom Furniture", slug: "bedroom-furniture" },
   { name: "Sofas & Sectionals", slug: "sofa" },
+  { name: "Chairs & Recliners", slug: "chair" },
   { name: "Dining & Tables", slug: "table" },
-  { name: "Dressers & Cabinets", slug: "cabinet" },
-  { name: "TV Stands & Entertainment", slug: "tv-stand" },
+  { name: "Cabinets & Storage", slug: "cabinet" },
+  { name: "TV Stands", slug: "tv-stand" },
+  { name: "Rugs", slug: "rug" },
+  { name: "More Furniture", slug: "other" },
 ] as const;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
