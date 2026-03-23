@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Minus, Plus, ShoppingCart } from "lucide-react";
 import type { ProductVariant } from "@/types";
 
@@ -56,18 +56,24 @@ export default function VariantSelector({
   const [quantity, setQuantity] = useState(1);
 
   /* derived unique sizes & colors */
-  const allSizes = sortSizes(
-    Array.from(new Set(variants.map((v) => v.size).filter(Boolean) as string[]))
+  const allSizes = useMemo(
+    () => sortSizes(
+      Array.from(new Set(variants.map((v) => v.size).filter(Boolean) as string[]))
+    ),
+    [variants]
   );
-  const allColors = Array.from(
-    new Set(variants.map((v) => v.color).filter(Boolean) as string[])
-  ).sort();
+  const allColors = useMemo(
+    () => Array.from(
+      new Set(variants.map((v) => v.color).filter(Boolean) as string[])
+    ).sort(),
+    [variants]
+  );
 
   const showSizeSelector = allSizes.length > 1;
   const showColorSelector = allColors.length > 1;
   const isSingleVariant = variants.length === 1;
 
-  /* auto-select the only variant when there's just one */
+  /* auto-select when only one option exists */
   useEffect(() => {
     if (isSingleVariant) {
       setSelectedSize(variants[0].size ?? null);
@@ -75,6 +81,14 @@ export default function VariantSelector({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSingleVariant]);
+
+  useEffect(() => {
+    if (allSizes.length === 1) setSelectedSize(allSizes[0]);
+  }, [allSizes]);
+
+  useEffect(() => {
+    if (allColors.length === 1) setSelectedColor(allColors[0]);
+  }, [allColors]);
 
   /* colors available for the currently selected size */
   const colorsForSelectedSize = selectedSize
@@ -158,8 +172,8 @@ export default function VariantSelector({
   /* ── multi-variant ────────────────────────────────────────────── */
   return (
     <div className="mt-6 space-y-6">
-      {/* Size selector */}
-      {showSizeSelector && (
+      {/* Size selector — buttons when 2+ sizes, static label when only 1 */}
+      {showSizeSelector ? (
         <div>
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
             Rug Size
@@ -194,10 +208,18 @@ export default function VariantSelector({
             })}
           </div>
         </div>
-      )}
+      ) : allSizes.length === 1 ? (
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+          Rug Size
+          <span className="ml-1 font-medium normal-case tracking-normal text-[#1C1C1C]">
+            {" : "}
+            {allSizes[0]}
+          </span>
+        </p>
+      ) : null}
 
-      {/* Color selector */}
-      {showColorSelector && (
+      {/* Color selector — buttons when 2+ colors, static label when only 1 */}
+      {showColorSelector ? (
         <div>
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
             Color
@@ -255,15 +277,23 @@ export default function VariantSelector({
             })}
           </div>
         </div>
-      )}
+      ) : allColors.length === 1 ? (
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+          Color
+          <span className="ml-1 font-medium normal-case tracking-normal text-[#1C1C1C]">
+            {" : "}
+            {allColors[0]}
+          </span>
+        </p>
+      ) : null}
 
-      {/* Resolved state */}
+      {/* Resolved state — only show prompts when there are actually choices to make */}
       <div>
-        {selectedSize === null ? (
+        {showSizeSelector && selectedSize === null ? (
           <p className="text-sm text-gray-400">
             Select a size to see available options
           </p>
-        ) : selectedColor === null ? (
+        ) : showColorSelector && selectedColor === null ? (
           <p className="text-sm text-gray-400">
             Select a color to continue
           </p>
