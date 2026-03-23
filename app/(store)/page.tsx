@@ -7,6 +7,7 @@ import HeroSlideshow from "@/components/home/HeroSlideshow";
 import ManufacturerSection from "@/components/home/ManufacturerSection";
 import RugsSpotlight from "@/components/home/RugsSpotlight";
 import SaleSection from "@/components/home/SaleSection";
+import SaleEventBlock from "@/components/home/SaleEventBlock";
 import {
   getHeroSlides,
   getManufacturersWithCounts,
@@ -65,6 +66,7 @@ export default async function StorePage() {
     <div className="min-h-screen bg-cream">
       <HeroSlideshow slides={slides} />
       <ManufacturerSection manufacturers={manufacturers} />
+      <SaleEventBlock />
       <CategoryGrid categoryImages={categoryImages} />
       <SaleSection products={saleProducts} />
       <TrustSignalStrip />

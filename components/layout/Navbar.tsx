@@ -11,6 +11,7 @@ import {
   Search,
   X,
   ChevronRight,
+  Tag,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -289,6 +290,13 @@ export default function Navbar() {
             </Link>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/sale"
+              className="hidden sm:flex items-center gap-1.5 text-sm font-semibold tracking-wide text-red-500 hover:text-red-400 transition-colors whitespace-nowrap"
+            >
+              <Tag className="h-4 w-4" />
+              Sale
+            </Link>
             <button
               onClick={() => setSearchOpen(!searchOpen)}
               className={`flex p-1.5 items-center justify-center rounded sm:p-2 ${iconColor} ${iconHover}`}
@@ -536,6 +544,14 @@ export default function Navbar() {
                 }`}
               >
                 Shop All
+              </Link>
+              <Link
+                href="/sale"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 px-4 py-3 font-semibold text-red-500 hover:bg-gray-50"
+              >
+                <Tag className="h-4 w-4" />
+                Sale
               </Link>
               {Object.entries(CATEGORIES).map(([key, cat]) => (
                 <div key={key} className="border-b border-[#ede8e3]/50">
