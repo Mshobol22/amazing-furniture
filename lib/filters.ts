@@ -73,13 +73,10 @@ export function parseFiltersFromSearchParams(
 // ── buildSupabaseQuery ─────────────────────────────────────────────────────
 // Never uses string concatenation — only Supabase's parameterized methods.
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function buildSupabaseQuery(
   _supabase: SupabaseClient,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  baseQuery: any,
+  baseQuery: any, // Supabase query builder — complex generics not worth typing
   filters: ProductFilters
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
   let q = baseQuery;
 
@@ -156,8 +153,7 @@ export function computeFacetCounts(
 const ACME_MARKERS = ["coming-soon", "placeholder"];
 
 export function buildFilterMeta(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  rawRows: any[]
+  rawRows: any[] // raw Supabase rows before mapping
 ): FilterMetaRow[] {
   return rawRows
     .filter((row) => {
