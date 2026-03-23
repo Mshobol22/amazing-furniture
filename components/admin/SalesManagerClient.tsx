@@ -193,7 +193,7 @@ export default function SalesManagerClient({ initialEvents }: Props) {
             <div className="py-16 text-center text-gray-400">
               <Package className="mx-auto mb-3 h-10 w-10 opacity-30" />
               <p className="font-medium">No sale events yet</p>
-              <p className="text-sm">Click "Create New Sale Event" to get started</p>
+              <p className="text-sm">Click &quot;Create New Sale Event&quot; to get started</p>
             </div>
           ) : (
             <table className="w-full text-sm">
