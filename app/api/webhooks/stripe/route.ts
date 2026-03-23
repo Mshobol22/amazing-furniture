@@ -62,6 +62,26 @@ export async function POST(request: NextRequest) {
 
       const order = data[0];
 
+      // ── Decrement variant stock — fire-and-forget, never block 200 ────
+      try {
+        const orderLineItems = Array.isArray(order.items) ? order.items : [];
+        const variantLineItems = orderLineItems.filter(
+          (item: Record<string, unknown>) => item.variant_id
+        );
+        for (const item of variantLineItems) {
+          await supabaseAdmin.rpc("decrement_variant_stock", {
+            variant_id: item.variant_id as string,
+            qty: item.quantity as number,
+          });
+        }
+      } catch (stockErr) {
+        console.error(
+          "Webhook: stock decrement failed",
+          order.id,
+          (stockErr as Error).message
+        );
+      }
+
       // ── Send confirmation email — only after confirmed DB update ──────
       try {
         const items = Array.isArray(order.items) ? order.items : [];

@@ -25,6 +25,10 @@ interface OrderRow {
     name: string;
     price: number;
     quantity: number;
+    variant_id?: string;
+    variant_sku?: string;
+    variant_size?: string;
+    variant_color?: string;
   }>;
   stripe_payment_intent_id?: string | null;
   created_at: string;
@@ -190,7 +194,17 @@ function OrdersTableInner({ orders }: { orders: OrderRow[] }) {
                                 className="flex justify-between text-sm text-charcoal"
                               >
                                 <span>
-                                  {item.name} × {item.quantity}
+                                  <span>{item.name} × {item.quantity}</span>
+                                  {(item.variant_size || item.variant_color) && (
+                                    <span className="ml-1 text-gray-500">
+                                      ({[item.variant_size, item.variant_color].filter(Boolean).join(" / ")})
+                                    </span>
+                                  )}
+                                  {item.variant_sku && (
+                                    <span className="block text-xs text-gray-400">
+                                      SKU: {item.variant_sku}
+                                    </span>
+                                  )}
                                 </span>
                                 <span>
                                   $

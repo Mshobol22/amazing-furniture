@@ -11,7 +11,13 @@ export interface OrderEmailData {
   total: number;
   tax_amount?: number;
   tax_rate?: number;
-  items: Array<{ name: string; quantity: number; price: number }>;
+  items: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+    variant_size?: string;
+    variant_color?: string;
+  }>;
   shipping_address: {
     address: string;
     city: string;
@@ -43,15 +49,20 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<void
   const shipping = order.total - order.subtotal - taxAmount;
 
   const itemRows = order.items
-    .map(
-      (item, i) => `
+    .map((item, i) => {
+      const variantDetail = [item.variant_size, item.variant_color]
+        .filter(Boolean)
+        .join(" / ");
+      return `
     <tr style="background:${i % 2 === 0 ? "#ffffff" : "#faf8f5"}">
-      <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;color:#1c1c1c;font-size:14px">${item.name}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;color:#1c1c1c;font-size:14px">
+        ${item.name}${variantDetail ? `<br><span style="color:#888;font-size:12px;font-family:Arial,sans-serif">${variantDetail}</span>` : ""}
+      </td>
       <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;text-align:center;color:#555;font-size:14px">${item.quantity}</td>
-      <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;text-align:right;color:#1c1c1c;font-size:14px">$${(item.price).toFixed(2)}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;text-align:right;color:#1c1c1c;font-size:14px">$${item.price.toFixed(2)}</td>
       <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;text-align:right;color:#1c1c1c;font-size:14px;font-weight:500">$${(item.price * item.quantity).toFixed(2)}</td>
-    </tr>`
-    )
+    </tr>`;
+    })
     .join("");
 
   const html = `<!DOCTYPE html>

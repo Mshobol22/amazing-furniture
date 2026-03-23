@@ -55,15 +55,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── 3. Build order items — price computed server-side ─────────────────
+    // ── 3. Server-side variant validation (before any Stripe calls) ──────────
+    const supabaseAdmin = createSupabaseAdmin(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const variantCartItems = body.items.filter((item) => item.variant_id);
+    if (variantCartItems.length > 0) {
+      const variantIds = variantCartItems.map((item) => item.variant_id!);
+      const { data: variantRows } = await supabaseAdmin
+        .from("product_variants")
+        .select("id, in_stock, size, color")
+        .in("id", variantIds);
+
+      for (const item of variantCartItems) {
+        const row = variantRows?.find((r) => r.id === item.variant_id);
+        if (!row) {
+          return NextResponse.json(
+            { error: "One or more items are no longer available. Please refresh your cart." },
+            { status: 400 }
+          );
+        }
+        if (!row.in_stock) {
+          const detail = [item.variant_size, item.variant_color]
+            .filter(Boolean)
+            .join(" / ");
+          return NextResponse.json(
+            {
+              error: `${item.product.name}${detail ? ` (${detail})` : ""} is out of stock. Please remove it from your cart to continue.`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    // ── 4. Build order items — price computed server-side ─────────────────
     const orderItems = body.items.map((item) => ({
       product_id: item.product.id,
       name: item.product.name,
-      price: getEffectivePrice(item.product),
+      price: item.variant_price ?? getEffectivePrice(item.product),
       quantity: item.quantity,
+      ...(item.variant_id && {
+        variant_id: item.variant_id,
+        variant_sku: item.variant_sku,
+        variant_size: item.variant_size,
+        variant_color: item.variant_color,
+      }),
     }));
 
-    // ── 4. Calculate amounts — guard against NaN if product price is missing
+    // ── 5. Calculate amounts — guard against NaN if product price is missing
     const subtotal = orderItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
@@ -76,12 +118,6 @@ export async function POST(request: NextRequest) {
     if (!isFinite(subtotal) || subtotal <= 0 || !isFinite(total) || totalCents <= 0) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
-
-    // ── 5. Create PENDING order in Supabase via inline service-role client ─
-    const supabaseAdmin = createSupabaseAdmin(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
 
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
