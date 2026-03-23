@@ -1,15 +1,23 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getManufacturerBySlug,
-  getProductsByManufacturer,
-  getManufacturerCategories,
-  getManufacturerCollections,
-  getManufacturerColors,
-  getManufacturerSizes,
-  getManufacturerSubcategories,
+  applyAcmePlaceholderImageFilter,
+  mapRowToProduct,
+  isHiddenAcmePlaceholderProduct,
 } from "@/lib/supabase/products";
-import BrandProductGrid from "@/components/brands/BrandProductGrid";
+import {
+  parseFiltersFromSearchParams,
+  buildSupabaseQuery,
+  buildFilterMeta,
+} from "@/lib/filters";
+import ProductSidebar from "@/components/store/ProductSidebar";
+import ActiveFilterChips from "@/components/store/ActiveFilterChips";
+import SortDropdown from "@/components/store/SortDropdown";
+import MobileFilterBar from "@/components/store/MobileFilterBar";
+import ProductGrid from "@/components/products/ProductGrid";
 import BrandNotifyForm from "@/components/brands/BrandNotifyForm";
 
 const BRAND_BG: Record<string, string> = {
@@ -21,6 +29,7 @@ const BRAND_BG: Record<string, string> = {
 
 interface BrandPageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[]>>;
 }
 
 export async function generateMetadata({
@@ -49,41 +58,58 @@ export async function generateMetadata({
   };
 }
 
-export default async function BrandPage({ params }: BrandPageProps) {
+export default async function BrandPage({
+  params,
+  searchParams,
+}: BrandPageProps) {
   const { slug } = await params;
+  const rawParams = await searchParams;
+
   const manufacturer = await getManufacturerBySlug(slug);
+  if (!manufacturer) notFound();
 
-  if (!manufacturer) {
-    notFound();
-  }
+  const supabase = createAdminClient();
 
-  // Check if this is a "coming soon" brand (no products)
-  const { total } = await getProductsByManufacturer(manufacturer.name, "all", 1, 0);
-  const isComingSoon = total === 0;
+  // ── Fetch filter metadata scoped to this brand ─────────────────────────
+  const { data: rawMeta } = await supabase
+    .from("products")
+    .select(
+      "manufacturer, category, color, material, collection, price, in_stock, on_sale, images"
+    )
+    .eq("manufacturer", manufacturer.name)
+    .not("images", "is", null)
+    .not("images", "eq", "{}");
 
-  if (isComingSoon) {
+  const filterMeta = buildFilterMeta(rawMeta ?? []);
+
+  // No products → coming soon
+  if (filterMeta.length === 0) {
     return <ComingSoonBrand manufacturer={manufacturer} />;
   }
 
-  const isZinatex = manufacturer.slug === "zinatex";
-  const heroBg = BRAND_BG[slug] ?? "#1C1C1C";
+  // ── Parse URL filters ──────────────────────────────────────────────────
+  const flat: Record<string, string> = {};
+  for (const [k, v] of Object.entries(rawParams)) {
+    flat[k] = Array.isArray(v) ? v[0] : v;
+  }
+  const urlParams = new URLSearchParams(flat);
+  const filters = parseFiltersFromSearchParams(urlParams);
 
-  // Fetch initial products + all filter options in parallel
-  const [
-    { products, total: totalCount },
-    categories,
-    collections,
-    colors,
-    sizes,
-    subcategories,
-  ] = await Promise.all([
-    getProductsByManufacturer(manufacturer.name, "all", 24, 0),
-    getManufacturerCategories(manufacturer.name),
-    getManufacturerCollections(manufacturer.name),
-    getManufacturerColors(manufacturer.name),
-    isZinatex ? getManufacturerSizes(manufacturer.name) : Promise.resolve([]),
-    getManufacturerSubcategories(manufacturer.name),
-  ]);
+  // ── Fetch filtered products ────────────────────────────────────────────
+  let productQuery = supabase
+    .from("products")
+    .select("*")
+    .eq("manufacturer", manufacturer.name);
+  productQuery = applyAcmePlaceholderImageFilter(productQuery);
+  productQuery = buildSupabaseQuery(supabase, productQuery, filters);
+
+  const { data: rawProducts } = await productQuery;
+  const products = (rawProducts ?? [])
+    .map(mapRowToProduct)
+    .filter((p) => !isHiddenAcmePlaceholderProduct(p));
+
+  const heroBg = BRAND_BG[slug] ?? "#1C1C1C";
+  const isZinatex = slug === "zinatex";
 
   return (
     <div className="min-h-screen bg-[#FAF8F5]">
@@ -96,34 +122,67 @@ export default async function BrandPage({ params }: BrandPageProps) {
           {isZinatex ? "Luxury Rugs & Floor Coverings" : manufacturer.name}
         </h1>
         {manufacturer.description && (
-          <p className="mt-3 max-w-lg text-sm text-[#FAF8F5]">
+          <p className="mt-3 max-w-lg text-sm text-[#FAF8F5]/80">
             {manufacturer.description}
           </p>
         )}
-        <p className="mt-2 text-xs text-[#FAF8F5]">
-          {totalCount} product{totalCount !== 1 ? "s" : ""}
+        <p className="mt-2 text-xs text-[#FAF8F5]/60">
+          {filterMeta.length.toLocaleString()} product
+          {filterMeta.length !== 1 ? "s" : ""}
         </p>
       </div>
 
-      {/* Product grid with filters */}
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <BrandProductGrid
-          slug={slug}
-          initialProducts={products}
-          initialTotal={totalCount}
-          availableCategories={categories}
-          availableCollections={collections}
-          availableColors={colors}
-          availableSizes={sizes}
-          availableSubcategories={subcategories}
-          isZinatex={isZinatex}
+      {/* Mobile filter bar */}
+      <Suspense fallback={null}>
+        <MobileFilterBar
+          filterMeta={filterMeta}
+          total={products.length}
+          hideBrand
+          hideCategory={false}
         />
+      </Suspense>
+
+      {/* Two-column layout */}
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="flex gap-8">
+          {/* Desktop sidebar */}
+          <aside className="hidden w-64 shrink-0 md:block">
+            <div className="sticky top-20 max-h-[calc(100vh-100px)] overflow-y-auto pr-2">
+              <Suspense fallback={null}>
+                <ProductSidebar
+                  filterMeta={filterMeta}
+                  hideBrand
+                  hideCategory={false}
+                />
+              </Suspense>
+            </div>
+          </aside>
+
+          {/* Main content */}
+          <main className="min-w-0 flex-1">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <Suspense fallback={null}>
+                <ActiveFilterChips />
+              </Suspense>
+              <Suspense fallback={null}>
+                <SortDropdown />
+              </Suspense>
+            </div>
+
+            <p className="mb-4 text-sm text-[#1C1C1C]/60">
+              {products.length.toLocaleString()} product
+              {products.length !== 1 ? "s" : ""}
+            </p>
+
+            <ProductGrid products={products} />
+          </main>
+        </div>
       </div>
     </div>
   );
 }
 
-// ── Coming Soon variant ───────────────────────────────────────────────────
+// ── Coming Soon variant ────────────────────────────────────────────────────
 
 function ComingSoonBrand({
   manufacturer,
@@ -135,15 +194,13 @@ function ComingSoonBrand({
       <span className="mb-4 rounded-full bg-[#2D4A3E]/10 px-4 py-1 text-xs font-medium uppercase tracking-widest text-[#2D4A3E]">
         Coming Soon
       </span>
-      <h1 className="font-display text-3xl font-semibold text-charcoal sm:text-4xl">
+      <h1 className="font-display text-3xl font-semibold text-[#1C1C1C] sm:text-4xl">
         {manufacturer.name}
       </h1>
       {manufacturer.description && manufacturer.description !== "Coming soon" && (
-        <p className="mt-3 max-w-md text-warm-gray">
-          {manufacturer.description}
-        </p>
+        <p className="mt-3 max-w-md text-[#6B6560]">{manufacturer.description}</p>
       )}
-      <p className="mt-4 max-w-sm text-sm text-warm-gray">
+      <p className="mt-4 max-w-sm text-sm text-[#6B6560]">
         We&apos;re working on bringing {manufacturer.name} products to our store.
         Sign up below to be the first to know when they launch.
       </p>

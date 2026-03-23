@@ -1,16 +1,23 @@
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  getInitialCollectionProducts,
-  getCategoryManufacturerCounts,
-  getCategoryCollections,
-  getCategoryColors,
-  getCategorySizes,
-  getCategorySubcategories,
+  applyAcmePlaceholderImageFilter,
+  mapRowToProduct,
+  isHiddenAcmePlaceholderProduct,
 } from "@/lib/supabase/products";
+import {
+  parseFiltersFromSearchParams,
+  buildSupabaseQuery,
+  buildFilterMeta,
+} from "@/lib/filters";
 import { getCategoryDisplayName } from "@/lib/collection-utils";
-import CollectionClient from "@/components/collections/CollectionClient";
+import ProductSidebar from "@/components/store/ProductSidebar";
+import ActiveFilterChips from "@/components/store/ActiveFilterChips";
+import SortDropdown from "@/components/store/SortDropdown";
+import MobileFilterBar from "@/components/store/MobileFilterBar";
+import ProductGrid from "@/components/products/ProductGrid";
 
 const ALLOWED_SLUGS = new Set([
   "bed",
@@ -79,6 +86,7 @@ const categoryMeta: Record<string, { title: string; description: string }> = {
 
 interface CollectionPageProps {
   params: Promise<{ category: string }>;
+  searchParams: Promise<Record<string, string | string[]>>;
 }
 
 export async function generateMetadata({
@@ -113,17 +121,15 @@ export async function generateMetadata({
 
 export default async function CollectionPage({
   params,
+  searchParams,
 }: CollectionPageProps) {
   const { category } = await params;
+  const rawParams = await searchParams;
+
+  if (!ALLOWED_SLUGS.has(category)) notFound();
+
   const heroBg = CATEGORY_BG[category] ?? "#1C1C1C";
-
-  // Validate slug against allowed list — reject anything else
-  if (!ALLOWED_SLUGS.has(category)) {
-    notFound();
-  }
-
   const isRug = category === "rug";
-
   const categoryLabel =
     category === "all"
       ? "All Products"
@@ -131,22 +137,46 @@ export default async function CollectionPage({
         ? "Rugs & Floor Coverings"
         : getCategoryDisplayName(category);
 
-  // Fetch initial page + all filter option lists in parallel
-  const [
-    { products, total },
-    manufacturerCounts,
-    availableCollections,
-    availableColors,
-    availableSizes,
-    availableSubcategories,
-  ] = await Promise.all([
-    getInitialCollectionProducts(category),
-    getCategoryManufacturerCounts(category),
-    isRug ? Promise.resolve([]) : getCategoryCollections(category),
-    getCategoryColors(category),
-    isRug ? getCategorySizes(category) : Promise.resolve([]),
-    getCategorySubcategories(category),
-  ]);
+  const supabase = createAdminClient();
+
+  // ── Fetch filter metadata scoped to this category ──────────────────────
+  let metaQuery = supabase
+    .from("products")
+    .select(
+      "manufacturer, category, color, material, collection, price, in_stock, on_sale, images"
+    )
+    .not("images", "is", null)
+    .not("images", "eq", "{}");
+
+  if (category !== "all") {
+    metaQuery = metaQuery.eq("category", category);
+  }
+
+  const { data: rawMeta } = await metaQuery;
+  const filterMeta = buildFilterMeta(rawMeta ?? []);
+
+  // ── Parse URL filters ──────────────────────────────────────────────────
+  const flat: Record<string, string> = {};
+  for (const [k, v] of Object.entries(rawParams)) {
+    flat[k] = Array.isArray(v) ? v[0] : v;
+  }
+  const urlParams = new URLSearchParams(flat);
+  const filters = parseFiltersFromSearchParams(urlParams);
+
+  // ── Fetch filtered products ────────────────────────────────────────────
+  let productQuery = supabase.from("products").select("*");
+
+  if (category !== "all") {
+    productQuery = productQuery.eq("category", category);
+  }
+
+  productQuery = applyAcmePlaceholderImageFilter(productQuery);
+  productQuery = buildSupabaseQuery(supabase, productQuery, filters);
+
+  const { data: rawProducts } = await productQuery;
+  const products = (rawProducts ?? [])
+    .map(mapRowToProduct)
+    .filter((p) => !isHiddenAcmePlaceholderProduct(p));
 
   return (
     <div className="min-h-screen bg-[#FAF8F5]">
@@ -158,32 +188,57 @@ export default async function CollectionPage({
         <h1 className="font-display text-xl font-semibold text-[#FAF8F5] md:text-2xl">
           {categoryLabel}
         </h1>
-        <p className="text-xs text-[#FAF8F5]">
-          {total.toLocaleString()} product{total !== 1 ? "s" : ""}
+        <p className="text-xs text-[#FAF8F5]/70">
+          {filterMeta.length.toLocaleString()} product
+          {filterMeta.length !== 1 ? "s" : ""}
         </p>
       </div>
 
+      {/* Mobile filter bar */}
+      <Suspense fallback={null}>
+        <MobileFilterBar
+          filterMeta={filterMeta}
+          total={products.length}
+          hideBrand={false}
+          hideCategory={category !== "all"}
+        />
+      </Suspense>
+
       {/* Two-column layout */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <Suspense
-          fallback={
-            <div className="flex gap-6">
-              <div className="hidden w-64 shrink-0 md:block" />
-              <div className="h-96 flex-1 animate-pulse rounded-lg bg-gray-100" />
+        <div className="flex gap-8">
+          {/* Desktop sidebar */}
+          <aside className="hidden w-64 shrink-0 md:block">
+            <div className="sticky top-20 max-h-[calc(100vh-100px)] overflow-y-auto pr-2">
+              <Suspense fallback={null}>
+                <ProductSidebar
+                  filterMeta={filterMeta}
+                  hideBrand={false}
+                  hideCategory={category !== "all"}
+                />
+              </Suspense>
             </div>
-          }
-        >
-          <CollectionClient
-            slug={category}
-            initialProducts={products}
-            initialTotal={total}
-            manufacturerCounts={manufacturerCounts}
-            availableCollections={availableCollections}
-            availableColors={availableColors}
-            availableSizes={availableSizes}
-            availableSubcategories={availableSubcategories}
-          />
-        </Suspense>
+          </aside>
+
+          {/* Main content */}
+          <main className="min-w-0 flex-1">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <Suspense fallback={null}>
+                <ActiveFilterChips />
+              </Suspense>
+              <Suspense fallback={null}>
+                <SortDropdown />
+              </Suspense>
+            </div>
+
+            <p className="mb-4 text-sm text-[#1C1C1C]/60">
+              {products.length.toLocaleString()} product
+              {products.length !== 1 ? "s" : ""}
+            </p>
+
+            <ProductGrid products={products} />
+          </main>
+        </div>
       </div>
     </div>
   );
