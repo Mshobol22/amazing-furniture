@@ -158,17 +158,25 @@ async function main() {
     });
   }
 
+  // Deduplicate by slug — keep last occurrence (later rows may have more data)
+  const seen = new Map<string, object>();
+  for (const p of products) {
+    seen.set((p as { slug: string }).slug, p);
+  }
+  const deduped = Array.from(seen.values());
+  const dupCount = products.length - deduped.length;
+
   console.log(
-    `Rows to upsert: ${products.length} | Skipped (no SKU): ${skipped}`
+    `Rows to upsert: ${deduped.length} | Skipped (no SKU): ${skipped} | Deduped (dup SKU in file): ${dupCount}`
   );
 
   // ─── Batch upsert ────────────────────────────────────────────────────────
 
-  const totalBatches = Math.ceil(products.length / BATCH_SIZE);
+  const totalBatches = Math.ceil(deduped.length / BATCH_SIZE);
   let totalUpserted = 0;
 
-  for (let i = 0; i < products.length; i += BATCH_SIZE) {
-    const batch = products.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < deduped.length; i += BATCH_SIZE) {
+    const batch = deduped.slice(i, i + BATCH_SIZE);
     const batchNum = Math.floor(i / BATCH_SIZE) + 1;
 
     console.log(

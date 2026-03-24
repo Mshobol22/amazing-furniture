@@ -389,15 +389,23 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
       <header className="w-full border-b border-gray-200 bg-[#FAF8F5] px-4 py-16 sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-4 text-center">
           {headerLogoSrc ? (
-            <Image
-              src={headerLogoSrc}
-              alt={`${manufacturer.name} logo`}
-              width={280}
-              height={160}
-              className="max-w-[280px] object-contain"
-              sizes="280px"
-              priority
-            />
+            <div
+              className={
+                manufacturer.slug === "zinatex"
+                  ? "rounded-xl bg-[#1C1C1C] px-8 py-5"
+                  : "contents"
+              }
+            >
+              <Image
+                src={headerLogoSrc}
+                alt={`${manufacturer.name} logo`}
+                width={280}
+                height={160}
+                className="max-w-[280px] object-contain"
+                sizes="280px"
+                priority
+              />
+            </div>
           ) : null}
           <h1 className="text-3xl font-bold text-[#1C1C1C]">{manufacturer.name}</h1>
           <p className="max-w-3xl text-base text-gray-500">{manufacturer.description}</p>

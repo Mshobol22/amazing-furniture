@@ -55,7 +55,13 @@ export default function ManufacturerSection({
                   className="relative aspect-[3/2] w-full overflow-hidden rounded-lg border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md"
                   style={{ opacity: isComing ? 0.6 : 1 }}
                 >
-                  <div className="relative h-full w-full min-h-0">
+                  <div
+                    className={
+                      m.slug === "zinatex"
+                        ? "relative h-full w-full min-h-0 rounded-md bg-[#1C1C1C] p-3"
+                        : "relative h-full w-full min-h-0"
+                    }
+                  >
                     {safeLogo ? (
                       <Image
                         src={safeLogo}
