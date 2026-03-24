@@ -22,9 +22,9 @@ export default function ManufacturerSection({
   manufacturers,
 }: ManufacturerSectionProps) {
   return (
-    <section className="bg-[#1C1C1C] px-4 py-12 sm:px-6">
+    <section className="bg-[#FAF8F5] px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-7xl">
-        <h2 className="mb-8 text-center font-display text-2xl font-semibold text-white">
+        <h2 className="mb-8 text-center font-display text-2xl font-semibold text-[#1C1C1C]">
           Shop by Brand
         </h2>
 
@@ -39,74 +39,40 @@ export default function ManufacturerSection({
                 (m.logo_url.startsWith("/") && !m.logo_url.startsWith("//")))
                 ? m.logo_url
                 : null;
-            const localPublicLogo =
-              !!safeLogo &&
-              safeLogo.startsWith("/") &&
-              !safeLogo.startsWith("/api/");
-            const bg =
-              m.backgroundImage &&
-              (m.backgroundImage.startsWith("https://") ||
-                m.backgroundImage.startsWith("/api/image-proxy"))
-                ? m.backgroundImage
-                : null;
 
             return (
               <Link
                 key={m.slug}
                 href={`/brands/${m.slug}`}
-                className={isComing ? "pointer-events-none" : "group block focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3B5E4F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1C1C1C]"}
+                className={
+                  isComing
+                    ? "pointer-events-none"
+                    : "group block focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3B5E4F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF8F5]"
+                }
                 aria-label={`Shop ${m.name}`}
               >
                 <div
-                  className="relative aspect-[5/2] w-full overflow-hidden rounded-lg border border-white/10 transition-all duration-200 group-hover:-translate-y-1 group-hover:border-[#2D4A3E] group-hover:shadow-[0_4px_20px_rgba(45,74,62,0.4)]"
+                  className="relative aspect-[3/2] w-full overflow-hidden rounded-lg border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md"
                   style={{ opacity: isComing ? 0.6 : 1 }}
                 >
-                  {bg ? (
-                    <>
+                  <div className="relative h-full w-full min-h-0">
+                    {safeLogo ? (
                       <Image
-                        src={bg}
+                        src={safeLogo}
                         alt=""
                         fill
-                        className="object-cover object-center"
-                        sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 240px"
+                        sizes="(max-width: 640px) 42vw, (max-width: 1024px) 28vw, 240px"
+                        className="object-contain object-center"
                       />
-                      <div
-                        className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/25 to-black/35"
-                        aria-hidden
-                      />
-                    </>
-                  ) : (
-                    <div
-                      className="absolute inset-0 bg-[#1C1C1C]"
-                      aria-hidden
-                    />
-                  )}
-
-                  {safeLogo ? (
-                    <div
-                      className="absolute inset-[4%] z-10 sm:inset-[5%]"
-                      aria-hidden
-                    >
-                      <div className="relative h-full w-full min-h-0">
-                        <Image
-                          src={safeLogo}
-                          alt=""
-                          fill
-                          sizes="(max-width: 640px) 42vw, (max-width: 1024px) 28vw, 220px"
-                          className={
-                            localPublicLogo
-                              ? "object-contain object-center drop-shadow-[0_2px_16px_rgba(0,0,0,0.5)]"
-                              : "object-contain object-center brightness-0 invert drop-shadow-[0_2px_16px_rgba(0,0,0,0.4)]"
-                          }
-                        />
+                    ) : (
+                      <div className="flex h-full items-center justify-center px-2 text-center text-sm font-medium text-gray-400">
+                        {m.name}
                       </div>
-                    </div>
-                  ) : (
-                    <span className="sr-only">{m.name}</span>
-                  )}
+                    )}
+                  </div>
 
                   {isComing ? (
-                    <span className="absolute right-2 top-2 z-20 rounded bg-white/20 px-2 py-1 text-xs text-white">
+                    <span className="absolute right-2 top-2 z-10 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-medium text-[#1C1C1C]">
                       Coming Soon
                     </span>
                   ) : null}
