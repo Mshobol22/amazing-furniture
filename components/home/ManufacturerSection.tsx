@@ -35,9 +35,14 @@ export default function ManufacturerSection({
             const safeLogo =
               m.logo_url &&
               (m.logo_url.startsWith("https://") ||
-                m.logo_url.startsWith("/api/image-proxy"))
+                m.logo_url.startsWith("/api/image-proxy") ||
+                (m.logo_url.startsWith("/") && !m.logo_url.startsWith("//")))
                 ? m.logo_url
                 : null;
+            const localPublicLogo =
+              !!safeLogo &&
+              safeLogo.startsWith("/") &&
+              !safeLogo.startsWith("/api/");
             const bg =
               m.backgroundImage &&
               (m.backgroundImage.startsWith("https://") ||
@@ -85,7 +90,11 @@ export default function ManufacturerSection({
                         alt={`${m.name} logo`}
                         width={120}
                         height={32}
-                        className="h-8 w-auto max-w-[140px] object-contain brightness-0 invert drop-shadow-md"
+                        className={
+                          localPublicLogo
+                            ? "h-8 w-auto max-w-[140px] object-contain drop-shadow-lg"
+                            : "h-8 w-auto max-w-[140px] object-contain brightness-0 invert drop-shadow-md"
+                        }
                       />
                     </div>
                   ) : null}

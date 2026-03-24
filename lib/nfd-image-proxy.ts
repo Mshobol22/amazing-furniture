@@ -27,14 +27,25 @@ export function productLeadImageSrc(
   return rawImage;
 }
 
-/** Brand logo `src` for `next/image`. */
+/**
+ * Brand logo `src` for `next/image`.
+ * Allows `https://…` (Nationwide FD proxied) and same-site root-relative paths such as `/logos/acme.png`.
+ */
 export function brandLogoSrc(
   manufacturerName: string,
   logoUrl: string | null | undefined
 ): string | null {
-  if (!logoUrl?.startsWith("https://")) return null;
-  if (logoUrl.includes("nationwidefd.com") || manufacturerName === NFD_MANUFACTURER_NAME) {
-    return `/api/image-proxy?url=${encodeURIComponent(logoUrl)}`;
+  if (logoUrl == null || typeof logoUrl !== "string") return null;
+  const trimmed = logoUrl.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) {
+    return trimmed;
   }
-  return logoUrl;
+
+  if (!trimmed.startsWith("https://")) return null;
+  if (trimmed.includes("nationwidefd.com") || manufacturerName === NFD_MANUFACTURER_NAME) {
+    return `/api/image-proxy?url=${encodeURIComponent(trimmed)}`;
+  }
+  return trimmed;
 }

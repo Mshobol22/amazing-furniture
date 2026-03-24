@@ -275,10 +275,6 @@ export interface ManufacturerWithCount {
   comingSoon: boolean;
 }
 
-function safeHttpsUrl(url: unknown): string | null {
-  return typeof url === "string" && url.startsWith("https://") ? url : null;
-}
-
 /**
  * Homepage manufacturers: anon Supabase client, manufacturers row + in-stock counts
  * and first valid https:// lead image per manufacturer (same ordering as DISTINCT ON
@@ -347,8 +343,7 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
   return mfrs.map((m) => {
     const name = m.name as string;
     const count = countByManufacturer.get(name) ?? 0;
-    const logoUrlRaw = safeHttpsUrl(m.logo_url);
-    const logoUrl = logoUrlRaw ? brandLogoSrc(name, logoUrlRaw) : null;
+    const logoUrl = brandLogoSrc(name, m.logo_url as string | null | undefined);
     const bg = backgroundByManufacturer.get(name) ?? null;
     const resolvedBg = bg && bg.startsWith("https://") ? bg : null;
     const backgroundImage = proxyIfNfdManufacturer(name, resolvedBg);
@@ -494,7 +489,7 @@ export async function getManufacturerBySlug(slug: string): Promise<Manufacturer 
   const row = data as Manufacturer;
   return {
     ...row,
-    logo_url: safeHttpsUrl(row.logo_url),
+    logo_url: brandLogoSrc(row.name, row.logo_url),
   };
 }
 
