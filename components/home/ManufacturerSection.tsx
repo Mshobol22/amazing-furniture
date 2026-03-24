@@ -50,21 +50,15 @@ export default function ManufacturerSection({
                 ? m.backgroundImage
                 : null;
 
-            const countLabel =
-              isComing
-                ? "Coming soon"
-                : m.count != null && m.count > 0
-                  ? `${m.count.toLocaleString()} products`
-                  : "Catalog loading...";
-
             return (
               <Link
                 key={m.slug}
                 href={`/brands/${m.slug}`}
-                className={isComing ? "pointer-events-none" : ""}
+                className={isComing ? "pointer-events-none" : "group block focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3B5E4F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1C1C1C]"}
+                aria-label={`Shop ${m.name}`}
               >
                 <div
-                  className={`relative flex min-h-[180px] flex-col overflow-hidden rounded-lg border border-white/10 transition-all duration-200 hover:-translate-y-1 hover:border-[#2D4A3E] hover:shadow-[0_4px_20px_rgba(45,74,62,0.4)] ${bg ? "" : "bg-[#1C1C1C]"}`}
+                  className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-white/10 transition-all duration-200 group-hover:-translate-y-1 group-hover:border-[#2D4A3E] group-hover:shadow-[0_4px_20px_rgba(45,74,62,0.4)]"
                   style={{ opacity: isComing ? 0.6 : 1 }}
                 >
                   {bg ? (
@@ -77,47 +71,40 @@ export default function ManufacturerSection({
                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
                       />
                       <div
-                        className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"
+                        className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/25 to-black/35"
                         aria-hidden
                       />
                     </>
-                  ) : null}
+                  ) : (
+                    <div
+                      className="absolute inset-0 bg-[#1C1C1C]"
+                      aria-hidden
+                    />
+                  )}
 
                   {safeLogo ? (
-                    <div className="relative z-10 p-3">
+                    <div className="absolute inset-0 z-10 flex items-center justify-center p-6">
                       <Image
                         src={safeLogo}
-                        alt={`${m.name} logo`}
-                        width={120}
-                        height={32}
+                        alt=""
+                        width={200}
+                        height={80}
                         className={
                           localPublicLogo
-                            ? "h-8 w-auto max-w-[140px] object-contain drop-shadow-lg"
-                            : "h-8 w-auto max-w-[140px] object-contain brightness-0 invert drop-shadow-md"
+                            ? "h-12 w-auto max-w-[min(85%,220px)] object-contain drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] sm:h-14"
+                            : "h-12 w-auto max-w-[min(85%,220px)] object-contain brightness-0 invert drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:h-14"
                         }
                       />
                     </div>
-                  ) : null}
+                  ) : (
+                    <span className="sr-only">{m.name}</span>
+                  )}
 
                   {isComing ? (
-                    <span className="absolute right-2 top-2 z-10 rounded bg-white/20 px-2 py-1 text-xs text-white">
+                    <span className="absolute right-2 top-2 z-20 rounded bg-white/20 px-2 py-1 text-xs text-white">
                       Coming Soon
                     </span>
                   ) : null}
-
-                  <div className="relative z-10 mt-auto flex items-end justify-between gap-2 p-4">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-white">
-                        {m.name}
-                      </p>
-                      <p className="text-sm text-white/70">{countLabel}</p>
-                    </div>
-                    {!isComing ? (
-                      <span className="shrink-0 text-lg text-white" aria-hidden>
-                        &rarr;
-                      </span>
-                    ) : null}
-                  </div>
                 </div>
               </Link>
             );
