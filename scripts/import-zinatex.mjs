@@ -27,13 +27,45 @@ const ADD_IMG_COLS = ['ADDITIONAL IMAGE 1','ADDITIONAL IMAGE 2','ADDITIONAL IMAG
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function s(v) { return (v || '').toString().trim(); }
 
+/** Leading style number only (99903-Beige-10x13 → 99903) — parent URL, not per-variant. */
+function zinatexStyleKeyFromSku(sku) {
+  const t = (sku || '').toString().trim();
+  if (!t) return '';
+  const first = t.split('-')[0] || '';
+  if (/^\d+$/.test(first)) return first.toLowerCase();
+  return t.toLowerCase()
+    .replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+}
+
+/** One PDP slug per rug design; matches lib/zinatex-slug.ts canonicalZinatexProductSlug. */
 function generateSlug(title, sku) {
   const base = title.toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '').trim()
     .replace(/\s+/g, '-').replace(/-+/g, '-').slice(0, 60);
-  const safeSku = sku.toLowerCase()
-    .replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-  return `${base}-ztx-${safeSku}`;
+  const safeStyle = zinatexStyleKeyFromSku(sku);
+  return `${base}-ztx-${safeStyle}`;
+}
+
+function groupKey(title, sku) {
+  return `${title.trim().toLowerCase()}:::${zinatexStyleKeyFromSku(sku)}`;
+}
+
+function extractRawSize(sku) {
+  const parts = (sku || '').toString().split('-');
+  return parts[parts.length - 1] ?? '';
+}
+
+function normalizeSize(raw) {
+  return raw.replace(/(\d+ft)([A-Z])/g, '$1 $2');
+}
+
+const VARIANT_SIZE_ORDER = {
+  '2x4': 1, '2x8': 2, '4x6': 3, '5x8': 4, '7ft Round': 5, '7x10': 6, '8x11': 7, '10x13': 8,
+};
+
+function getVariantSortOrder(size) {
+  if (!size) return 99;
+  return VARIANT_SIZE_ORDER[size] ?? 99;
 }
 
 /** Parse SIZE field: "10x13 (9'2"x12'5")" → {size, display} */
@@ -93,16 +125,23 @@ while (true) {
 }
 console.log(`Existing SKUs in DB: ${existingSkus.size}`);
 
+const { data: variantSkuRows } = await supabase.from('product_variants').select('sku');
+const existingVariantSkus = new Set(
+  (variantSkuRows ?? []).map((r) => r.sku).filter(Boolean)
+);
+console.log(`Existing variant SKUs in DB: ${existingVariantSkus.size}`);
+
 const { count: existingZTX } = await supabase
   .from('products').select('id', { count: 'exact', head: true }).eq('manufacturer', 'Zinatex');
 console.log(`Already in DB (Zinatex): ${existingZTX ?? 0}`);
 
-// ── Step 4: Transform ──────────────────────────────────────────────────────────
+// ── Step 4: Transform (group by title + style key → one parent + product_variants) ─
 let filteredPrice = 0, filteredNoName = 0, filteredNoSku = 0;
 let skippedExisting = 0, dupeSku = 0, placeholders = 0;
 let joinMatched = 0, joinNoMatch = 0;
+let skippedPartialGroup = 0;
 const seenSkus = new Set();
-const products = [];
+const groups = new Map();
 
 for (const row of mainRows) {
   const sku   = s(row['Variation SKU']);
@@ -117,10 +156,11 @@ for (const row of mainRows) {
   if (seenSkus.has(sku)) { dupeSku++; continue; }
   seenSkus.add(sku);
 
-  if (existingSkus.has(sku)) { skippedExisting++; continue; }
+  if (existingSkus.has(sku) || existingVariantSkus.has(sku)) {
+    skippedExisting++;
+    continue;
+  }
 
-  // ── Inventory join ───────────────────────────────────────────────────────────
-  // Inventory file is authoritative. If not found → in_stock=false per spec.
   let inStock;
   if (invMap.has(sku)) {
     joinMatched++;
@@ -130,31 +170,98 @@ for (const row of mainRows) {
     inStock = false;
   }
 
-  // Images
   const images = parseImages(row);
   if (images[0] === PLACEHOLDER) placeholders++;
 
-  products.push({
-    name: title,
-    slug: generateSlug(title, sku),
-    description: s(row['DESCRIPTION']) || title,
-    price: Math.round(price * 100) / 100,
-    category: 'rug',              // hardcoded — not trusted from CSV
+  const key = groupKey(title, sku);
+  const bucket = groups.get(key) ?? [];
+  bucket.push({
+    title,
     sku,
+    price: Math.round(price * 100) / 100,
+    inStock,
     images,
-    manufacturer: 'Zinatex',     // hardcoded — not trusted from CSV
     color: (s(row['COLOR']) || '').slice(0, 100) || null,
     dimensions: parseDimensions(s(row['SIZE'])),
-    in_stock: inStock,
+    description: s(row['DESCRIPTION']) || title,
+  });
+  groups.set(key, bucket);
+}
+
+const workItems = [];
+for (const [, members] of groups) {
+  const inFile = members.length;
+  const pending = members.filter(
+    (m) => !existingSkus.has(m.sku) && !existingVariantSkus.has(m.sku)
+  );
+  if (pending.length === 0) continue;
+  if (pending.length < inFile) {
+    skippedPartialGroup++;
+    console.warn(
+      `  [SKIP GROUP] "${pending[0].title}" — only ${pending.length}/${inFile} SKUs are new; fix DB or CSV and re-run`
+    );
+    continue;
+  }
+
+  pending.sort((a, b) => {
+    const ai = a.images.length;
+    const bi = b.images.length;
+    if (bi !== ai) return bi - ai;
+    return a.price - b.price;
+  });
+
+  const parent = pending[0];
+  const hasVariants = pending.length > 1;
+  const slug = generateSlug(parent.title, parent.sku);
+
+  const productPayload = {
+    name: parent.title,
+    slug,
+    description: parent.description,
+    price: parent.price,
+    category: 'rug',
+    sku: parent.sku,
+    images: parent.images,
+    manufacturer: 'Zinatex',
+    color: parent.color,
+    dimensions: parent.dimensions,
+    in_stock: parent.inStock,
+    has_variants: hasVariants,
+    variant_type: hasVariants ? 'rug' : null,
     on_sale: false,
     rating: 0,
     review_count: 0,
     tags: [],
-  });
+  };
+
+  const variantPayloads = hasVariants
+    ? pending.map((m) => {
+        const sizeFromCsv = m.dimensions?.size ?? null;
+        const sizeFromSku = normalizeSize(extractRawSize(m.sku));
+        const size = sizeFromCsv || sizeFromSku || null;
+        return {
+          sku: m.sku,
+          size,
+          color: m.color,
+          price: m.price,
+          compare_at_price: null,
+          in_stock: m.inStock,
+          stock_qty: 0,
+          image_url: m.images[0] ?? null,
+          sort_order: getVariantSortOrder(size),
+        };
+      })
+    : [];
+
+  workItems.push({ product: productPayload, variants: variantPayloads });
 }
 
+let variantRowsToInsert = 0;
+for (const w of workItems) variantRowsToInsert += w.variants.length;
+
 console.log('\n=== TRANSFORM SUMMARY ===');
-console.log(`  Ready to insert:         ${products.length}`);
+console.log(`  Parent products to insert: ${workItems.length}`);
+console.log(`  Variant rows to insert:      ${variantRowsToInsert}`);
 console.log(`  Join matched (inv file): ${joinMatched}`);
 console.log(`  Join no match → false:   ${joinNoMatch}`);
 console.log(`  Filtered (bad price):    ${filteredPrice}`);
@@ -162,21 +269,47 @@ console.log(`  Filtered (no name):      ${filteredNoName}`);
 console.log(`  Filtered (no SKU):       ${filteredNoSku}`);
 console.log(`  Skipped (dupe SKU):      ${dupeSku}`);
 console.log(`  Skipped (in DB):         ${skippedExisting}`);
+console.log(`  Skipped (partial groups): ${skippedPartialGroup}`);
 console.log(`  Placeholder images:      ${placeholders}`);
 
-// ── Step 5: Batch insert ───────────────────────────────────────────────────────
-const batches = [];
-for (let i = 0; i < products.length; i += BATCH_SIZE) batches.push(products.slice(i, i + BATCH_SIZE));
+// ── Step 5: Batch insert products, then product_variants ───────────────────────
+let totalInserted = 0, batchErrors = 0, variantInsertErrors = 0;
 
-let totalInserted = 0, batchErrors = 0;
-for (let i = 0; i < batches.length; i++) {
-  const { error } = await supabase.from('products').insert(batches[i]);
+for (let i = 0; i < workItems.length; i += BATCH_SIZE) {
+  const batch = workItems.slice(i, i + BATCH_SIZE);
+  const productRows = batch.map((w) => w.product);
+  const { data: inserted, error } = await supabase
+    .from('products')
+    .insert(productRows)
+    .select('id, slug');
+
   if (error) {
-    console.error(`  ERROR batch ${i+1}/${batches.length}: ${error.message}`);
+    console.error(`  ERROR product batch ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`);
     batchErrors++;
-  } else {
-    totalInserted += batches[i].length;
-    console.log(`  Batch ${i+1}/${batches.length} complete — ${batches[i].length} inserted`);
+    continue;
+  }
+
+  totalInserted += inserted?.length ?? 0;
+  console.log(
+    `  Product batch ${Math.floor(i / BATCH_SIZE) + 1} complete — ${inserted?.length ?? 0} inserted`
+  );
+
+  if (!inserted || inserted.length !== batch.length) {
+    console.error('  ERROR: insert count mismatch — skipping variants for this batch');
+    variantInsertErrors++;
+    continue;
+  }
+
+  for (let j = 0; j < batch.length; j++) {
+    const vars = batch[j].variants;
+    if (!vars.length) continue;
+    const pid = inserted[j].id;
+    const withPid = vars.map((v) => ({ ...v, product_id: pid }));
+    const { error: vErr } = await supabase.from('product_variants').insert(withPid);
+    if (vErr) {
+      console.error(`  ERROR variants for ${inserted[j].slug}: ${vErr.message}`);
+      variantInsertErrors++;
+    }
   }
 }
 
@@ -197,6 +330,7 @@ console.log(`Rows in main file:         ${mainRows.length}`);
 console.log(`Rows in inventory file:    ${invRows.length}`);
 console.log(`Inserted this run:         ${totalInserted}`);
 console.log(`Batch errors:              ${batchErrors}`);
+console.log(`Variant insert errors:     ${variantInsertErrors}`);
 console.log(`Placeholder images:        ${placeholders}`);
 console.log(`Final DB count (Zinatex):  ${totalZTX}`);
 console.log(`  In stock:                ${inStockZTX}`);

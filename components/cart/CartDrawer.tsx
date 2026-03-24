@@ -41,7 +41,7 @@ export default function CartDrawer() {
       >
         <SheetHeader className="flex flex-row items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-2">
-            <SheetTitle className="font-display text-xl text-charcoal">
+            <SheetTitle className="font-sans text-xl font-semibold text-charcoal">
               Your Cart
             </SheetTitle>
             {itemCount > 0 && (
@@ -62,7 +62,7 @@ export default function CartDrawer() {
               >
                 <ShoppingBag className="h-16 w-16 text-warm-gray" />
               </motion.div>
-              <p className="text-center font-display text-lg text-charcoal">
+              <p className="text-center font-sans text-lg text-charcoal">
                 Your cart is empty
               </p>
               <Button asChild variant="outline" className="border-charcoal">

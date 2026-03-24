@@ -69,7 +69,7 @@ export default function CustomerProfile({ user, orders }: CustomerProfileProps) 
             {initial}
           </div>
           <div className="text-center sm:text-left">
-            <h1 className="text-2xl font-serif font-bold text-white">
+            <h1 className="font-playfair text-2xl font-semibold text-white">
               {displayName}
             </h1>
             <p className="text-white/60 text-sm mt-1">{user?.email}</p>

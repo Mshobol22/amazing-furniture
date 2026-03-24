@@ -21,10 +21,10 @@ export default async function SaleCollectionPage() {
       {/* Header */}
       <div className="bg-[#2D4A3E] py-12 px-4">
         <div className="mx-auto max-w-7xl">
-          <h1 className="font-display text-3xl font-semibold text-white">
+          <h1 className="font-playfair text-3xl font-semibold text-white md:text-4xl">
             On Sale Now
           </h1>
-          <p className="mt-2 text-sm text-white/70">
+          <p className="mt-2 font-cormorant text-lg italic text-white/75">
             Premium furniture at exceptional prices — limited time only.
           </p>
         </div>

@@ -10,7 +10,7 @@ export default function FeaturedProducts({ products }: FeaturedProductsProps) {
     return (
       <section className="bg-white px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <h2 className="mb-4 font-display text-3xl font-semibold text-charcoal">
+          <h2 className="mb-4 font-cormorant text-3xl font-semibold tracking-wide text-[#2D4A3E] md:text-4xl">
             Featured Collection
           </h2>
           <p className="text-warm-gray">
@@ -24,7 +24,7 @@ export default function FeaturedProducts({ products }: FeaturedProductsProps) {
   return (
     <section className="bg-white px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <h2 className="mb-4 font-display text-3xl font-semibold text-charcoal">
+        <h2 className="mb-4 font-cormorant text-3xl font-semibold tracking-wide text-[#2D4A3E] md:text-4xl">
           Featured Collection
         </h2>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4">

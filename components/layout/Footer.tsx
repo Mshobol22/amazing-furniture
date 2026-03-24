@@ -63,10 +63,10 @@ export default function Footer() {
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col items-center gap-6 md:flex-row md:justify-between md:gap-8">
             <div>
-              <h3 className="font-display text-2xl font-semibold">
+              <h3 className="font-cormorant text-3xl font-semibold tracking-wide text-[#FAF8F5] md:text-4xl">
                 Stay in the loop
               </h3>
-              <p className="mt-1 text-sm text-cream/80">
+              <p className="mt-1 font-cormorant text-lg font-normal italic text-[#FAF8F5]/70">
                 Get exclusive offers and design inspiration.
               </p>
             </div>
@@ -112,28 +112,28 @@ export default function Footer() {
           <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
             {/* Brand */}
             <div>
-              <Link href="/" className="font-display text-xl font-semibold">
+              <Link href="/" className="font-playfair text-xl font-semibold text-[#FAF8F5]">
                 Amazing Home Furniture
               </Link>
-              <p className="mt-3 text-sm text-cream/80">
+              <p className="mt-3 font-sans text-sm text-[#FAF8F5]/70">
                 Handcrafted furniture for the modern home. Elevate your living
                 space with timeless design.
               </p>
-              <p className="mt-2 text-sm font-medium text-walnut">
+              <p className="mt-2 font-sans text-sm font-medium text-walnut">
                 Free shipping over $299
               </p>
             </div>
 
             {/* Quick Links */}
             <div>
-              <h4 className="font-display text-sm font-semibold uppercase tracking-wider">
+              <h4 className="font-cormorant text-base font-semibold uppercase tracking-widest text-[#FAF8F5]">
                 Quick Links
               </h4>
               <ul className="mt-4 space-y-2">
                 <li>
                   <Link
                     href="/collections/all"
-                    className="text-sm text-cream/80 transition-colors hover:text-cream"
+                    className="font-sans text-sm text-[#FAF8F5]/70 transition-colors hover:text-cream"
                   >
                     Shop All
                   </Link>
@@ -141,7 +141,7 @@ export default function Footer() {
                 <li>
                   <Link
                     href="/financing"
-                    className="text-sm text-cream/80 transition-colors hover:text-cream"
+                    className="font-sans text-sm text-[#FAF8F5]/70 transition-colors hover:text-cream"
                   >
                     Financing
                   </Link>
@@ -150,7 +150,7 @@ export default function Footer() {
                   <li key={cat.slug}>
                     <Link
                       href={`/collections/${cat.slug}`}
-                      className="text-sm text-cream/80 transition-colors hover:text-cream"
+                      className="font-sans text-sm text-[#FAF8F5]/70 transition-colors hover:text-cream"
                     >
                       {cat.name}
                     </Link>
@@ -161,14 +161,14 @@ export default function Footer() {
 
             {/* Customer Service */}
             <div>
-              <h4 className="font-display text-sm font-semibold uppercase tracking-wider">
+              <h4 className="font-cormorant text-base font-semibold uppercase tracking-widest text-[#FAF8F5]">
                 Customer Service
               </h4>
               <ul className="mt-4 space-y-2">
                 <li>
                   <Link
                     href="/faq"
-                    className="text-sm text-cream/80 transition-colors hover:text-cream"
+                    className="font-sans text-sm text-[#FAF8F5]/70 transition-colors hover:text-cream"
                   >
                     FAQ
                   </Link>
@@ -176,7 +176,7 @@ export default function Footer() {
                 <li>
                   <Link
                     href="/contact"
-                    className="text-sm text-cream/80 transition-colors hover:text-cream"
+                    className="font-sans text-sm text-[#FAF8F5]/70 transition-colors hover:text-cream"
                   >
                     Contact
                   </Link>
@@ -184,7 +184,7 @@ export default function Footer() {
                 <li>
                   <Link
                     href="/track-order"
-                    className="text-sm text-cream/80 transition-colors hover:text-cream"
+                    className="font-sans text-sm text-[#FAF8F5]/70 transition-colors hover:text-cream"
                   >
                     Track Order
                   </Link>
@@ -194,7 +194,7 @@ export default function Footer() {
 
             {/* Social & Policies */}
             <div>
-              <h4 className="font-display text-sm font-semibold uppercase tracking-wider">
+              <h4 className="font-cormorant text-base font-semibold uppercase tracking-widest text-[#FAF8F5]">
                 Follow Us
               </h4>
               <div className="mt-4 flex gap-3">
@@ -222,14 +222,14 @@ export default function Footer() {
                   </svg>
                 </a>
               </div>
-              <h4 className="mt-6 font-display text-sm font-semibold uppercase tracking-wider">
+              <h4 className="mt-6 font-cormorant text-base font-semibold uppercase tracking-widest text-[#FAF8F5]">
                 Policies
               </h4>
               <ul className="mt-4 space-y-2">
                 <li>
                   <Link
                     href="/shipping"
-                    className="text-sm text-cream/80 transition-colors hover:text-cream"
+                    className="font-sans text-sm text-[#FAF8F5]/70 transition-colors hover:text-cream"
                   >
                     Shipping
                   </Link>
@@ -237,7 +237,7 @@ export default function Footer() {
                 <li>
                   <Link
                     href="/returns"
-                    className="text-sm text-cream/80 transition-colors hover:text-cream"
+                    className="font-sans text-sm text-[#FAF8F5]/70 transition-colors hover:text-cream"
                   >
                     Returns
                   </Link>
@@ -245,7 +245,7 @@ export default function Footer() {
                 <li>
                   <Link
                     href="/privacy-policy"
-                    className="text-sm text-cream/80 transition-colors hover:text-cream"
+                    className="font-sans text-sm text-[#FAF8F5]/70 transition-colors hover:text-cream"
                   >
                     Privacy Policy
                   </Link>
@@ -253,7 +253,7 @@ export default function Footer() {
                 <li>
                   <Link
                     href="/terms"
-                    className="text-sm text-cream/80 transition-colors hover:text-cream"
+                    className="font-sans text-sm text-[#FAF8F5]/70 transition-colors hover:text-cream"
                   >
                     Terms of Service
                   </Link>
@@ -267,15 +267,15 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/10 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <p className="text-xs text-white/30">
+          <p className="font-sans text-xs text-[#FAF8F5]/40">
             © {new Date().getFullYear()} Amazing Home Furniture. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1 text-sm text-cream/60">
+            <span className="flex items-center gap-1 font-sans text-sm text-[#FAF8F5]/70">
               <CreditCard className="h-4 w-4" />
               Visa · Mastercard
             </span>
-            <span className="rounded bg-white/10 px-2 py-0.5 text-xs text-cream/80">
+            <span className="rounded bg-white/10 px-2 py-0.5 font-sans text-xs text-[#FAF8F5]/70">
               Stripe
             </span>
           </div>

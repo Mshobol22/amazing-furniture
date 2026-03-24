@@ -57,8 +57,9 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        display: ["var(--font-display)", "Playfair Display", "serif"],
-        body: ["var(--font-body)", "DM Sans", "sans-serif"],
+        playfair: ["var(--font-playfair)", "Georgia", "serif"],
+        cormorant: ["var(--font-cormorant)", "Georgia", "serif"],
+        sans: ["var(--font-dm-sans)", "system-ui", "sans-serif"],
       },
     },
   },

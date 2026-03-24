@@ -115,7 +115,7 @@ export default function SignupForm() {
         <div className="flex flex-1 items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           <div className="rounded-xl border border-light-sand bg-white p-8 shadow-sm text-center">
-            <h1 className="mb-4 font-display text-2xl font-semibold text-charcoal">
+            <h1 className="mb-4 text-2xl font-semibold text-charcoal">
               Amazing Home Furniture
             </h1>
             <p className="mb-6 text-warm-gray">
@@ -139,7 +139,7 @@ export default function SignupForm() {
       <div className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="rounded-xl border border-light-sand bg-white p-8 shadow-sm">
-          <h1 className="mb-8 text-center font-display text-2xl font-semibold text-charcoal">
+          <h1 className="mb-8 text-center text-2xl font-semibold text-charcoal">
             Amazing Home Furniture
           </h1>
 

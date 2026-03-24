@@ -9,7 +9,7 @@ export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-[#FAF8F5]">
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
-        <h1 className="font-display text-4xl font-semibold text-charcoal">
+        <h1 className=" text-4xl font-semibold text-charcoal">
           Privacy Policy
         </h1>
         <p className="mt-2 text-sm text-warm-gray">Last updated: March 2026</p>
@@ -17,7 +17,7 @@ export default function PrivacyPolicyPage() {
         <div className="mt-10 space-y-10 text-[15px] leading-relaxed text-charcoal/80">
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               1. Who We Are
             </h2>
             <p className="mt-3">
@@ -37,7 +37,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               2. Information We Collect
             </h2>
             <p className="mt-3">
@@ -76,7 +76,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               3. How We Use Your Information
             </h2>
             <ul className="mt-3 list-disc space-y-1 pl-6">
@@ -112,7 +112,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               4. Cookies
             </h2>
             <p className="mt-3">
@@ -141,7 +141,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               5. Third-Party Services
             </h2>
             <p className="mt-3">
@@ -174,7 +174,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               6. Data Retention
             </h2>
             <p className="mt-3">
@@ -188,7 +188,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               7. Your Rights
             </h2>
             <p className="mt-3">
@@ -216,7 +216,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               8. Security
             </h2>
             <p className="mt-3">
@@ -230,7 +230,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               9. Changes to This Policy
             </h2>
             <p className="mt-3">
@@ -241,7 +241,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               10. Contact Us
             </h2>
             <p className="mt-3">

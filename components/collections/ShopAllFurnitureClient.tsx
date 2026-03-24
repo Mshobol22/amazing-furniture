@@ -271,11 +271,13 @@ export default function ShopAllFurnitureClient() {
     <div className="min-h-screen bg-[#FAF8F5] text-[#1C1C1C]">
       <header className="on-forest-surface w-full bg-[#2D4A3E] px-4 py-10 sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-4 text-center">
-          <h1 className="text-3xl font-semibold text-[#FAF8F5] sm:text-4xl">Shop All Furniture</h1>
-          <p className="max-w-3xl text-sm text-[#FAF8F5]/90 sm:text-base">
+          <h1 className="font-playfair text-3xl font-semibold text-[#FAF8F5] md:text-4xl">
+            Shop All Furniture
+          </h1>
+          <p className="max-w-3xl font-cormorant text-lg italic text-[#FAF8F5]/85">
             Browse our complete collection from all brands
           </p>
-          <p className="rounded-full bg-[#FAF8F5] px-4 py-1 text-sm font-semibold text-[#2D4A3E]">
+          <p className="rounded-full bg-[#FAF8F5] px-4 py-1 font-sans text-sm font-semibold text-[#2D4A3E]">
             {catalogTotal.toLocaleString()} Products Available
           </p>
         </div>
@@ -362,7 +364,9 @@ export default function ShopAllFurnitureClient() {
               </div>
             ) : products.length === 0 ? (
               <div className="rounded-xl border border-[#1C1C1C]/10 bg-white p-8 text-center">
-                <h2 className="text-lg font-semibold text-[#1C1C1C]">No products found</h2>
+                <h2 className="font-sans text-lg font-semibold text-[#1C1C1C]">
+                  No products found
+                </h2>
                 <button
                   type="button"
                   onClick={handleClear}

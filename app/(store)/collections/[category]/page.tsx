@@ -238,10 +238,10 @@ export default async function CollectionPage({
         className="flex flex-col items-center justify-center gap-1 py-5"
         style={{ backgroundColor: heroBg }}
       >
-        <h1 className="font-display text-xl font-semibold text-[#FAF8F5] md:text-2xl">
+        <h1 className="font-playfair text-3xl font-semibold text-[#FAF8F5] md:text-4xl">
           {categoryLabel}
         </h1>
-        <p className="text-xs text-[#FAF8F5]/70">
+        <p className="font-sans text-sm text-[#FAF8F5]/80">
           {initialTotal.toLocaleString()} product
           {initialTotal !== 1 ? "s" : ""}
         </p>

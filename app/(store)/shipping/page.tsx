@@ -19,13 +19,13 @@ export default function ShippingPage() {
           <span className="text-charcoal">Shipping</span>
         </nav>
 
-        <h1 className="mb-8 font-display text-3xl font-semibold text-charcoal">
+        <h1 className="mb-8 text-3xl font-semibold text-charcoal">
           Shipping Policy
         </h1>
 
         <div className="prose prose-charcoal max-w-none space-y-6 text-warm-gray">
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               Free Shipping
             </h2>
             <p>
@@ -34,28 +34,28 @@ export default function ShippingPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               Standard Shipping
             </h2>
             <p>5–10 business days</p>
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               Express Shipping
             </h2>
             <p>2–5 business days (additional fee at checkout)</p>
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               Delivery Area
             </h2>
             <p>Contiguous 48 United States only</p>
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               Delivery Options
             </h2>
             <p>
@@ -65,7 +65,7 @@ export default function ShippingPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               Tracking
             </h2>
             <p>

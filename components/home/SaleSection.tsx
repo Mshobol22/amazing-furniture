@@ -25,7 +25,7 @@ export default function SaleSection({ products }: SaleSectionProps) {
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-8 w-1 rounded bg-[#2D4A3E]" />
-            <h2 className="font-display text-2xl font-semibold text-[#1C1C1C]">
+            <h2 className="font-cormorant text-3xl font-semibold tracking-wide text-[#2D4A3E] md:text-4xl">
               On Sale Now
             </h2>
           </div>

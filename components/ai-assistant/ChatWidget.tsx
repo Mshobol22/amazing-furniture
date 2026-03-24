@@ -187,7 +187,7 @@ export default function ChatWidget() {
               <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-walnut" />
-                  <span className="font-display font-semibold text-charcoal">
+                  <span className="font-sans font-semibold text-charcoal">
                     AI Assistant
                   </span>
                 </div>

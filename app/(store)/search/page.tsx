@@ -26,7 +26,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
         {!query ? (
           <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
-            <h1 className="mb-2 font-display text-2xl font-semibold text-charcoal">
+            <h1 className="mb-2 text-2xl font-semibold text-charcoal">
               Search Products
             </h1>
             <p className="text-warm-gray">
@@ -35,7 +35,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </div>
         ) : products.length === 0 ? (
           <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
-            <h1 className="mb-2 font-display text-2xl font-semibold text-charcoal">
+            <h1 className="mb-2 text-2xl font-semibold text-charcoal">
               No products found for &quot;{query}&quot;
             </h1>
             <p className="mb-6 text-warm-gray">
@@ -50,7 +50,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </div>
         ) : (
           <>
-            <h1 className="mb-2 font-display text-3xl font-semibold text-charcoal">
+            <h1 className="mb-2 text-3xl font-semibold text-charcoal">
               Search results for: {query}
             </h1>
             <p className="mb-8 text-sm text-warm-gray">

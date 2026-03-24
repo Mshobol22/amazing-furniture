@@ -46,7 +46,7 @@ export default function AccountSidebar({ user }: AccountSidebarProps) {
             </div>
           )}
           <div className="text-center sm:text-left lg:text-center">
-            <p className="font-display font-medium text-charcoal">
+            <p className="font-sans font-medium text-charcoal">
               {user.displayName}
             </p>
             <p className="text-sm text-warm-gray">{user.email}</p>

@@ -29,7 +29,7 @@ export default async function NewsletterPage() {
 
   return (
     <div>
-      <h1 className="mb-8 font-display text-2xl font-semibold text-charcoal">
+      <h1 className="mb-8 text-2xl font-semibold text-charcoal">
         Newsletter Subscribers
       </h1>
       <NewsletterTable subscribers={subscribers} totalCount={totalCount} />

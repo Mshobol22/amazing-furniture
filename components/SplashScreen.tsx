@@ -36,13 +36,13 @@ export default function SplashScreen() {
     >
         <div className="text-center">
           <p
-            className="font-display text-4xl italic"
+            className="font-playfair text-4xl italic"
             style={{ color: "#2D4A3E" }}
           >
             Amazing
           </p>
           <p
-            className="font-display text-5xl font-bold"
+            className="font-playfair text-5xl font-bold"
             style={{ color: "#1C1C1C" }}
           >
             Home Furniture

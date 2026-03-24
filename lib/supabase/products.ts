@@ -1,5 +1,9 @@
 import { createAdminClient } from "./admin";
 import { brandLogoSrc, proxyIfNfdManufacturer } from "@/lib/nfd-image-proxy";
+import {
+  extractZinatexSlugSuffix,
+  normalizeZinatexVariationSkuForSlug,
+} from "@/lib/zinatex-slug";
 import type { Product } from "@/types";
 
 export function mapRowToProduct(row: Record<string, unknown>): Product {
@@ -159,6 +163,62 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   }
 
   return mapRowToProduct(data);
+}
+
+/**
+ * Legacy Zinatex URLs used /products/[slug] where slug embedded the full Variation SKU
+ * (e.g. …-ztx-99903-beige-10x13). After variant migration only the parent row remains;
+ * resolve via product_variants.sku and redirect to the parent slug.
+ */
+async function findZinatexProductByLegacyVariantSlug(
+  slug: string
+): Promise<Product | null> {
+  const suffix = extractZinatexSlugSuffix(slug);
+  if (!suffix) return null;
+
+  const supabase = createAdminClient();
+  const { data: rows, error } = await supabase
+    .from("product_variants")
+    .select("product_id, sku, products!inner(manufacturer)")
+    .eq("products.manufacturer", "Zinatex");
+
+  if (error || !rows?.length) return null;
+
+  const hit = rows.find(
+    (r: { sku: string }) =>
+      normalizeZinatexVariationSkuForSlug(r.sku) === suffix
+  );
+  if (!hit) return null;
+
+  const { data: productRow, error: pErr } = await supabase
+    .from("products")
+    .select("*")
+    .eq("id", (hit as { product_id: string }).product_id)
+    .single();
+
+  if (pErr || !productRow) return null;
+  return mapRowToProduct(productRow as Record<string, unknown>);
+}
+
+export type ResolveProductPageSlugResult =
+  | { ok: true; product: Product; redirectToSlug?: string }
+  | { ok: false };
+
+export async function resolveProductPageSlug(
+  slug: string
+): Promise<ResolveProductPageSlugResult> {
+  const direct = await getProductBySlug(slug);
+  if (direct) {
+    return { ok: true, product: direct };
+  }
+
+  const legacy = await findZinatexProductByLegacyVariantSlug(slug);
+  if (!legacy) return { ok: false };
+
+  if (legacy.slug !== slug) {
+    return { ok: true, product: legacy, redirectToSlug: legacy.slug };
+  }
+  return { ok: true, product: legacy };
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {

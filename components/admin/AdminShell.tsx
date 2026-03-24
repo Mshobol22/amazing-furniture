@@ -51,7 +51,10 @@ export default function AdminShell({ children, adminEmail }: AdminShellProps) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div
+      data-admin-root
+      className="flex h-screen overflow-hidden bg-gray-50 font-sans"
+    >
       {/* Mobile backdrop */}
       {sidebarOpen && (
         <div

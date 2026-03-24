@@ -29,7 +29,7 @@ export default async function AccountOrdersPage() {
           >
             ← Back to Account
           </Link>
-          <h1 className="font-display text-2xl font-semibold text-white">
+          <h1 className=" text-2xl font-semibold text-white">
             My Orders
           </h1>
         </div>

@@ -28,11 +28,11 @@ export default function FinancingSection() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex items-center gap-3">
           <CreditCard className="h-6 w-6 text-[#2D4A3E]" />
-          <h2 className="font-display text-2xl font-semibold text-charcoal sm:text-3xl">
+          <h2 className="font-cormorant text-3xl font-semibold tracking-wide text-[#2D4A3E] md:text-4xl">
             Flexible Financing Options
           </h2>
         </div>
-        <p className="mb-8 max-w-2xl text-warm-gray">
+        <p className="mb-8 max-w-2xl font-cormorant text-lg font-normal italic text-[#1C1C1C]/60">
           Make your dream furniture affordable with our financing partners.
           Apply online — no obligation, no impact on your credit score to check
           your options.
@@ -60,7 +60,7 @@ export default function FinancingSection() {
                 aria-hidden
               />
               <div className="relative z-10 flex flex-col p-6">
-                <h3 className="font-display text-lg font-semibold text-white drop-shadow-md sm:text-xl">
+                <h3 className="font-sans text-lg font-semibold text-white drop-shadow-md sm:text-xl">
                   {opt.name}
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-white/95 drop-shadow-sm sm:text-[0.9375rem]">

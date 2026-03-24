@@ -271,7 +271,7 @@ export default function SlidesPage() {
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold text-charcoal">
+        <h1 className=" text-2xl font-semibold text-charcoal">
           Hero Slides
         </h1>
         {!showForm && (
@@ -289,7 +289,7 @@ export default function SlidesPage() {
         <section className="mb-10">
           <div className="rounded-lg border border-gray-200 bg-white p-6">
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="font-display text-lg font-semibold text-charcoal">
+              <h2 className=" text-lg font-semibold text-charcoal">
                 {editingId ? "Edit Slide" : "New Slide"}
               </h2>
               <button
@@ -371,7 +371,7 @@ export default function SlidesPage() {
                     {form.headline && (
                       <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent p-4">
                         <div>
-                          <p className="font-display text-base font-semibold leading-snug text-white">
+                          <p className=" text-base font-semibold leading-snug text-white">
                             {form.headline}
                           </p>
                           {form.subheading && (
@@ -542,7 +542,7 @@ export default function SlidesPage() {
       {/* ── Slides List ─────────────────────────────────────────────────────── */}
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold text-charcoal">
+          <h2 className=" text-lg font-semibold text-charcoal">
             All Slides
           </h2>
           {orderDirty && (

@@ -24,7 +24,7 @@ export default function ManufacturerSection({
   return (
     <section className="bg-[#FAF8F5] px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-7xl">
-        <h2 className="mb-8 text-center font-display text-2xl font-semibold text-[#1C1C1C]">
+        <h2 className="mb-8 text-center font-cormorant text-3xl font-semibold tracking-wide text-[#2D4A3E] md:text-4xl">
           Shop by Brand
         </h2>
 
@@ -71,7 +71,7 @@ export default function ManufacturerSection({
                         className="object-contain object-center"
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center px-2 text-center text-sm font-medium text-gray-400">
+                      <div className="flex h-full items-center justify-center px-2 text-center font-playfair text-lg font-semibold text-[#1C1C1C]">
                         {m.name}
                       </div>
                     )}

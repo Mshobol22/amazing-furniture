@@ -68,7 +68,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     <div className="min-h-screen bg-[#FAF8F5]">
       {/* Slim hero bar */}
       <div className="flex h-20 items-center justify-center bg-[#1C1C1C]">
-        <h1 className="font-display text-xl font-semibold text-[#FAF8F5] md:text-2xl">
+        <h1 className="font-playfair text-3xl font-semibold text-[#FAF8F5] md:text-4xl">
           Shop All Furniture
         </h1>
       </div>

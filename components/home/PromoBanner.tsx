@@ -9,7 +9,7 @@ export default function PromoBanner() {
         aria-hidden
       />
       <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-        <p className="font-display text-lg font-medium text-cream sm:text-xl">
+        <p className="font-sans text-sm font-medium text-cream sm:text-base">
           Free Shipping on Orders Over $299 · Flexible Financing Available ·
           Illinois-Based Business
         </p>

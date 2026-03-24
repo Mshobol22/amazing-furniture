@@ -37,7 +37,7 @@ export default async function WishlistPage() {
           />
           <main className="flex-1">
             <div className="rounded-lg border border-light-sand bg-white p-6">
-              <h2 className="mb-6 font-display text-2xl font-semibold text-charcoal">
+              <h2 className="mb-6 text-2xl font-semibold text-charcoal">
                 Wishlist
               </h2>
               <WishlistContent />

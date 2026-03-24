@@ -69,7 +69,7 @@ export default function FinancingPage() {
           <span className="text-sm font-semibold uppercase tracking-widest text-[#2D4A3E]">
             Flexible Payments
           </span>
-          <h1 className="mt-3 font-display text-4xl font-bold md:text-5xl">
+          <h1 className="mt-3 text-4xl font-bold md:text-5xl">
             Buy Now, Pay Later
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-white/70">
@@ -90,7 +90,7 @@ export default function FinancingPage() {
       {/* Payment plans */}
       <section className="bg-[#FAF8F5] py-16">
         <div className="mx-auto max-w-4xl px-4">
-          <h2 className="mb-8 text-center font-display text-2xl font-bold text-[#1C1C1C]">
+          <h2 className="mb-8 text-center text-2xl font-bold text-[#1C1C1C]">
             Payment Plans
           </h2>
           <div className="grid gap-6 md:grid-cols-3">
@@ -139,7 +139,7 @@ export default function FinancingPage() {
       {/* How it works */}
       <section className="bg-white py-16">
         <div className="mx-auto max-w-3xl px-4">
-          <h2 className="mb-12 text-center font-display text-2xl font-bold text-[#1C1C1C]">
+          <h2 className="mb-12 text-center text-2xl font-bold text-[#1C1C1C]">
             How It Works
           </h2>
           <div className="grid gap-8 text-center md:grid-cols-3">
@@ -159,7 +159,7 @@ export default function FinancingPage() {
       {/* FAQ */}
       <section className="bg-[#FAF8F5] py-16">
         <div className="mx-auto max-w-2xl px-4">
-          <h2 className="mb-8 text-center font-display text-2xl font-bold text-[#1C1C1C]">
+          <h2 className="mb-8 text-center text-2xl font-bold text-[#1C1C1C]">
             Financing FAQ
           </h2>
           <Accordion type="single" collapsible className="rounded-lg border border-gray-200 bg-white">

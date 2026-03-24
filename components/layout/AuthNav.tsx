@@ -5,7 +5,7 @@ export default function AuthNav() {
     <header className="flex h-14 items-center justify-between border-b border-gray-100 bg-[#FAF8F5] px-6">
       <Link
         href="/"
-        className="font-display text-lg text-[#1C1C1C] hover:opacity-80"
+        className="font-playfair text-xl font-semibold text-[#1C1C1C] hover:opacity-80"
       >
         Amazing Home Furniture
       </Link>

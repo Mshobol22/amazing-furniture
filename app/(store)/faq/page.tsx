@@ -78,7 +78,7 @@ export default function FAQPage() {
           <span className="text-charcoal">FAQ</span>
         </nav>
 
-        <h1 className="mb-8 font-display text-3xl font-semibold text-charcoal">
+        <h1 className="mb-8 text-3xl font-semibold text-charcoal">
           Frequently Asked Questions
         </h1>
 

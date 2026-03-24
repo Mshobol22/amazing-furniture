@@ -48,17 +48,17 @@ const categoryLabel = (cat: string) =>
   cat.charAt(0).toUpperCase() + cat.slice(1).replace("-", " ");
 
 const CARD_ELEMENT_OPTIONS = {
-  style: {
-    base: {
-      color: "#1C1C1C",
-      fontFamily: "DM Sans, sans-serif",
-      fontSize: "16px",
-      "::placeholder": { color: "#6B6560" },
-    },
-    invalid: {
-      color: "#dc2626",
-    },
-  },
+ style: {
+ base: {
+ color: "#1C1C1C",
+ fontFamily: "var(--font-dm-sans), system-ui, sans-serif",
+ fontSize: "16px",
+ "::placeholder": { color: "#6B6560" },
+ },
+ invalid: {
+ color: "#dc2626",
+ },
+ },
 };
 
 function CheckoutForm() {
@@ -236,7 +236,7 @@ function CheckoutForm() {
               exit={{ opacity: 0, x: 20 }}
               className="rounded-lg border border-light-sand bg-cream p-6"
             >
-              <h2 className="mb-6 font-display text-2xl font-semibold text-charcoal">
+              <h2 className="mb-6 text-2xl font-semibold text-charcoal">
                 Shipping Information
               </h2>
               <form
@@ -354,7 +354,7 @@ function CheckoutForm() {
               className="space-y-6"
             >
               <div className="rounded-lg border border-light-sand bg-cream p-6">
-                <h2 className="mb-4 font-display text-2xl font-semibold text-charcoal">
+                <h2 className="mb-4 text-2xl font-semibold text-charcoal">
                   Order Summary
                 </h2>
                 <div className="max-h-48 space-y-2 overflow-y-auto">
@@ -418,7 +418,7 @@ function CheckoutForm() {
               </div>
 
               <div className="rounded-lg border border-light-sand bg-cream p-6">
-                <h2 className="mb-4 font-display text-2xl font-semibold text-charcoal">
+                <h2 className="mb-4 text-2xl font-semibold text-charcoal">
                   Payment
                 </h2>
                 <div className="rounded-md border border-warm-gray/30 bg-white p-4">
@@ -490,7 +490,7 @@ function CheckoutForm() {
               >
                 <Check className="h-10 w-10 text-green-600" />
               </motion.div>
-              <h2 className="mb-2 font-display text-3xl font-semibold text-charcoal">
+              <h2 className="mb-2 text-3xl font-semibold text-charcoal">
                 Order Confirmed!
               </h2>
               <p className="mb-8 text-warm-gray">
@@ -561,7 +561,7 @@ export default function CheckoutPage() {
       <div className="mx-auto mt-20 max-w-md px-4">
         <div className="flex flex-col items-center text-center">
           <Lock className="mb-4 h-12 w-12 text-[#2D4A3E]" />
-          <h1 className="mb-2 font-display text-[28px] font-semibold text-charcoal">
+          <h1 className="mb-2 text-[28px] font-semibold text-charcoal">
             Sign In to Complete Your Order
           </h1>
           <p className="mb-8 text-warm-gray">

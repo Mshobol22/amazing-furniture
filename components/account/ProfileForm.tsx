@@ -72,7 +72,7 @@ export default function ProfileForm({
           </div>
         )}
         <div>
-          <p className="font-display font-medium text-charcoal">{displayName}</p>
+          <p className="font-sans font-medium text-charcoal">{displayName}</p>
           <p className="text-sm text-warm-gray">Member since {memberSince}</p>
         </div>
       </div>

@@ -284,7 +284,7 @@ export default function Navbar() {
             </button>
             <Link
               href="/"
-              className={`font-display text-lg font-semibold whitespace-nowrap flex-shrink-0 ${logoColor}`}
+              className={`font-playfair text-xl font-semibold whitespace-nowrap flex-shrink-0 ${logoColor}`}
             >
               Amazing Home
             </Link>
@@ -455,7 +455,7 @@ export default function Navbar() {
               >
                 <Link
                   href={`/collections/${cat.slug}`}
-                  className={`block px-3 py-2 text-sm font-semibold cursor-pointer whitespace-nowrap ${
+                  className={`block px-3 py-2 font-sans text-sm font-medium tracking-wide cursor-pointer whitespace-nowrap ${
                     navTransparent ? "text-white/90 hover:text-white" : "text-cream/90 hover:text-cream"
                   } ${
                     isCollectionActive(cat.slug)
@@ -522,7 +522,7 @@ export default function Navbar() {
             <div className="flex h-14 items-center justify-between border-b border-[#ede8e3] px-4">
               <Link
                 href="/"
-                className="font-display font-semibold text-[#1C1C1C]"
+                className="font-playfair text-xl font-semibold text-[#1C1C1C]"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Amazing Home

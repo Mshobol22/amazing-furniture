@@ -38,13 +38,13 @@ export default function ContactPage() {
           <span className="text-charcoal">Contact</span>
         </nav>
 
-        <h1 className="mb-8 font-display text-3xl font-semibold text-charcoal">
+        <h1 className="mb-8 text-3xl font-semibold text-charcoal">
           Contact Us
         </h1>
 
         <div className="grid gap-12 lg:grid-cols-2">
           <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="mb-4 font-display text-lg font-semibold text-charcoal">
+            <h2 className="mb-4 text-lg font-semibold text-charcoal">
               Amazing Home Furniture
             </h2>
             <p className="text-sm text-warm-gray">
@@ -85,7 +85,7 @@ export default function ContactPage() {
           </div>
 
           <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="mb-4 font-display text-lg font-semibold text-charcoal">
+            <h2 className="mb-4 text-lg font-semibold text-charcoal">
               Send us a message
             </h2>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

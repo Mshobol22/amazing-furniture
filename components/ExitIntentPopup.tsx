@@ -124,7 +124,7 @@ export default function ExitIntentPopup() {
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
                   <Check className="h-8 w-8 text-green-600" />
                 </div>
-                <h2 className="font-display text-2xl font-semibold text-charcoal">
+                <h2 className="font-sans text-2xl font-semibold text-charcoal">
                   You&apos;re in!
                 </h2>
                 <p className="mt-2 text-warm-gray">Your code is:</p>
@@ -163,7 +163,7 @@ export default function ExitIntentPopup() {
                 >
                   Exclusive Offer
                 </p>
-                <h2 className="mt-2 font-display text-[28px] font-semibold text-charcoal">
+                <h2 className="mt-2 font-sans text-[28px] font-semibold text-charcoal">
                   Before You Go...
                 </h2>
                 <p

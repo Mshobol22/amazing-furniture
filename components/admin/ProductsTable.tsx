@@ -247,28 +247,28 @@ function ProductsTableInner({ products }: ProductsTableProps) {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-        <table className="w-full min-w-[700px] text-sm">
+        <table className="w-full min-w-[700px] font-sans text-sm">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50">
-              <th className="w-16 px-4 py-3 text-left font-medium text-charcoal">
+              <th className="w-16 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-charcoal">
                 Thumbnail
               </th>
-              <th className="w-20 px-4 py-3 text-left font-medium text-charcoal">
+              <th className="w-20 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-charcoal">
                 SKU
               </th>
-              <th className="min-w-0 flex-1 px-4 py-3 text-left font-medium text-charcoal">
+              <th className="min-w-0 flex-1 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-charcoal">
                 Name
               </th>
-              <th className="w-24 px-4 py-3 text-left font-medium text-charcoal">
+              <th className="w-24 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-charcoal">
                 Category
               </th>
-              <th className="w-[90px] px-4 py-3 text-left font-medium text-charcoal">
+              <th className="w-[90px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-charcoal">
                 Price
               </th>
-              <th className="w-20 px-4 py-3 text-left font-medium text-charcoal">
+              <th className="w-20 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-charcoal">
                 Stock
               </th>
-              <th className="w-20 px-4 py-3 text-left font-medium text-charcoal">
+              <th className="w-20 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-charcoal">
                 Actions
               </th>
             </tr>

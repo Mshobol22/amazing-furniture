@@ -19,7 +19,7 @@ export default async function PromotionsPage() {
 
   return (
     <div>
-      <h1 className="mb-8 font-display text-2xl font-semibold text-charcoal">
+      <h1 className="mb-8 text-2xl font-semibold text-charcoal">
         Promotions & Sales
       </h1>
       <div className="grid gap-6 lg:grid-cols-2">

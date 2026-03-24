@@ -257,7 +257,7 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#1C1C1C]">
-      <header className="w-full border-b border-gray-200 bg-[#FAF8F5] px-4 py-16 sm:px-6 lg:px-8">
+      <header className="w-full border-b border-[#1E3329] bg-[#1E3329] px-4 py-16 sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-4 text-center">
           {headerLogoSrc ? (
             <div
@@ -278,14 +278,18 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
               />
             </div>
           ) : null}
-          <h1 className="text-3xl font-bold text-[#1C1C1C]">{manufacturer.name}</h1>
-          <p className="max-w-3xl text-base text-gray-500">{manufacturer.description}</p>
+          <h1 className="font-playfair text-3xl font-semibold text-[#FAF8F5] md:text-4xl">
+            {manufacturer.name}
+          </h1>
+          <p className="max-w-3xl font-cormorant text-lg font-normal italic text-[#FAF8F5]/85">
+            {manufacturer.description}
+          </p>
           {manufacturer.heroTagline ? (
-            <p className="rounded-full border border-gray-300 bg-transparent px-4 py-1 text-sm font-medium text-[#1C1C1C]">
+            <p className="rounded-full border border-[#FAF8F5]/40 bg-transparent px-4 py-1 font-sans text-sm font-medium text-[#FAF8F5]">
               {manufacturer.heroTagline}
             </p>
           ) : null}
-          <p className="rounded-full border border-[#1C1C1C] bg-transparent px-4 py-1 text-sm font-semibold text-[#1C1C1C]">
+          <p className="rounded-full border border-[#FAF8F5]/50 bg-transparent px-4 py-1 font-sans text-sm font-semibold text-[#FAF8F5]">
             {brandTotal.toLocaleString()} Products Available
           </p>
         </div>
@@ -368,7 +372,7 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
               </div>
             ) : products.length === 0 ? (
               <div className="rounded-xl border border-[#1C1C1C]/10 bg-white p-8 text-center">
-                <h2 className="text-lg font-semibold text-[#1C1C1C]">No products found</h2>
+                <h2 className="font-sans text-lg font-semibold text-[#1C1C1C]">No products found</h2>
                 <button
                   type="button"
                   onClick={clearFilters}

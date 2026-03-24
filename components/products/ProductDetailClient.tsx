@@ -26,10 +26,10 @@ export default function ProductDetailClient({
       {/* Description — always visible */}
       {product.description && (
         <div className="mt-4 border-t border-gray-100 pt-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#2D4A3E] mb-2">
+          <p className="mb-2 font-sans text-xs font-medium uppercase tracking-widest text-[#1C1C1C]/50">
             About This Product
           </p>
-          <p className="text-[#1C1C1C] font-medium text-base leading-relaxed">
+          <p className="font-cormorant text-lg leading-relaxed text-[#1C1C1C]/80">
             {product.description}
           </p>
         </div>
@@ -57,7 +57,7 @@ export default function ProductDetailClient({
         <Button
           onClick={handleAddToCart}
           disabled={!product.in_stock}
-          className="w-fit bg-[#1C1C1C] text-white hover:bg-[#2a2a2a] disabled:opacity-50"
+          className="w-fit bg-[#1C1C1C] font-sans font-semibold tracking-wide text-white hover:bg-[#2a2a2a] disabled:opacity-50"
         >
           <ShoppingCart className="mr-2 h-4 w-4 text-[#2D4A3E]" />
           Add to Cart
@@ -81,7 +81,7 @@ export default function ProductDetailClient({
         <Button
           onClick={handleAddToCart}
           disabled={!product.in_stock}
-          className="flex-1 bg-[#1C1C1C] text-white hover:bg-[#2a2a2a] disabled:opacity-50"
+          className="flex-1 bg-[#1C1C1C] font-sans font-semibold tracking-wide text-white hover:bg-[#2a2a2a] disabled:opacity-50"
         >
           <ShoppingCart className="mr-2 h-4 w-4 text-[#2D4A3E]" />
           {product.in_stock ? "Add to Cart" : "Out of Stock"}

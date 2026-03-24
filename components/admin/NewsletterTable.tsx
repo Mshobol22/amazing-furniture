@@ -82,14 +82,24 @@ export default function NewsletterTable({
 
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
+        <table className="min-w-full divide-y divide-gray-200 font-sans text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-warm-gray">Email</th>
-              <th className="px-4 py-3 text-left font-medium text-warm-gray">Subscribed</th>
-              <th className="px-4 py-3 text-left font-medium text-warm-gray">Source</th>
-              <th className="px-4 py-3 text-left font-medium text-warm-gray">Status</th>
-              <th className="px-4 py-3 text-right font-medium text-warm-gray">Action</th>
+              <th className="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-wider text-warm-gray">
+                Email
+              </th>
+              <th className="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-wider text-warm-gray">
+                Subscribed
+              </th>
+              <th className="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-wider text-warm-gray">
+                Source
+              </th>
+              <th className="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-wider text-warm-gray">
+                Status
+              </th>
+              <th className="px-4 py-3 text-right font-sans text-xs font-semibold uppercase tracking-wider text-warm-gray">
+                Action
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">

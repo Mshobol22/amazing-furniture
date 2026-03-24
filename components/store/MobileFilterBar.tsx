@@ -83,7 +83,7 @@ export default function MobileFilterBar({
           className="flex w-[300px] max-w-full flex-col overflow-hidden bg-[#FAF8F5] p-0"
         >
           <SheetHeader className="shrink-0 border-b border-gray-100 px-6 py-4">
-            <SheetTitle className="font-display text-lg font-semibold text-[#1C1C1C]">
+            <SheetTitle className="font-sans text-lg font-semibold text-[#1C1C1C]">
               Filters
             </SheetTitle>
           </SheetHeader>

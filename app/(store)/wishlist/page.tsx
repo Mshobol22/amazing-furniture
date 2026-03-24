@@ -14,7 +14,7 @@ export default function WishlistPage() {
           <span className="text-charcoal">Wishlist</span>
         </nav>
 
-        <h1 className="mb-8 font-display text-3xl font-semibold text-charcoal">
+        <h1 className="mb-8 text-3xl font-semibold text-charcoal">
           Your Wishlist
         </h1>
 

@@ -16,10 +16,10 @@ export default function LifestyleSplit() {
           />
         </div>
         <div className="flex flex-col justify-center py-12 lg:py-0">
-          <h2 className="font-display text-3xl font-semibold text-charcoal sm:text-4xl">
+          <h2 className="font-cormorant text-3xl font-semibold tracking-wide text-[#2D4A3E] sm:text-4xl md:text-4xl">
             Designed for Real Living
           </h2>
-          <p className="mt-6 text-lg leading-relaxed text-warm-gray">
+          <p className="mt-6 font-cormorant text-lg font-normal italic leading-relaxed text-[#1C1C1C]/60">
             Every piece in our collection is crafted with intention. We believe
             furniture should adapt to your life—comfortable for everyday use,
             beautiful for special moments, and built to last for generations.

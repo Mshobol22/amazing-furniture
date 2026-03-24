@@ -123,13 +123,13 @@ export default function BannersPage() {
 
   return (
     <div>
-      <h1 className="mb-8 font-display text-2xl font-semibold text-charcoal">
+      <h1 className="mb-8 text-2xl font-semibold text-charcoal">
         Banners
       </h1>
 
       {/* Create / Edit form */}
       <section className="mb-12">
-        <h2 className="mb-4 font-display text-lg font-semibold text-charcoal">
+        <h2 className="mb-4 text-lg font-semibold text-charcoal">
           {editingId ? "Edit Banner" : "Create Banner"}
         </h2>
 
@@ -279,7 +279,7 @@ export default function BannersPage() {
 
       {/* Active banners list */}
       <section>
-        <h2 className="mb-4 font-display text-lg font-semibold text-charcoal">
+        <h2 className="mb-4 text-lg font-semibold text-charcoal">
           Active Banners
         </h2>
         {loading ? (

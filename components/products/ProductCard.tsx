@@ -87,16 +87,16 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         </div>
       </div>
       <div className="flex flex-col gap-1.5 p-3">
-        <h3 className="line-clamp-2 text-sm font-medium text-gray-900">
+        <h3 className="line-clamp-2 font-sans text-sm font-medium text-gray-900">
           {product.name}
         </h3>
-        <p className="text-base font-semibold text-gray-900">
+        <p className="font-sans text-base font-semibold tabular-nums text-gray-900">
           {product.on_sale && product.sale_price != null ? (
             <>
-              <span style={{ color: "#DC2626" }}>
+              <span className="text-base font-semibold text-red-600 tabular-nums">
                 ${product.sale_price.toLocaleString()}
               </span>
-              <span className="ml-2 text-sm font-normal text-gray-500 line-through">
+              <span className="ml-2 text-sm font-normal text-[#1C1C1C]/45 line-through tabular-nums">
                 ${product.price.toLocaleString()}
               </span>
             </>
@@ -105,7 +105,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
               ${product.price.toLocaleString()}
               {product.compare_price != null &&
                 product.compare_price > product.price && (
-                  <span className="ml-2 text-sm font-normal text-gray-500 line-through">
+                  <span className="ml-2 text-sm font-normal text-[#1C1C1C]/45 line-through tabular-nums">
                     ${product.compare_price.toLocaleString()}
                   </span>
                 )}

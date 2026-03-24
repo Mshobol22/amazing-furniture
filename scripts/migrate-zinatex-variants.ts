@@ -33,6 +33,7 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 import { createClient } from "@supabase/supabase-js";
+import { canonicalZinatexProductSlug } from "../lib/zinatex-slug";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -112,6 +113,53 @@ const SIZE_ORDER: Record<string, number> = {
 
 function getSortOrder(size: string): number {
   return SIZE_ORDER[size] ?? 99;
+}
+
+async function applyCanonicalZinatexSlug(
+  productId: string,
+  productName: string,
+  productSku: string,
+  logLabel: string
+): Promise<void> {
+  const canonical = canonicalZinatexProductSlug(productName, productSku);
+  const { data: self, error: selfErr } = await supabase
+    .from("products")
+    .select("slug")
+    .eq("id", productId)
+    .single();
+
+  if (selfErr || !self) return;
+  if (self.slug === canonical) return;
+
+  const { data: conflict } = await supabase
+    .from("products")
+    .select("id")
+    .eq("slug", canonical)
+    .neq("id", productId)
+    .maybeSingle();
+
+  if (conflict) {
+    console.warn(
+      `${logLabel} canonical slug "${canonical}" taken — keeping "${self.slug}"`
+    );
+    return;
+  }
+
+  if (DRY_RUN) {
+    console.log(`${logLabel} would set slug → "${canonical}"`);
+    return;
+  }
+
+  const { error } = await supabase
+    .from("products")
+    .update({ slug: canonical })
+    .eq("id", productId);
+
+  if (error) {
+    console.warn(`${logLabel} slug update failed: ${error.message}`);
+  } else {
+    console.log(`${logLabel} slug → "${canonical}"`);
+  }
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
@@ -230,20 +278,26 @@ async function main(): Promise<void> {
       const p = group[0];
       singleRowDesigns++;
 
-      if (p.has_variants === false) {
-        // Already correct — nothing to do
-        continue;
-      }
-
       if (DRY_RUN) {
+        console.log(
+          `[SINGLE]     "${name}" → would set has_variants false + canonical slug`
+        );
         continue;
       }
 
-      await supabase
-        .from("products")
-        .update({ has_variants: false })
-        .eq("id", p.id);
+      if (p.has_variants !== false) {
+        await supabase
+          .from("products")
+          .update({ has_variants: false })
+          .eq("id", p.id);
+      }
 
+      await applyCanonicalZinatexSlug(
+        p.id,
+        p.name,
+        p.sku,
+        `[SLUG]       "${name}"`
+      );
       continue;
     }
 
@@ -288,8 +342,9 @@ async function main(): Promise<void> {
       const sizeList = variantRows.map((v: { size: string }) => v.size).join(", ");
 
       if (DRY_RUN) {
+        const wouldSlug = canonicalZinatexProductSlug(parent.name, parent.sku);
         console.log(
-          `[VARIANT]    "${name}" → parent: ${parent.id}, variants: ${group.length} (${sizeList})`
+          `[VARIANT]    "${name}" → parent: ${parent.id}, variants: ${group.length} (${sizeList}); slug → "${wouldSlug}"`
         );
         variantGroups++;
         variantsInserted += group.length;
@@ -328,6 +383,13 @@ async function main(): Promise<void> {
           throw new Error(`delete non-parent rows: ${deleteErr.message}`);
         }
       }
+
+      await applyCanonicalZinatexSlug(
+        parent.id,
+        parent.name,
+        parent.sku,
+        `[SLUG]       "${name}"`
+      );
 
       console.log(
         `[VARIANT]    "${name}" → parent: ${parent.id}, variants: ${group.length} (${sizeList})`

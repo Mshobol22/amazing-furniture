@@ -19,13 +19,13 @@ export default function PrivacyPage() {
           <span className="text-charcoal">Privacy Policy</span>
         </nav>
 
-        <h1 className="mb-8 font-display text-3xl font-semibold text-charcoal">
+        <h1 className="mb-8 text-3xl font-semibold text-charcoal">
           Privacy Policy
         </h1>
 
         <div className="prose prose-charcoal max-w-none space-y-6 text-warm-gray">
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               Information We Collect
             </h2>
             <p>
@@ -34,7 +34,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               How We Use It
             </h2>
             <p>
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               Third Parties
             </h2>
             <p>
@@ -52,7 +52,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               Cookies
             </h2>
             <p>
@@ -61,7 +61,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               Your Rights
             </h2>
             <p>
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               Contact
             </h2>
             <p>

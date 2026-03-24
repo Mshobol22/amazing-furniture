@@ -35,15 +35,17 @@ export default function BrandProductGridCard({ product }: { product: Product }) 
       <div className="space-y-2 p-3">
         <Link
           href={`/products/${product.slug}`}
-          className="line-clamp-2 text-sm font-medium text-[#1C1C1C] hover:text-[#2D4A3E]"
+          className="line-clamp-2 font-sans text-sm font-medium text-[#1C1C1C] hover:text-[#2D4A3E]"
         >
           {product.name}
         </Link>
-        <p className="text-base font-semibold text-[#1C1C1C]">
+        <p className="font-sans text-base font-semibold tabular-nums text-[#1C1C1C]">
           {product.on_sale && product.sale_price ? (
             <>
-              <span className="text-red-600">${product.sale_price.toLocaleString()}</span>
-              <span className="ml-2 text-sm font-normal text-[#1C1C1C]/45 line-through">
+              <span className="text-base font-semibold text-red-600 tabular-nums">
+                ${product.sale_price.toLocaleString()}
+              </span>
+              <span className="ml-2 text-sm font-normal text-[#1C1C1C]/45 line-through tabular-nums">
                 ${product.price.toLocaleString()}
               </span>
             </>

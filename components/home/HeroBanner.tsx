@@ -60,13 +60,13 @@ export default function HeroBanner() {
           </motion.span>
           <motion.h1
             variants={item}
-            className="font-display text-5xl font-semibold leading-tight text-white sm:text-6xl lg:text-7xl"
+            className="font-playfair text-5xl font-semibold leading-tight text-white sm:text-6xl lg:text-7xl"
           >
             Elevate Your Living Space
           </motion.h1>
           <motion.p
             variants={item}
-            className="text-lg text-white/90 sm:text-xl"
+            className="font-cormorant text-lg font-normal italic text-white/85 sm:text-xl"
           >
             Handcrafted furniture for the modern home
           </motion.p>

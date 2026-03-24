@@ -38,16 +38,16 @@ export default function ProductVariantPageClient({
 
       {/* Product info + variant selector */}
       <div>
-        <h1 className="text-2xl font-serif font-bold text-[#1C1C1C] md:text-3xl">
+        <h1 className="font-playfair text-2xl font-semibold leading-tight text-[#1C1C1C] md:text-3xl">
           {product.name}
         </h1>
 
         {product.description && (
           <div className="mt-4 border-t border-gray-100 pt-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#2D4A3E]">
+            <p className="mb-2 font-sans text-xs font-medium uppercase tracking-widest text-[#1C1C1C]/50">
               About This Product
             </p>
-            <p className="text-base font-medium leading-relaxed text-[#1C1C1C]">
+            <p className="font-cormorant text-lg leading-relaxed text-[#1C1C1C]/80">
               {product.description}
             </p>
           </div>

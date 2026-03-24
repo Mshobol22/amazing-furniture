@@ -1,9 +1,9 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import {
-  getProductBySlug,
   getProducts,
+  resolveProductPageSlug,
 } from "@/lib/supabase/products";
 import { createAdminClient } from "@/lib/supabase/admin";
 import ProductDetailClient from "@/components/products/ProductDetailClient";
@@ -37,9 +37,14 @@ export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
-  if (!product)
+  const resolved = await resolveProductPageSlug(slug);
+  if (!resolved.ok) {
     return { title: "Product Not Found | Amazing Home Furniture" };
+  }
+  if (resolved.redirectToSlug) {
+    redirect(`/products/${resolved.redirectToSlug}`);
+  }
+  const product = resolved.product;
 
   const enrichedTitle = enrichProductTitle(product.name, product.category);
 
@@ -65,11 +70,14 @@ export async function generateMetadata({
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
-
-  if (!product) {
+  const resolved = await resolveProductPageSlug(slug);
+  if (!resolved.ok) {
     notFound();
   }
+  if (resolved.redirectToSlug) {
+    redirect(`/products/${resolved.redirectToSlug}`);
+  }
+  const product = resolved.product;
 
   // Fetch variants for products that support them (e.g. Zinatex rugs)
   let variants: ProductVariant[] = [];
@@ -130,7 +138,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             {/* Product info */}
             <div>
-              <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#1C1C1C]">
+              <h1 className="font-playfair text-2xl font-semibold leading-tight text-[#1C1C1C] md:text-3xl">
                 {product.name}
               </h1>
 
@@ -138,13 +146,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 {product.on_sale && product.sale_price != null ? (
                   <>
-                    <span
-                      className="text-2xl font-semibold"
-                      style={{ color: "#DC2626" }}
-                    >
+                    <span className="font-sans text-2xl font-bold tabular-nums text-red-600">
                       ${product.sale_price.toLocaleString()}
                     </span>
-                    <span className="text-lg text-warm-gray line-through">
+                    <span className="font-sans text-sm font-normal tabular-nums text-[#1C1C1C]/45 line-through">
                       ${product.price.toLocaleString()}
                     </span>
                     <span
@@ -159,12 +164,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   </>
                 ) : (
                   <>
-                    <span className="text-2xl font-semibold text-charcoal">
+                    <span className="font-sans text-2xl font-bold tabular-nums text-[#1C1C1C]">
                       ${product.price.toLocaleString()}
                     </span>
                     {product.compare_price != null &&
                       product.compare_price > product.price && (
-                        <span className="text-lg text-warm-gray line-through">
+                        <span className="font-sans text-sm font-normal tabular-nums text-[#1C1C1C]/45 line-through">
                           ${product.compare_price.toLocaleString()}
                         </span>
                       )}
@@ -199,7 +204,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {/* You May Also Like — horizontal scroll */}
         {relatedProducts.length > 0 && (
           <section className="mt-8">
-            <h2 className="mb-4 text-base font-semibold text-charcoal">
+            <h2 className="mb-4 font-cormorant text-xl font-semibold text-charcoal md:text-2xl">
               You May Also Like
             </h2>
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">

@@ -28,10 +28,10 @@ export default function RugsSpotlight({ products }: RugsSpotlightProps) {
             <p className="mb-2 text-sm font-medium uppercase tracking-[0.2em] text-cream/60">
               Zinatex Collection
             </p>
-            <h2 className="font-display text-3xl font-semibold text-cream sm:text-4xl">
+            <h2 className="font-cormorant text-3xl font-semibold tracking-wide text-cream md:text-4xl">
               Premium Rugs by Zinatex
             </h2>
-            <p className="mt-3 max-w-md text-cream/75">
+            <p className="mt-3 max-w-md font-cormorant text-lg font-normal italic text-[#FAF8F5]/75">
               Handwoven area rugs that bring warmth, texture, and character to
               every room.
             </p>

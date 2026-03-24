@@ -31,7 +31,7 @@ export default function CartPage() {
     return (
       <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center gap-6 px-4 py-16">
         <ShoppingBag className="h-20 w-20 text-warm-gray" />
-        <h2 className="font-display text-2xl font-semibold text-charcoal">
+        <h2 className=" text-2xl font-semibold text-charcoal">
           Your cart is empty
         </h2>
         <p className="text-center text-warm-gray">
@@ -49,7 +49,7 @@ export default function CartPage() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="font-display text-3xl font-semibold text-charcoal">
+            <h1 className=" text-3xl font-semibold text-charcoal">
               Shopping Cart
             </h1>
             <p className="mt-1 text-warm-gray">
@@ -84,7 +84,7 @@ export default function CartPage() {
                     />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-display text-lg font-medium text-charcoal line-clamp-2">
+                    <p className=" text-lg font-medium text-charcoal line-clamp-2">
                       {item.product.name}
                     </p>
                     <p className="text-sm text-warm-gray">
@@ -144,7 +144,7 @@ export default function CartPage() {
           {/* Right column - order summary */}
           <div className="lg:col-span-1">
             <div className="sticky top-24 rounded-lg border border-light-sand bg-cream p-6">
-              <h2 className="mb-6 font-display text-xl font-semibold text-charcoal">
+              <h2 className="mb-6 text-xl font-semibold text-charcoal">
                 Order Summary
               </h2>
               <div className="space-y-3">

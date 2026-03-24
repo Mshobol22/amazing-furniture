@@ -25,7 +25,7 @@ export default async function AdminOrdersPage() {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-8">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold text-charcoal">
+        <h1 className=" text-2xl font-semibold text-charcoal">
           Orders
         </h1>
         <span className="text-sm text-warm-gray">

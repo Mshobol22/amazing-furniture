@@ -96,25 +96,25 @@ export default function HeroSlideshow({ slides }: HeroSlideshowProps) {
           <span className="text-xs font-medium uppercase tracking-[0.3em] text-white/70">
             Amazing Home Furniture
           </span>
-          <h1 className="font-display text-4xl font-semibold leading-tight text-white sm:text-5xl lg:text-6xl">
+          <h1 className="font-playfair text-4xl font-semibold leading-tight text-[#FAF8F5] md:text-5xl lg:text-6xl">
             {slide.headline}
           </h1>
           {slide.subheading && (
-            <p className="max-w-lg text-base text-white/80 sm:text-lg">
+            <p className="max-w-lg font-cormorant text-xl font-normal italic text-[#FAF8F5]/85 md:text-2xl">
               {slide.subheading}
             </p>
           )}
           <div className="flex flex-wrap gap-3 pt-1">
             <Button
               asChild
-              className="bg-forest text-cream hover:bg-forest-light px-6 py-2.5 text-sm"
+              className="bg-forest font-sans font-medium tracking-wide text-cream hover:bg-forest-light px-6 py-2.5 text-sm"
             >
               <Link href={slide.cta_href}>{slide.cta_label}</Link>
             </Button>
             <Button
               asChild
               variant="outline"
-              className="border border-white/60 bg-transparent text-white hover:bg-white/10 hover:text-white px-6 py-2.5 text-sm"
+              className="border border-white/60 bg-transparent font-sans font-medium tracking-wide text-white hover:bg-white/10 hover:text-white px-6 py-2.5 text-sm"
             >
               <Link href="/collections/all">Browse All</Link>
             </Button>

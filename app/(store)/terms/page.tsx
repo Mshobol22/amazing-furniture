@@ -9,7 +9,7 @@ export default function TermsPage() {
   return (
     <div className="min-h-screen bg-[#FAF8F5]">
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
-        <h1 className="font-display text-4xl font-semibold text-charcoal">
+        <h1 className=" text-4xl font-semibold text-charcoal">
           Terms of Service
         </h1>
         <p className="mt-2 text-sm text-warm-gray">Last updated: March 2026</p>
@@ -17,7 +17,7 @@ export default function TermsPage() {
         <div className="mt-10 space-y-10 text-[15px] leading-relaxed text-charcoal/80">
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               1. Acceptance of Terms
             </h2>
             <p className="mt-3">
@@ -33,7 +33,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               2. Products and Pricing
             </h2>
             <p className="mt-3">
@@ -64,7 +64,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               3. Order Process and Acceptance
             </h2>
             <p className="mt-3">
@@ -84,7 +84,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               4. Payment
             </h2>
             <p className="mt-3">
@@ -97,7 +97,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               5. Shipping and Delivery
             </h2>
             <p className="mt-3">
@@ -116,7 +116,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               6. Returns and Refunds
             </h2>
             <p className="mt-3">
@@ -143,7 +143,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               7. Damaged or Defective Items
             </h2>
             <p className="mt-3">
@@ -161,7 +161,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               8. Use of the Site
             </h2>
             <p className="mt-3">
@@ -188,7 +188,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               9. Intellectual Property
             </h2>
             <p className="mt-3">
@@ -201,7 +201,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               10. Limitation of Liability
             </h2>
             <p className="mt-3">
@@ -220,7 +220,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               11. Disclaimer of Warranties
             </h2>
             <p className="mt-3">
@@ -234,7 +234,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               12. Governing Law
             </h2>
             <p className="mt-3">
@@ -247,7 +247,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-semibold text-charcoal">
+            <h2 className=" text-xl font-semibold text-charcoal">
               13. Contact Us
             </h2>
             <p className="mt-3">

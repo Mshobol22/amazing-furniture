@@ -135,7 +135,7 @@ export default function CollectionClient({
           />
           <div className="absolute bottom-0 right-0 top-0 w-[300px] max-w-full overflow-y-auto bg-[#FAF8F5] p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-lg font-semibold text-[#1C1C1C]">
+              <h2 className="font-sans text-lg font-semibold text-[#1C1C1C]">
                 Filters
               </h2>
               <button

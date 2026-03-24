@@ -19,13 +19,13 @@ export default function ReturnsPage() {
           <span className="text-charcoal">Sales Policy</span>
         </nav>
 
-        <h1 className="mb-8 font-display text-3xl font-semibold text-charcoal">
+        <h1 className="mb-8 text-3xl font-semibold text-charcoal">
           Sales Policy
         </h1>
 
         <div className="prose prose-charcoal max-w-none space-y-6 text-warm-gray">
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               All Sales Are Final
             </h2>
             <p>
@@ -37,7 +37,7 @@ export default function ReturnsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               Damaged or Defective Items
             </h2>
             <p>
@@ -50,7 +50,7 @@ export default function ReturnsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-semibold text-charcoal">
+            <h2 className=" text-lg font-semibold text-charcoal">
               Order Cancellations
             </h2>
             <p>

@@ -19,7 +19,7 @@ export default function TrustSignalStrip() {
             className="flex shrink-0 items-center gap-2 text-[#FAF8F5]"
           >
             <Icon className="h-4 w-4 text-white" />
-            <span className="text-xs font-medium uppercase tracking-wide">
+            <span className="font-sans text-sm font-medium uppercase tracking-wide">
               {text}
             </span>
           </div>

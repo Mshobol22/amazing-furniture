@@ -61,7 +61,7 @@ export default function SteppedSidebar({
         return (
           <section key={step.id} className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-[#1C1C1C]">
+              <h3 className="font-sans text-xs font-semibold uppercase tracking-widest text-[#1C1C1C]/60">
                 {step.label.startsWith("Step") ? step.label : `Step ${index + 1}: ${step.label}`}
               </h3>
             </div>
@@ -70,7 +70,7 @@ export default function SteppedSidebar({
                 <button
                   type="button"
                   onClick={() => setStep(step.id, null)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                  className={`rounded-full border px-3 py-1.5 font-sans text-xs font-medium transition ${
                     selected === null
                       ? "border-[#2D4A3E] bg-[#2D4A3E] text-[#FAF8F5]"
                       : "border-[#1C1C1C]/15 bg-white text-[#1C1C1C]"
@@ -84,7 +84,7 @@ export default function SteppedSidebar({
                   key={item.value}
                   type="button"
                   onClick={() => setStep(step.id, item.value)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                  className={`rounded-full border px-3 py-1.5 font-sans text-xs font-medium transition ${
                     selected === item.value
                       ? "border-[#2D4A3E] bg-[#2D4A3E] text-[#FAF8F5]"
                       : "border-[#1C1C1C]/15 bg-white text-[#1C1C1C]"
@@ -121,7 +121,7 @@ export default function SteppedSidebar({
           />
           <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-[#FAF8F5] p-4 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-[#1C1C1C]">Filters</h2>
+              <h2 className="font-sans text-lg font-semibold text-[#1C1C1C]">Filters</h2>
               <button
                 type="button"
                 className="rounded p-1 text-[#1C1C1C]/70"

@@ -175,10 +175,10 @@ export default function VariantSelector({
       {/* Size selector — buttons when 2+ sizes, static label when only 1 */}
       {showSizeSelector ? (
         <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+          <p className="mb-3 font-sans text-sm font-medium text-[#1C1C1C]">
             Rug Size
             {selectedSize && (
-              <span className="ml-1 font-medium normal-case tracking-normal text-[#1C1C1C]">
+              <span className="ml-1 font-medium">
                 {" : "}
                 {selectedSize}
               </span>
@@ -194,7 +194,7 @@ export default function VariantSelector({
                   type="button"
                   onClick={() => handleSizeClick(size)}
                   disabled={oos}
-                  className={`rounded px-3 py-1.5 text-sm transition-colors ${
+                  className={`rounded px-3 py-1.5 font-sans text-sm transition-colors ${
                     active
                       ? "border-2 border-[#2D4A3E] bg-[#2D4A3E] font-medium text-white"
                       : oos
@@ -209,9 +209,9 @@ export default function VariantSelector({
           </div>
         </div>
       ) : allSizes.length === 1 ? (
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+        <p className="font-sans text-sm font-medium text-[#1C1C1C]">
           Rug Size
-          <span className="ml-1 font-medium normal-case tracking-normal text-[#1C1C1C]">
+          <span className="ml-1 font-medium">
             {" : "}
             {allSizes[0]}
           </span>
@@ -221,10 +221,10 @@ export default function VariantSelector({
       {/* Color selector — buttons when 2+ colors, static label when only 1 */}
       {showColorSelector ? (
         <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+          <p className="mb-3 font-sans text-sm font-medium text-[#1C1C1C]">
             Color
             {selectedColor && (
-              <span className="ml-1 font-medium normal-case tracking-normal text-[#1C1C1C]">
+              <span className="ml-1 font-medium">
                 {" : "}
                 {selectedColor}
               </span>
@@ -240,7 +240,7 @@ export default function VariantSelector({
                   <button
                     type="button"
                     onClick={() => handleColorClick(color)}
-                    className={`relative rounded px-3 py-1.5 text-sm transition-colors ${
+                    className={`relative rounded px-3 py-1.5 font-sans text-xs transition-colors ${
                       active
                         ? "border-2 border-[#2D4A3E] bg-[#2D4A3E] font-medium text-white"
                         : oos
@@ -278,9 +278,9 @@ export default function VariantSelector({
           </div>
         </div>
       ) : allColors.length === 1 ? (
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+        <p className="font-sans text-sm font-medium text-[#1C1C1C]">
           Color
-          <span className="ml-1 font-medium normal-case tracking-normal text-[#1C1C1C]">
+          <span className="ml-1 font-medium">
             {" : "}
             {allColors[0]}
           </span>
@@ -323,12 +323,12 @@ function ResolvedState({ variant }: { variant: ProductVariant | null }) {
       {variant.in_stock ? (
         <>
           <div className="flex items-baseline gap-3">
-            <span className="text-2xl font-semibold text-[#1C1C1C]">
+            <span className="font-sans text-2xl font-bold tabular-nums text-[#1C1C1C]">
               ${variant.price.toLocaleString()}
             </span>
             {variant.compare_at_price != null &&
               variant.compare_at_price > variant.price && (
-                <span className="text-lg text-gray-400 line-through">
+                <span className="font-sans text-sm font-normal tabular-nums text-[#1C1C1C]/45 line-through">
                   ${variant.compare_at_price.toLocaleString()}
                 </span>
               )}
@@ -345,7 +345,7 @@ function ResolvedState({ variant }: { variant: ProductVariant | null }) {
         </>
       ) : (
         <>
-          <span className="text-2xl font-semibold text-gray-400">
+          <span className="font-sans text-2xl font-bold tabular-nums text-gray-400">
             ${variant.price.toLocaleString()}
           </span>
           <p className="text-sm font-medium text-red-600">Out of Stock</p>
@@ -403,7 +403,7 @@ function QuantityAndCart({
         type="button"
         onClick={onAdd}
         disabled={!canAdd}
-        className={`flex w-full items-center justify-center gap-2 rounded py-3 text-sm font-medium transition-colors ${
+        className={`flex w-full items-center justify-center gap-2 rounded py-3 font-sans text-sm font-semibold tracking-wide transition-colors ${
           canAdd
             ? "bg-[#2D4A3E] text-white hover:bg-[#3B5E4F]"
             : "cursor-not-allowed bg-gray-200 text-gray-400"
