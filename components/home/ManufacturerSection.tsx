@@ -58,7 +58,7 @@ export default function ManufacturerSection({
                 aria-label={`Shop ${m.name}`}
               >
                 <div
-                  className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-white/10 transition-all duration-200 group-hover:-translate-y-1 group-hover:border-[#2D4A3E] group-hover:shadow-[0_4px_20px_rgba(45,74,62,0.4)]"
+                  className="relative aspect-[5/2] w-full overflow-hidden rounded-lg border border-white/10 transition-all duration-200 group-hover:-translate-y-1 group-hover:border-[#2D4A3E] group-hover:shadow-[0_4px_20px_rgba(45,74,62,0.4)]"
                   style={{ opacity: isComing ? 0.6 : 1 }}
                 >
                   {bg ? (
@@ -67,8 +67,8 @@ export default function ManufacturerSection({
                         src={bg}
                         alt=""
                         fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover object-center"
+                        sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 240px"
                       />
                       <div
                         className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/25 to-black/35"
@@ -83,18 +83,23 @@ export default function ManufacturerSection({
                   )}
 
                   {safeLogo ? (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center p-6">
-                      <Image
-                        src={safeLogo}
-                        alt=""
-                        width={200}
-                        height={80}
-                        className={
-                          localPublicLogo
-                            ? "h-12 w-auto max-w-[min(85%,220px)] object-contain drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] sm:h-14"
-                            : "h-12 w-auto max-w-[min(85%,220px)] object-contain brightness-0 invert drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:h-14"
-                        }
-                      />
+                    <div
+                      className="absolute inset-[4%] z-10 sm:inset-[5%]"
+                      aria-hidden
+                    >
+                      <div className="relative h-full w-full min-h-0">
+                        <Image
+                          src={safeLogo}
+                          alt=""
+                          fill
+                          sizes="(max-width: 640px) 42vw, (max-width: 1024px) 28vw, 220px"
+                          className={
+                            localPublicLogo
+                              ? "object-contain object-center drop-shadow-[0_2px_16px_rgba(0,0,0,0.5)]"
+                              : "object-contain object-center brightness-0 invert drop-shadow-[0_2px_16px_rgba(0,0,0,0.4)]"
+                          }
+                        />
+                      </div>
                     </div>
                   ) : (
                     <span className="sr-only">{m.name}</span>
