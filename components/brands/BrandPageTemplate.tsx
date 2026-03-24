@@ -12,6 +12,7 @@ import {
 } from "@/lib/brand-filters";
 import { getPageWindow } from "@/lib/pagination";
 import BrandProductGridCard from "@/components/products/BrandProductGridCard";
+import { brandLogoSrc } from "@/lib/nfd-image-proxy";
 import { LockIcon } from "@/components/filters/SteppedFilterSidebar";
 
 interface BrandPageTemplateProps {
@@ -381,14 +382,16 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
     </div>
   );
 
+  const headerLogoSrc = brandLogoSrc(manufacturer.name, manufacturer.logo_url);
+
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#1C1C1C]">
       <header className="w-full bg-[#2D4A3E] px-4 py-10 sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-4 text-center">
-          {manufacturer.logo_url ? (
+          {headerLogoSrc ? (
             <div className="relative h-20 w-48">
               <Image
-                src={manufacturer.logo_url}
+                src={headerLogoSrc}
                 alt={`${manufacturer.name} logo`}
                 fill
                 className="object-contain"

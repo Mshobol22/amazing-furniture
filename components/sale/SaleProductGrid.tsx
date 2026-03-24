@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Product } from '@/types'
+import { productLeadImageSrc } from '@/lib/nfd-image-proxy'
 import type { SaleEventWithProducts } from '@/lib/types/sale'
 
 interface Props {
@@ -57,7 +58,7 @@ export default function SaleProductGrid({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {products.map(product => {
-          const image = product.images?.[0] ?? null
+          const image = productLeadImageSrc(product.manufacturer, product.images?.[0])
           const salePrice = product.sale_price
           const comparePrice = product.compare_price ?? product.price
           const savings =

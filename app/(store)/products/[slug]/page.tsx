@@ -123,6 +123,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <ProductImageGallery
               rawImages={product.images}
               productName={product.name}
+              manufacturer={product.manufacturer}
               onSale={product.on_sale}
               salePrice={product.sale_price}
             />

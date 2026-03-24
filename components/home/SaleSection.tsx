@@ -56,7 +56,7 @@ export default function SaleSection({ products }: SaleSectionProps) {
                 <div className="relative aspect-[4/3] overflow-hidden bg-gray-50">
                   {img ? (
                     <Image
-                      src={proxyImage(img)}
+                      src={proxyImage(img, { manufacturer: product.manufacturer })}
                       alt={product.name}
                       fill
                       className="object-cover transition-transform duration-300 group-hover:scale-105"

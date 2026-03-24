@@ -8,6 +8,7 @@ interface ManufacturerCard {
   slug: string;
   description: string;
   logo_url: string | null;
+  backgroundImage: string | null;
   count: number | null;
   is_active?: boolean;
   comingSoon?: boolean;
@@ -31,15 +32,18 @@ export default function ManufacturerSection({
           {manufacturers.filter(m => m.is_active && (m.count ?? 0) > 0).map((m) => {
             const isComing =
               m.comingSoon || COMING_SOON.includes(m.name);
-            const cardBgClass =
-              m.slug === "nationwide-fd" ? "bg-[#1C1C1C]" : "bg-[#FAF8F5]";
-            const infoBgClass =
-              m.slug === "nationwide-fd" ? "bg-[#1C1C1C]" : "bg-[#FAF8F5]";
-            const nameClass =
-              m.slug === "nationwide-fd" ? "text-[#FAF8F5]" : "text-[#1C1C1C]";
-            const labelClass =
-              m.slug === "nationwide-fd" ? "text-[#FAF8F5]/70" : "text-[#1C1C1C]/60";
-            const validLogo = m.logo_url ? m.logo_url : null;
+            const safeLogo =
+              m.logo_url &&
+              (m.logo_url.startsWith("https://") ||
+                m.logo_url.startsWith("/api/image-proxy"))
+                ? m.logo_url
+                : null;
+            const bg =
+              m.backgroundImage &&
+              (m.backgroundImage.startsWith("https://") ||
+                m.backgroundImage.startsWith("/api/image-proxy"))
+                ? m.backgroundImage
+                : null;
 
             const countLabel =
               isComing
@@ -54,45 +58,56 @@ export default function ManufacturerSection({
                 href={`/brands/${m.slug}`}
                 className={isComing ? "pointer-events-none" : ""}
               >
-                <div className="relative flex min-h-[180px] flex-col overflow-hidden rounded-lg border border-white/10 transition-all duration-200 hover:-translate-y-1 hover:border-[#2D4A3E] hover:shadow-[0_4px_20px_rgba(45,74,62,0.4)]">
-                  {/* Logo area */}
-                  <div
-                    className={`relative flex min-h-[130px] flex-1 items-center justify-center p-6 ${cardBgClass}`}
-                    style={{ opacity: isComing ? 0.6 : 1 }}
-                  >
-                    {validLogo ? (
+                <div
+                  className={`relative flex min-h-[180px] flex-col overflow-hidden rounded-lg border border-white/10 transition-all duration-200 hover:-translate-y-1 hover:border-[#2D4A3E] hover:shadow-[0_4px_20px_rgba(45,74,62,0.4)] ${bg ? "" : "bg-[#1C1C1C]"}`}
+                  style={{ opacity: isComing ? 0.6 : 1 }}
+                >
+                  {bg ? (
+                    <>
                       <Image
-                        src={validLogo}
-                        alt={m.name}
-                        width={220}
-                        height={80}
-                        className="max-h-[80px] w-auto object-contain"
+                        src={bg}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
                       />
-                    ) : (
-                      <span className="text-center text-xl font-bold leading-tight text-[#1C1C1C]">
-                        {m.name}
-                      </span>
-                    )}
-                    {isComing && (
-                      <span className="absolute right-2 top-2 rounded bg-white/20 px-2 py-1 text-xs text-white">
-                        Coming Soon
-                      </span>
-                    )}
-                  </div>
+                      <div
+                        className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"
+                        aria-hidden
+                      />
+                    </>
+                  ) : null}
 
-                  {/* Info area */}
-                  <div className={`flex items-center justify-between px-4 py-3 ${infoBgClass}`}>
+                  {safeLogo ? (
+                    <div className="relative z-10 p-3">
+                      <Image
+                        src={safeLogo}
+                        alt={`${m.name} logo`}
+                        width={120}
+                        height={32}
+                        className="h-8 w-auto max-w-[140px] object-contain brightness-0 invert drop-shadow-md"
+                      />
+                    </div>
+                  ) : null}
+
+                  {isComing ? (
+                    <span className="absolute right-2 top-2 z-10 rounded bg-white/20 px-2 py-1 text-xs text-white">
+                      Coming Soon
+                    </span>
+                  ) : null}
+
+                  <div className="relative z-10 mt-auto flex items-end justify-between gap-2 p-4">
                     <div className="min-w-0">
-                      <p className={`truncate text-sm font-semibold ${nameClass}`}>
+                      <p className="truncate font-semibold text-white">
                         {m.name}
                       </p>
-                      <p className={`text-xs ${labelClass}`}>
-                        {countLabel}
-                      </p>
+                      <p className="text-sm text-white/70">{countLabel}</p>
                     </div>
-                    {!isComing && (
-                      <span className="text-lg text-[#2D4A3E]">&rarr;</span>
-                    )}
+                    {!isComing ? (
+                      <span className="shrink-0 text-lg text-white" aria-hidden>
+                        &rarr;
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </Link>

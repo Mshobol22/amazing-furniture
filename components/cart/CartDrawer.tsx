@@ -95,6 +95,7 @@ export default function CartDrawer() {
                         <ProductImage
                           src={displayImage}
                           alt={item.product.name}
+                          manufacturer={item.product.manufacturer}
                           fill
                           className="object-contain"
                           sizes="80px"

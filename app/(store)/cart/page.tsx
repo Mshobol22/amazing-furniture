@@ -77,6 +77,7 @@ export default function CartPage() {
                     <ProductImage
                       src={item.product.images[0]}
                       alt={item.product.name}
+                      manufacturer={item.product.manufacturer}
                       fill
                       className="object-contain"
                       sizes="96px"

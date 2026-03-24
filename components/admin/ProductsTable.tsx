@@ -284,6 +284,7 @@ function ProductsTableInner({ products }: ProductsTableProps) {
                     <ProductImage
                       src={product.images[0]}
                       alt={product.name}
+                      manufacturer={product.manufacturer}
                       fill
                       className="object-contain"
                       sizes="40px"

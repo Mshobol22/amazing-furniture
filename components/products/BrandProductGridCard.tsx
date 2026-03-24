@@ -4,11 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
+import { productLeadImageSrc } from "@/lib/nfd-image-proxy";
 
 export default function BrandProductGridCard({ product }: { product: Product }) {
   const addItem = useCartStore((state) => state.addItem);
-  const image = product.images?.[0];
-  const safeImage = image?.startsWith("https://") ? image : null;
+  const safeImage = productLeadImageSrc(product.manufacturer, product.images?.[0]);
 
   return (
     <article className="overflow-hidden rounded-xl border border-[#1C1C1C]/10 bg-white shadow-sm">

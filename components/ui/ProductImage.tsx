@@ -10,14 +10,16 @@ interface ProductImageProps
     "src" | "onError"
   > {
   src: string | null | undefined;
+  /** Used to proxy Nationwide FD images when the URL omits `nationwidefd.com`. */
+  manufacturer?: string | null;
 }
 
-export function ProductImage({ src, alt, ...props }: ProductImageProps) {
-  const [imgSrc, setImgSrc] = useState(() => proxyImage(src));
+export function ProductImage({ src, alt, manufacturer, ...props }: ProductImageProps) {
+  const [imgSrc, setImgSrc] = useState(() => proxyImage(src, { manufacturer }));
 
   useEffect(() => {
-    setImgSrc(proxyImage(src));
-  }, [src]);
+    setImgSrc(proxyImage(src, { manufacturer }));
+  }, [src, manufacturer]);
 
   return (
     <Image

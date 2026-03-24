@@ -30,6 +30,7 @@ export default function ProductVariantPageClient({
       <ProductImageGallery
         rawImages={product.images}
         productName={product.name}
+        manufacturer={product.manufacturer}
         onSale={product.on_sale}
         salePrice={product.sale_price}
         primaryImageUrl={selectedVariant?.image_url ?? null}

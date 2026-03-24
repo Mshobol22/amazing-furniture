@@ -2,12 +2,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getActiveSaleEvents } from '@/lib/actions/sale-actions'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { productLeadImageSrc } from '@/lib/nfd-image-proxy'
 
 async function getOnSaleImages(): Promise<string[]> {
   const supabase = createAdminClient()
   const { data } = await supabase
     .from('products')
-    .select('images')
+    .select('manufacturer, images')
     .eq('on_sale', true)
     .eq('in_stock', true)
     .not('images', 'is', null)
@@ -16,7 +17,11 @@ async function getOnSaleImages(): Promise<string[]> {
   const images: string[] = []
   for (const row of data) {
     const img = row.images?.[0]
-    if (img && images.length < 4) images.push(img)
+    const resolved =
+      typeof img === 'string'
+        ? productLeadImageSrc(row.manufacturer as string | null | undefined, img)
+        : null
+    if (resolved && images.length < 4) images.push(resolved)
   }
   return images
 }

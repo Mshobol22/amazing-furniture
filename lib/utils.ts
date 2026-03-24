@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { productLeadImageSrc } from "@/lib/nfd-image-proxy";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -20,13 +21,14 @@ export function extractSku(slug: string): string | null {
   return null;
 }
 
-export function proxyImage(url: string | null | undefined): string {
+export function proxyImage(
+  url: string | null | undefined,
+  opts?: { manufacturer?: string | null }
+): string {
   if (!url || url.trim() === "") return FALLBACK_IMAGE;
   if (!url.startsWith("https://")) return FALLBACK_IMAGE;
-  if (url.includes("nationwidefd.com")) {
-    return `/api/image-proxy?url=${encodeURIComponent(url)}`;
-  }
-  return url;
+  const resolved = productLeadImageSrc(opts?.manufacturer ?? null, url);
+  return resolved ?? FALLBACK_IMAGE;
 }
 
 /**

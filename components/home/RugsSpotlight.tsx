@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { productLeadImageSrc } from "@/lib/nfd-image-proxy";
 
 interface SpotlightProduct {
   id: string;
@@ -9,6 +10,7 @@ interface SpotlightProduct {
   slug: string;
   price: number;
   images: string[];
+  manufacturer?: string | null;
 }
 
 interface RugsSpotlightProps {
@@ -47,11 +49,12 @@ export default function RugsSpotlight({ products }: RugsSpotlightProps) {
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {products.slice(0, 4).map((product) => {
-            const img =
+            const raw =
               product.images?.[0] &&
               product.images[0] !== "/images/placeholder-product.jpg"
                 ? product.images[0]
                 : null;
+            const img = productLeadImageSrc(product.manufacturer, raw);
 
             return (
               <Link

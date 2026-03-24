@@ -1,4 +1,6 @@
 import { createAdminClient } from "./admin";
+import { createClient as createServerAnonClient } from "./server";
+import { brandLogoSrc, proxyIfNfdManufacturer } from "@/lib/nfd-image-proxy";
 import type { Product } from "@/types";
 
 export function mapRowToProduct(row: Record<string, unknown>): Product {
@@ -269,49 +271,96 @@ export interface ManufacturerWithCount {
   slug: string;
   description: string;
   logo_url: string | null;
+  backgroundImage: string | null;
   is_active: boolean;
   count: number;
   comingSoon: boolean;
 }
 
-export async function getManufacturersWithCounts(): Promise<ManufacturerWithCount[]> {
-  const supabase = createAdminClient();
+function safeHttpsUrl(url: unknown): string | null {
+  return typeof url === "string" && url.startsWith("https://") ? url : null;
+}
 
-  const { data: mfrs } = await supabase
+/**
+ * Homepage manufacturers: anon Supabase client, manufacturers row + in-stock counts
+ * and first valid https:// lead image per manufacturer (same ordering as DISTINCT ON
+ * (manufacturer), id ASC in SQL).
+ */
+export async function getManufacturersWithCounts(): Promise<ManufacturerWithCount[]> {
+  const supabase = await createServerAnonClient();
+
+  const { data: mfrs, error: mfrError } = await supabase
     .from("manufacturers")
     .select("name, slug, description, logo_url, is_active")
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
 
+  if (mfrError) {
+    console.error("getManufacturersWithCounts manufacturers error:", mfrError);
+    return [];
+  }
   if (!mfrs || mfrs.length === 0) return [];
 
-  const countResults = await Promise.all(
-    mfrs.map(async (mfr) => {
-      const { count, error } = await supabase
-        .from("products")
-        .select("*", { count: "exact", head: true })
-        .eq("manufacturer", mfr.name as string)
-        .eq("in_stock", true);
+  let backgroundQuery = supabase
+    .from("products")
+    .select("manufacturer, id, images")
+    .eq("in_stock", true);
+  backgroundQuery = applyAcmePlaceholderImageFilter(backgroundQuery);
+  backgroundQuery = backgroundQuery
+    .order("manufacturer", { ascending: true })
+    .order("id", { ascending: true });
 
-      if (error) {
-        console.error("getManufacturersWithCounts count error:", error);
-        return 0;
-      }
+  const [{ data: countRows, error: countError }, { data: productRows, error: prodError }] =
+    await Promise.all([
+      supabase.from("products").select("manufacturer").eq("in_stock", true),
+      backgroundQuery,
+    ]);
 
-      return count ?? 0;
-    })
-  );
+  if (countError) {
+    console.error("getManufacturersWithCounts count query error:", countError);
+  }
+  if (prodError) {
+    console.error("getManufacturersWithCounts products error:", prodError);
+  }
 
-  return mfrs.map((m, i) => {
-    const count = countResults[i];
-    const logoUrl = typeof m.logo_url === "string" && (m.logo_url as string).startsWith("https://")
-      ? (m.logo_url as string)
-      : null;
+  const countByManufacturer = new Map<string, number>();
+  for (const row of countRows ?? []) {
+    const mName = row.manufacturer as string | null;
+    if (!mName) continue;
+    countByManufacturer.set(mName, (countByManufacturer.get(mName) ?? 0) + 1);
+  }
+
+  const backgroundByManufacturer = new Map<string, string>();
+  for (const row of productRows ?? []) {
+    const mName = row.manufacturer as string | null;
+    if (!mName) continue;
+    if (backgroundByManufacturer.has(mName)) continue;
+
+    const images = row.images as string[] | null;
+    if (!Array.isArray(images) || images.length === 0) continue;
+
+    const first = images[0];
+    if (typeof first !== "string" || !first.startsWith("https://")) continue;
+    if (isHiddenAcmePlaceholderProduct({ images })) continue;
+
+    backgroundByManufacturer.set(mName, first);
+  }
+
+  return mfrs.map((m) => {
+    const name = m.name as string;
+    const count = countByManufacturer.get(name) ?? 0;
+    const logoUrlRaw = safeHttpsUrl(m.logo_url);
+    const logoUrl = logoUrlRaw ? brandLogoSrc(name, logoUrlRaw) : null;
+    const bg = backgroundByManufacturer.get(name) ?? null;
+    const resolvedBg = bg && bg.startsWith("https://") ? bg : null;
+    const backgroundImage = proxyIfNfdManufacturer(name, resolvedBg);
+
     return {
-      name: m.name as string,
+      name,
       slug: m.slug as string,
       description: m.description as string,
       logo_url: logoUrl,
+      backgroundImage,
       is_active: Boolean(m.is_active),
       count,
       comingSoon: count === 0,
@@ -444,7 +493,11 @@ export async function getManufacturerBySlug(slug: string): Promise<Manufacturer 
     .single();
 
   if (error || !data) return null;
-  return data as Manufacturer;
+  const row = data as Manufacturer;
+  return {
+    ...row,
+    logo_url: safeHttpsUrl(row.logo_url),
+  };
 }
 
 export async function getProductsByManufacturer(

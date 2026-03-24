@@ -35,12 +35,14 @@ function clampIndex(index: number, length: number) {
 function Lightbox({
   images,
   index,
+  manufacturer,
   onClose,
   onPrev,
   onNext,
 }: {
   images: string[];
   index: number;
+  manufacturer?: string | null;
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -100,7 +102,7 @@ function Lightbox({
         onClick={(e) => e.stopPropagation()}
       >
         <Image
-          src={proxyImage(images[index])}
+          src={proxyImage(images[index], { manufacturer })}
           alt={`Image ${index + 1}`}
           fill
           className="object-contain"
@@ -140,6 +142,7 @@ function Lightbox({
 interface ProductImageGalleryProps {
   rawImages: unknown;
   productName: string;
+  manufacturer?: string | null;
   onSale?: boolean;
   salePrice?: number | null;
   primaryImageUrl?: string | null;
@@ -148,6 +151,7 @@ interface ProductImageGalleryProps {
 export default function ProductImageGallery({
   rawImages,
   productName,
+  manufacturer,
   onSale,
   salePrice,
   primaryImageUrl,
@@ -208,7 +212,7 @@ export default function ProductImageGallery({
                 }`}
               >
                 <Image
-                  src={proxyImage(img)}
+                  src={proxyImage(img, { manufacturer })}
                   alt={`${productName} ${i + 1}`}
                   fill
                   className="object-cover"
@@ -248,7 +252,7 @@ export default function ProductImageGallery({
           )}
 
           <Image
-            src={proxyImage(activeImage)}
+            src={proxyImage(activeImage, { manufacturer })}
             alt={productName}
             fill
             className="object-contain transition-transform duration-150"
@@ -323,7 +327,7 @@ export default function ProductImageGallery({
           )}
 
           <Image
-            src={proxyImage(activeImage)}
+            src={proxyImage(activeImage, { manufacturer })}
             alt={productName}
             fill
             className="object-contain transition-opacity duration-150"
@@ -365,6 +369,7 @@ export default function ProductImageGallery({
         <Lightbox
           images={images}
           index={safe}
+          manufacturer={manufacturer}
           onClose={closeLightbox}
           onPrev={goPrev}
           onNext={goNext}

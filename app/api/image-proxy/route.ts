@@ -1,42 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FALLBACK_IMAGE } from "@/lib/utils";
 
-const ALLOWED_ORIGIN = "https://nationwidefd.com";
+const ALLOWED_REFERER_ORIGIN = "https://nationwidefd.com";
+
+function isAllowedNationwideFdUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase();
+    return host === "nationwidefd.com" || host === "www.nationwidefd.com";
+  } catch {
+    return false;
+  }
+}
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const rawUrl = searchParams.get("url") ?? "";
 
-  // Reject non-absolute URLs immediately — prevents malformed fetch crashes.
-  if (!rawUrl.startsWith("https://") && !rawUrl.startsWith("http://")) {
-    return new Response("Invalid URL", { status: 400 });
-  }
-
-  const url = rawUrl;
-
-  if (!url) {
+  if (!rawUrl) {
     return NextResponse.json(
       { error: "Missing url query parameter" },
       { status: 400 }
     );
   }
 
-  try {
-    const parsed = new URL(url);
-    if (!parsed.origin.startsWith(ALLOWED_ORIGIN)) {
-      return NextResponse.json(
-        { error: "URL must be from nationwidefd.com" },
-        { status: 400 }
-      );
-    }
-  } catch {
-    return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
+  if (!rawUrl.startsWith("https://")) {
+    return new Response("Invalid URL", { status: 400 });
+  }
+
+  if (!isAllowedNationwideFdUrl(rawUrl)) {
+    return new Response("Forbidden", { status: 403 });
   }
 
   try {
-    const res = await fetch(url, {
+    const res = await fetch(rawUrl, {
       headers: {
-        Referer: ALLOWED_ORIGIN,
+        Referer: ALLOWED_REFERER_ORIGIN,
         "User-Agent": "Mozilla/5.0",
       },
     });

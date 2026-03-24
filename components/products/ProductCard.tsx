@@ -66,6 +66,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
             <ProductImage
               src={safeImage}
               alt={product.name}
+              manufacturer={product.manufacturer}
               fill
               className="object-contain transition-transform duration-300 group-hover:scale-105"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
