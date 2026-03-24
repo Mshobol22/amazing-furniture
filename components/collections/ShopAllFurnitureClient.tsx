@@ -1,10 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import SteppedFilterSidebar, {
-  type ActiveFilters,
-  type FilterStep,
-} from "@/components/filters/SteppedFilterSidebar";
+import SteppedSidebar from "@/components/filters/SteppedSidebar";
 import BrandProductGridCard from "@/components/products/BrandProductGridCard";
 import { getPageWindow } from "@/lib/pagination";
 import {
@@ -15,6 +12,7 @@ import {
   fetchMaterialsForFilters,
 } from "@/lib/brand-filters";
 import type { Product } from "@/types";
+import SmartSearchBar from "@/components/filters/SmartSearchBar";
 
 const PER_PAGE = 24;
 
@@ -31,13 +29,19 @@ const CATEGORY_DISPLAY: Record<string, string> = {
 };
 
 type ValueCount = { value: string; count: number };
+type SidebarStep = {
+  id: string;
+  label: string;
+  dependsOn?: string;
+  options: Array<{ value: string; count: number; label?: string }>;
+};
 
 export default function ShopAllFurnitureClient() {
   const [categoryOptions, setCategoryOptions] = useState<ValueCount[]>([]);
   const [manufacturers, setManufacturers] = useState<ValueCount[]>([]);
   const [colors, setColors] = useState<string[]>([]);
   const [materials, setMaterials] = useState<string[]>([]);
-  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
+  const [activeFilters, setActiveFilters] = useState<Record<string, string | null>>({
     category: null,
     brand: null,
     color: null,
@@ -50,20 +54,11 @@ export default function ShopAllFurnitureClient() {
   const [page, setPage] = useState(1);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [categoriesReady, setCategoriesReady] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PER_PAGE)), [total]);
 
-  const showBrandStep = manufacturers.length > 1;
-
-  const effectiveManufacturer = useMemo(() => {
-    if (showBrandStep) {
-      return activeFilters.brand ? String(activeFilters.brand) : undefined;
-    }
-    if (manufacturers.length === 1) {
-      return manufacturers[0].value;
-    }
-    return undefined;
-  }, [showBrandStep, activeFilters.brand, manufacturers]);
+  const effectiveManufacturer = activeFilters.brand ? String(activeFilters.brand) : undefined;
 
   useEffect(() => {
     let ignore = false;
@@ -110,6 +105,20 @@ export default function ShopAllFurnitureClient() {
       ignore = true;
     };
   }, [activeFilters.category]);
+
+  useEffect(() => {
+    if (manufacturers.length === 1) {
+      setActiveFilters((prev) =>
+        prev.brand === manufacturers[0].value ? prev : { ...prev, brand: manufacturers[0].value }
+      );
+      return;
+    }
+    setActiveFilters((prev) => {
+      if (!prev.brand) return prev;
+      const stillValid = manufacturers.some((m) => m.value === prev.brand);
+      return stillValid ? prev : { ...prev, brand: null };
+    });
+  }, [manufacturers]);
 
   useEffect(() => {
     const cat = activeFilters.category;
@@ -163,6 +172,7 @@ export default function ShopAllFurnitureClient() {
         manufacturer: effectiveManufacturer,
         color: activeFilters.color ? String(activeFilters.color) : undefined,
         material: activeFilters.material ? String(activeFilters.material) : undefined,
+        searchQuery: searchQuery || undefined,
         page,
         perPage: PER_PAGE,
       });
@@ -176,13 +186,20 @@ export default function ShopAllFurnitureClient() {
     activeFilters.color,
     activeFilters.material,
     effectiveManufacturer,
+    searchQuery,
     page,
     categoriesReady,
   ]);
 
   useEffect(() => {
     setPage(1);
-  }, [activeFilters.category, activeFilters.brand, activeFilters.color, activeFilters.material]);
+  }, [
+    activeFilters.category,
+    activeFilters.brand,
+    activeFilters.color,
+    activeFilters.material,
+    searchQuery,
+  ]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -190,57 +207,43 @@ export default function ShopAllFurnitureClient() {
     }
   }, [page, totalPages]);
 
-  const steps: FilterStep[] = useMemo(() => {
-    const list: FilterStep[] = [
+  const steps = useMemo(() => {
+    const list: SidebarStep[] = [
       {
         id: "category",
-        label: "Step 1: Category",
+        label: "Category",
         options: categoryOptions.map((c) => ({
           value: c.value,
           count: c.count,
-          displayLabel: CATEGORY_DISPLAY[c.value] ?? c.value,
+          label: CATEGORY_DISPLAY[c.value] ?? c.value,
         })),
       },
     ];
 
-    if (showBrandStep) {
-      list.push({
-        id: "brand",
-        label: "Step 2: Brand",
-        dependsOn: "category",
-        resetWhen: ["category"],
-        clearPill: { label: "All Brands" },
-        options: manufacturers.map((m) => ({ value: m.value, count: m.count })),
-      });
-    }
+    list.push({
+      id: "brand",
+      label: "Brand",
+      dependsOn: "category",
+      options: manufacturers.map((m) => ({ value: m.value, count: m.count, label: m.value })),
+    });
 
     list.push(
       {
         id: "color",
         label: "Color",
-        options: colors.map((c) => ({ value: c, count: 0 })),
+        options: colors.map((c) => ({ value: c, count: 0, label: c })),
         dependsOn: "category",
-        resetWhen: ["category", "brand"],
-        colorSwatches: true,
-        toggleable: true,
-        hideCountsWhenZero: true,
-        visualGroupId: "refine",
-        visualGroupTitle: "Step 3: Color & Material",
       },
       {
         id: "material",
         label: "Material",
-        options: materials.map((m) => ({ value: m, count: 0 })),
+        options: materials.map((m) => ({ value: m, count: 0, label: m })),
         dependsOn: "category",
-        resetWhen: ["category", "brand"],
-        toggleable: true,
-        hideCountsWhenZero: true,
-        visualGroupId: "refine",
       }
     );
 
     return list;
-  }, [categoryOptions, manufacturers, colors, materials, showBrandStep]);
+  }, [categoryOptions, manufacturers, colors, materials]);
 
   const handleClear = useCallback(() => {
     const first = categoryOptions[0]?.value ?? null;
@@ -266,15 +269,6 @@ export default function ShopAllFurnitureClient() {
   const from = total === 0 ? 0 : (page - 1) * PER_PAGE + 1;
   const to = Math.min(page * PER_PAGE, total);
 
-  const sidebar = (
-    <SteppedFilterSidebar
-      steps={steps}
-      activeFilters={activeFilters}
-      onChange={setActiveFilters}
-      onClear={handleClear}
-    />
-  );
-
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#1C1C1C]">
       <header className="on-forest-surface w-full bg-[#2D4A3E] px-4 py-10 sm:px-6 lg:px-8">
@@ -292,7 +286,37 @@ export default function ShopAllFurnitureClient() {
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
         <aside className="hidden lg:block">
           <div className="sticky top-20 max-h-[calc(100vh-120px)] overflow-y-auto rounded-xl border border-[#1C1C1C]/10 bg-[#FAF8F5] p-4">
-            {sidebar}
+            <SteppedSidebar
+              steps={steps.map((step) => ({
+                ...step,
+                options: step.options.map((o) => ({
+                  value: (o as { label?: string; value: string }).label ?? o.value,
+                  count: o.count,
+                })),
+              }))}
+              activeFilters={{
+                ...activeFilters,
+                category:
+                  activeFilters.category && CATEGORY_DISPLAY[activeFilters.category]
+                    ? CATEGORY_DISPLAY[activeFilters.category]
+                    : activeFilters.category,
+              }}
+              onChange={(stepId, value) => {
+                if (stepId === "category") {
+                  const categoryValue =
+                    value && Object.keys(CATEGORY_DISPLAY).find((k) => CATEGORY_DISPLAY[k] === value);
+                  setActiveFilters((prev) => ({
+                    ...prev,
+                    category: categoryValue ?? value,
+                  }));
+                  return;
+                }
+                setActiveFilters((prev) => ({ ...prev, [stepId]: value }));
+              }}
+              onClear={handleClear}
+              mobileOpen={false}
+              onMobileClose={() => setMobileFiltersOpen(false)}
+            />
           </div>
         </aside>
 
@@ -310,6 +334,16 @@ export default function ShopAllFurnitureClient() {
               products
             </p>
           </div>
+          <SmartSearchBar
+            placeholder="Search all furniture"
+            onSearch={setSearchQuery}
+            className="mb-4"
+          />
+          {searchQuery ? (
+            <p className="mb-4 text-sm text-[#1C1C1C]/70">
+              Showing {total.toLocaleString()} results for &quot;{searchQuery}&quot;
+            </p>
+          ) : null}
 
           <div id="all-products-grid">
             {loading ? (
@@ -386,36 +420,38 @@ export default function ShopAllFurnitureClient() {
         </main>
       </div>
 
-      {mobileFiltersOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setMobileFiltersOpen(false)}
-            aria-label="Close filters"
-          />
-          <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-[#FAF8F5] p-4 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-[#1C1C1C]">Filters</h2>
-              <button
-                type="button"
-                className="rounded p-1 text-[#1C1C1C]/70"
-                onClick={() => setMobileFiltersOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-            {sidebar}
-            <button
-              type="button"
-              className="mt-4 w-full rounded-lg bg-[#2D4A3E] px-4 py-2 text-sm font-medium text-[#FAF8F5]"
-              onClick={() => setMobileFiltersOpen(false)}
-            >
-              Show Results
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <SteppedSidebar
+        steps={steps.map((step) => ({
+          ...step,
+          options: step.options.map((o) => ({
+            value: (o as { label?: string; value: string }).label ?? o.value,
+            count: o.count,
+          })),
+        }))}
+        activeFilters={{
+          ...activeFilters,
+          category:
+            activeFilters.category && CATEGORY_DISPLAY[activeFilters.category]
+              ? CATEGORY_DISPLAY[activeFilters.category]
+              : activeFilters.category,
+        }}
+        onChange={(stepId, value) => {
+          if (stepId === "category") {
+            const categoryValue =
+              value && Object.keys(CATEGORY_DISPLAY).find((k) => CATEGORY_DISPLAY[k] === value);
+            setActiveFilters((prev) => ({
+              ...prev,
+              category: categoryValue ?? value,
+            }));
+            return;
+          }
+          setActiveFilters((prev) => ({ ...prev, [stepId]: value }));
+        }}
+        onClear={handleClear}
+        mobileOpen={mobileFiltersOpen}
+        onMobileClose={() => setMobileFiltersOpen(false)}
+        renderInline={false}
+      />
     </div>
   );
 }

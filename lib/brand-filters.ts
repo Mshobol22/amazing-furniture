@@ -191,6 +191,7 @@ interface FetchBrandProductsParams {
   collection?: string;
   color?: string;
   material?: string;
+  searchQuery?: string;
   page: number;
   perPage: number;
 }
@@ -218,6 +219,7 @@ export async function fetchBrandProducts(
   if (params.collection) query = query.eq("collection", params.collection);
   if (params.material) query = query.eq("material", params.material);
   if (params.color) query = query.ilike("color", `%${params.color}%`);
+  if (params.searchQuery) query = query.ilike("name", `%${params.searchQuery}%`);
 
   const { data, error, count } = await query.range(start, end);
   if (error || !data) return { products: [], total: 0 };
@@ -238,6 +240,7 @@ export interface FetchAllProductsParams {
   collection?: string;
   color?: string;
   material?: string;
+  searchQuery?: string;
   page: number;
   perPage: number;
 }
@@ -273,6 +276,9 @@ export async function fetchAllProducts(
   }
   if (params.color) {
     query = query.ilike("color", `%${params.color}%`);
+  }
+  if (params.searchQuery) {
+    query = query.ilike("name", `%${params.searchQuery}%`);
   }
 
   const { data, error, count } = await query.range(start, end);

@@ -13,7 +13,8 @@ import {
 import { getPageWindow } from "@/lib/pagination";
 import BrandProductGridCard from "@/components/products/BrandProductGridCard";
 import { brandLogoSrc } from "@/lib/nfd-image-proxy";
-import { LockIcon } from "@/components/filters/SteppedFilterSidebar";
+import SteppedSidebar from "@/components/filters/SteppedSidebar";
+import SmartSearchBar from "@/components/filters/SmartSearchBar";
 
 interface BrandPageTemplateProps {
   manufacturer: {
@@ -35,15 +36,6 @@ type ValueCount = { value: string; count: number };
 const PER_PAGE = 24;
 const MISC_CATEGORY_VALUE = "__misc__";
 
-function isLikelyCssColor(value: string): boolean {
-  const v = value.trim();
-  return (
-    /^#[0-9a-fA-F]{3,8}$/.test(v) ||
-    /^rgb\(/.test(v) ||
-    /^hsl\(/.test(v)
-  );
-}
-
 export default function BrandPageTemplate({ manufacturer, config }: BrandPageTemplateProps) {
   const step2Label = config?.step2Label ?? "Collection";
   const step3Label = config?.step3Label ?? "Refine";
@@ -62,13 +54,13 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PER_PAGE)), [total]);
   const isMiscCategorySelected = selectedCategory === MISC_CATEGORY_VALUE;
   const step1Active = selectedCategory !== null;
   const hasCollections = collections.length > 0;
   const step2Enabled = step1Active && hasCollections && !isMiscCategorySelected;
-  const step3Enabled = step1Active;
 
   useEffect(() => {
     let ignore = false;
@@ -151,6 +143,7 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
         collection: hasCollections ? selectedCollection ?? undefined : undefined,
         color: selectedColor ?? undefined,
         material: selectedMaterial ?? undefined,
+        searchQuery: searchQuery || undefined,
         page,
         perPage: PER_PAGE,
       });
@@ -166,6 +159,7 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
     selectedCollection,
     selectedColor,
     selectedMaterial,
+    searchQuery,
     page,
     hasCollections,
     isMiscCategorySelected,
@@ -174,7 +168,7 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
 
   useEffect(() => {
     setPage(1);
-  }, [selectedCategory, selectedCollection, selectedColor, selectedMaterial]);
+  }, [selectedCategory, selectedCollection, selectedColor, selectedMaterial, searchQuery]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -210,177 +204,39 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
     if (anchor) anchor.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  const sidebar = (
-    <div className="space-y-6">
-      <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-[#1C1C1C]">Step 1: Category</h3>
-        <div className="flex flex-wrap gap-2">
-          {categories.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              onClick={() => {
-                setSelectedCategory(item.value);
-                setSelectedCollection(null);
-              }}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                selectedCategory === item.value
-                  ? "border-[#2D4A3E] bg-[#2D4A3E] text-[#FAF8F5]"
-                  : "border-[#1C1C1C]/15 bg-white text-[#1C1C1C] hover:border-[#2D4A3E]"
-              }`}
-            >
-              {item.value} ({item.count})
-            </button>
-          ))}
-          {showMiscCategory && (
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedCategory(MISC_CATEGORY_VALUE);
-                setSelectedCollection(null);
-                setSelectedColor(null);
-                setSelectedMaterial(null);
-              }}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                selectedCategory === MISC_CATEGORY_VALUE
-                  ? "border-[#2D4A3E] bg-[#2D4A3E] text-[#FAF8F5]"
-                  : "border-[#1C1C1C]/15 bg-white text-[#1C1C1C] hover:border-[#2D4A3E]"
-              }`}
-            >
-              {config?.miscCategoryLabel} ({miscCount})
-            </button>
-          )}
-        </div>
-      </section>
-
-      {!step1Active || hasCollections ? (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[#1C1C1C]">Step 2: {step2Label}</h3>
-            {!step2Enabled && <LockIcon />}
-          </div>
-          {step2Enabled ? (
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedCollection(null)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                  selectedCollection === null
-                    ? "border-[#2D4A3E] bg-[#2D4A3E] text-[#FAF8F5]"
-                    : "border-[#1C1C1C]/15 bg-white text-[#1C1C1C]"
-                }`}
-              >
-                All Collections
-              </button>
-              {collections.map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  onClick={() => setSelectedCollection(item.value)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                    selectedCollection === item.value
-                      ? "border-[#2D4A3E] bg-[#2D4A3E] text-[#FAF8F5]"
-                      : "border-[#1C1C1C]/15 bg-white text-[#1C1C1C]"
-                  }`}
-                >
-                  {item.value} ({item.count})
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-lg border border-dashed border-[#1C1C1C]/20 bg-white/60 p-3 text-xs text-[#1C1C1C]/55">
-              {isMiscCategorySelected
-                ? "Collections are unavailable for Other Items."
-                : "Choose a category first."}
-            </div>
-          )}
-        </section>
-      ) : null}
-
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[#1C1C1C]">Step 3: {step3Label}</h3>
-          {!step3Enabled && <LockIcon />}
-        </div>
-        {step3Enabled ? (
-          <div className="space-y-4">
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[#1C1C1C]/60">
-                Color
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {colors.length === 0 && (
-                  <span className="text-xs text-[#1C1C1C]/55">No colors available.</span>
-                )}
-                {colors.map((color) => {
-                  const canSwatch = isLikelyCssColor(color);
-                  return (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setSelectedColor((prev) => (prev === color ? null : color))}
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${
-                        selectedColor === color
-                          ? "border-[#2D4A3E] bg-[#2D4A3E] text-[#FAF8F5]"
-                          : "border-[#1C1C1C]/15 bg-white text-[#1C1C1C]"
-                      }`}
-                    >
-                      {canSwatch ? (
-                        <span
-                          className="h-3 w-3 rounded-full border border-[#1C1C1C]/20"
-                          style={{ backgroundColor: color }}
-                        />
-                      ) : null}
-                      <span>{color}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[#1C1C1C]/60">
-                Material
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {materials.length === 0 && (
-                  <span className="text-xs text-[#1C1C1C]/55">No materials available.</span>
-                )}
-                {materials.map((material) => (
-                  <button
-                    key={material}
-                    type="button"
-                    onClick={() =>
-                      setSelectedMaterial((prev) => (prev === material ? null : material))
-                    }
-                    className={`rounded-full border px-3 py-1.5 text-xs ${
-                      selectedMaterial === material
-                        ? "border-[#2D4A3E] bg-[#2D4A3E] text-[#FAF8F5]"
-                        : "border-[#1C1C1C]/15 bg-white text-[#1C1C1C]"
-                    }`}
-                  >
-                    {material}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-lg border border-dashed border-[#1C1C1C]/20 bg-white/60 p-3 text-xs text-[#1C1C1C]/55">
-            Complete step 1 first.
-          </div>
-        )}
-      </section>
-
-      <button
-        type="button"
-        onClick={clearFilters}
-        className="w-full rounded-lg border border-[#1C1C1C]/15 bg-white px-3 py-2 text-sm font-medium text-[#1C1C1C] hover:border-[#2D4A3E] hover:text-[#2D4A3E]"
-      >
-        Clear Filters
-      </button>
-    </div>
-  );
+  const steps = [
+    {
+      id: "category",
+      label: "Category",
+      options: [
+        ...categories,
+        ...(showMiscCategory
+          ? [{ value: config?.miscCategoryLabel ?? "Other", count: miscCount }]
+          : []),
+      ],
+    },
+    {
+      id: "collection",
+      label: step2Label,
+      dependsOn: "category",
+      options:
+        selectedCategory && !isMiscCategorySelected && step2Enabled
+          ? collections
+          : [],
+    },
+    {
+      id: "color",
+      label: `${step3Label} - Color`,
+      dependsOn: "category",
+      options: colors.map((c) => ({ value: c, count: 0 })),
+    },
+    {
+      id: "material",
+      label: `${step3Label} - Material`,
+      dependsOn: "category",
+      options: materials.map((m) => ({ value: m, count: 0 })),
+    },
+  ];
 
   const headerLogoSrc = brandLogoSrc(manufacturer.name, manufacturer.logo_url);
 
@@ -423,7 +279,40 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
         <aside className="hidden lg:block">
           <div className="sticky top-20 max-h-[calc(100vh-120px)] overflow-y-auto rounded-xl border border-[#1C1C1C]/10 bg-[#FAF8F5] p-4">
-            {sidebar}
+            <SteppedSidebar
+              steps={steps}
+              activeFilters={{
+                category:
+                  selectedCategory === MISC_CATEGORY_VALUE
+                    ? config?.miscCategoryLabel ?? "Other"
+                    : selectedCategory,
+                collection: selectedCollection,
+                color: selectedColor,
+                material: selectedMaterial,
+              }}
+              onChange={(stepId, value) => {
+                if (stepId === "category") {
+                  if (value === (config?.miscCategoryLabel ?? "Other")) {
+                    setSelectedCategory(MISC_CATEGORY_VALUE);
+                    setSelectedCollection(null);
+                    setSelectedColor(null);
+                    setSelectedMaterial(null);
+                    return;
+                  }
+                  setSelectedCategory(value);
+                  setSelectedCollection(null);
+                  setSelectedColor(null);
+                  setSelectedMaterial(null);
+                  return;
+                }
+                if (stepId === "collection") setSelectedCollection(value);
+                if (stepId === "color") setSelectedColor(value);
+                if (stepId === "material") setSelectedMaterial(value);
+              }}
+              onClear={clearFilters}
+              mobileOpen={false}
+              onMobileClose={() => setMobileFiltersOpen(false)}
+            />
           </div>
         </aside>
 
@@ -440,6 +329,16 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
               Showing {from.toLocaleString()}-{to.toLocaleString()} of {total.toLocaleString()} products
             </p>
           </div>
+          <SmartSearchBar
+            placeholder={`Search ${manufacturer.name} products`}
+            onSearch={setSearchQuery}
+            className="mb-4"
+          />
+          {searchQuery ? (
+            <p className="mb-4 text-sm text-[#1C1C1C]/70">
+              Showing {total.toLocaleString()} results for &quot;{searchQuery}&quot;
+            </p>
+          ) : null}
 
           <div id="brand-products-grid">
             {loading ? (
@@ -512,37 +411,41 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
           </div>
         </main>
       </div>
-
-      {mobileFiltersOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setMobileFiltersOpen(false)}
-            aria-label="Close filters"
-          />
-          <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-[#FAF8F5] p-4 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-[#1C1C1C]">Filters</h2>
-              <button
-                type="button"
-                className="rounded p-1 text-[#1C1C1C]/70"
-                onClick={() => setMobileFiltersOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-            {sidebar}
-            <button
-              type="button"
-              className="mt-4 w-full rounded-lg bg-[#2D4A3E] px-4 py-2 text-sm font-medium text-[#FAF8F5]"
-              onClick={() => setMobileFiltersOpen(false)}
-            >
-              Show Results
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <SteppedSidebar
+        steps={steps}
+        activeFilters={{
+          category:
+            selectedCategory === MISC_CATEGORY_VALUE
+              ? config?.miscCategoryLabel ?? "Other"
+              : selectedCategory,
+          collection: selectedCollection,
+          color: selectedColor,
+          material: selectedMaterial,
+        }}
+        onChange={(stepId, value) => {
+          if (stepId === "category") {
+            if (value === (config?.miscCategoryLabel ?? "Other")) {
+              setSelectedCategory(MISC_CATEGORY_VALUE);
+              setSelectedCollection(null);
+              setSelectedColor(null);
+              setSelectedMaterial(null);
+              return;
+            }
+            setSelectedCategory(value);
+            setSelectedCollection(null);
+            setSelectedColor(null);
+            setSelectedMaterial(null);
+            return;
+          }
+          if (stepId === "collection") setSelectedCollection(value);
+          if (stepId === "color") setSelectedColor(value);
+          if (stepId === "material") setSelectedMaterial(value);
+        }}
+        onClear={clearFilters}
+        mobileOpen={mobileFiltersOpen}
+        onMobileClose={() => setMobileFiltersOpen(false)}
+        renderInline={false}
+      />
     </div>
   );
 }
