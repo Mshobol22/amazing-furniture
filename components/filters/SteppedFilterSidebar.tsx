@@ -1,19 +1,5 @@
 "use client";
 
-export function LockIcon() {
-  return (
-    <svg className="h-4 w-4 text-[#1C1C1C]/35" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M7 10V7a5 5 0 1110 0v3M6 10h12a1 1 0 011 1v9a1 1 0 01-1 1H6a1 1 0 01-1-1v-9a1 1 0 011-1z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export interface ActiveFilters {
   [stepId: string]: string | null;
 }
@@ -76,11 +62,6 @@ function stepUnlocked(step: FilterStep, activeFilters: ActiveFilters): boolean {
   return v != null && v !== "";
 }
 
-function dependsOnLabel(steps: FilterStep[], dependsOnId: string | undefined): string {
-  if (!dependsOnId) return "previous";
-  return steps.find((s) => s.id === dependsOnId)?.label ?? "previous";
-}
-
 function parseMultiValues(value: string | null | undefined): string[] {
   if (value == null || value === "") return [];
   return value.split(",").map((s) => s.trim()).filter(Boolean);
@@ -118,8 +99,7 @@ function renderPillOptions(
       {step.options.map((item) => {
         const isOn = multi ? multiSelected.includes(item.value) : selected === item.value;
         const label = item.displayLabel ?? item.value;
-        const countSuffix =
-          hideCounts ? "" : ` (${item.count})`;
+        const countSuffix = hideCounts ? "" : ` (${item.count})`;
         return (
           <button
             key={item.value}
@@ -196,50 +176,40 @@ export default function SteppedFilterSidebar({
 
         if (isGroup && first.visualGroupTitle) {
           const groupLocked = !stepUnlocked(first, activeFilters);
+          if (groupLocked) return null;
           return (
             <section key={`group-${chunkIdx}-${first.visualGroupId ?? chunkIdx}`} className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-[#1C1C1C]">{first.visualGroupTitle}</h3>
-                {groupLocked ? <LockIcon /> : null}
               </div>
-              {groupLocked ? (
-                <div className="rounded-lg border border-dashed border-[#1C1C1C]/20 bg-white/60 p-3 text-xs text-[#1C1C1C]/55">
-                  Choose {dependsOnLabel(steps, first.dependsOn)} first.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {groupSteps.map((step) => (
-                    <div key={step.id}>
-                      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[#1C1C1C]/60">
-                        {step.label}
-                      </p>
-                      {step.options.length === 0 ? (
-                        <span className="text-xs text-[#1C1C1C]/55">No options available.</span>
-                      ) : (
-                        renderPillOptions(step, activeFilters, setForStep)
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="space-y-4">
+                {groupSteps.map((step) => (
+                  <div key={step.id}>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[#1C1C1C]/60">
+                      {step.label}
+                    </p>
+                    {step.options.length === 0 ? (
+                      <span className="text-xs text-[#1C1C1C]/55">No options available.</span>
+                    ) : (
+                      renderPillOptions(step, activeFilters, setForStep)
+                    )}
+                  </div>
+                ))}
+              </div>
             </section>
           );
         }
 
         const step = first;
         const stepLock = !stepUnlocked(step, activeFilters);
+        if (stepLock) return null;
 
         return (
           <section key={step.id} className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-[#1C1C1C]">{step.label}</h3>
-              {stepLock ? <LockIcon /> : null}
             </div>
-            {stepLock ? (
-              <div className="rounded-lg border border-dashed border-[#1C1C1C]/20 bg-white/60 p-3 text-xs text-[#1C1C1C]/55">
-                Choose {dependsOnLabel(steps, step.dependsOn)} first.
-              </div>
-            ) : step.options.length === 0 && !step.clearPill ? (
+            {step.options.length === 0 && !step.clearPill ? (
               <div className="rounded-lg border border-dashed border-[#1C1C1C]/20 bg-white/60 p-3 text-xs text-[#1C1C1C]/55">
                 No options available.
               </div>

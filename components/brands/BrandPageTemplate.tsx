@@ -13,7 +13,7 @@ import {
 import { getPageWindow } from "@/lib/pagination";
 import BrandProductGridCard from "@/components/products/BrandProductGridCard";
 import { brandLogoSrc } from "@/lib/nfd-image-proxy";
-import SteppedSidebar from "@/components/filters/SteppedSidebar";
+import SteppedSidebar, { type SteppedSidebarStep } from "@/components/filters/SteppedSidebar";
 import SmartSearchBar from "@/components/filters/SmartSearchBar";
 
 interface BrandPageTemplateProps {
@@ -58,9 +58,7 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PER_PAGE)), [total]);
   const isMiscCategorySelected = selectedCategory === MISC_CATEGORY_VALUE;
-  const step1Active = selectedCategory !== null;
   const hasCollections = collections.length > 0;
-  const step2Enabled = step1Active && hasCollections && !isMiscCategorySelected;
 
   useEffect(() => {
     let ignore = false;
@@ -204,39 +202,56 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
     if (anchor) anchor.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  const steps = [
-    {
-      id: "category",
-      label: "Category",
-      options: [
-        ...categories,
-        ...(showMiscCategory
-          ? [{ value: config?.miscCategoryLabel ?? "Other", count: miscCount }]
-          : []),
-      ],
-    },
-    {
-      id: "collection",
-      label: step2Label,
-      dependsOn: "category",
-      options:
-        selectedCategory && !isMiscCategorySelected && step2Enabled
-          ? collections
-          : [],
-    },
-    {
-      id: "color",
-      label: `${step3Label} - Color`,
-      dependsOn: "category",
-      options: colors.map((c) => ({ value: c, count: 0 })),
-    },
-    {
-      id: "material",
-      label: `${step3Label} - Material`,
-      dependsOn: "category",
-      options: materials.map((m) => ({ value: m, count: 0 })),
-    },
-  ];
+  const steps: SteppedSidebarStep[] = useMemo(() => {
+    const base: SteppedSidebarStep[] = [
+      {
+        id: "category",
+        label: "Category",
+        options: [
+          ...categories,
+          ...(showMiscCategory
+            ? [{ value: config?.miscCategoryLabel ?? "Other", count: miscCount }]
+            : []),
+        ],
+      },
+    ];
+    if (hasCollections) {
+      base.push({
+        id: "collection",
+        label: step2Label,
+        dependsOn: "category",
+        options: selectedCategory && !isMiscCategorySelected ? collections : [],
+      });
+    }
+    base.push(
+      {
+        id: "color",
+        label: `${step3Label} - Color`,
+        dependsOn: "category",
+        options: colors.map((c) => ({ value: c, count: 0 })),
+      },
+      {
+        id: "material",
+        label: `${step3Label} - Material`,
+        dependsOn: "category",
+        options: materials.map((m) => ({ value: m, count: 0 })),
+      }
+    );
+    return base;
+  }, [
+    categories,
+    showMiscCategory,
+    config?.miscCategoryLabel,
+    miscCount,
+    hasCollections,
+    step2Label,
+    selectedCategory,
+    isMiscCategorySelected,
+    collections,
+    step3Label,
+    colors,
+    materials,
+  ]);
 
   const headerLogoSrc = brandLogoSrc(manufacturer.name, manufacturer.logo_url);
 

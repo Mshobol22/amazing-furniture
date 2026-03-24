@@ -33,6 +33,7 @@ type SidebarStep = {
   id: string;
   label: string;
   dependsOn?: string;
+  hideAllPill?: boolean;
   options: Array<{ value: string; count: number; label?: string }>;
 };
 
@@ -76,9 +77,6 @@ export default function ShopAllFurnitureClient() {
       const cats = await fetchAllCategories();
       if (ignore) return;
       setCategoryOptions(cats);
-      setActiveFilters((f) =>
-        f.category ? f : { ...f, category: cats[0]?.value ?? null }
-      );
       if (cats.length === 0) {
         setLoading(false);
       }
@@ -212,6 +210,7 @@ export default function ShopAllFurnitureClient() {
       {
         id: "category",
         label: "Category",
+        hideAllPill: true,
         options: categoryOptions.map((c) => ({
           value: c.value,
           count: c.count,
@@ -232,13 +231,13 @@ export default function ShopAllFurnitureClient() {
         id: "color",
         label: "Color",
         options: colors.map((c) => ({ value: c, count: 0, label: c })),
-        dependsOn: "category",
+        dependsOn: "brand",
       },
       {
         id: "material",
         label: "Material",
         options: materials.map((m) => ({ value: m, count: 0, label: m })),
-        dependsOn: "category",
+        dependsOn: "brand",
       }
     );
 
@@ -246,15 +245,14 @@ export default function ShopAllFurnitureClient() {
   }, [categoryOptions, manufacturers, colors, materials]);
 
   const handleClear = useCallback(() => {
-    const first = categoryOptions[0]?.value ?? null;
     setActiveFilters({
-      category: first,
+      category: null,
       brand: null,
       color: null,
       material: null,
     });
     setPage(1);
-  }, [categoryOptions]);
+  }, []);
 
   const goToPage = useCallback(
     (nextPage: number) => {
@@ -288,7 +286,10 @@ export default function ShopAllFurnitureClient() {
           <div className="sticky top-20 max-h-[calc(100vh-120px)] overflow-y-auto rounded-xl border border-[#1C1C1C]/10 bg-[#FAF8F5] p-4">
             <SteppedSidebar
               steps={steps.map((step) => ({
-                ...step,
+                id: step.id,
+                label: step.label,
+                dependsOn: step.dependsOn,
+                hideAllPill: step.hideAllPill,
                 options: step.options.map((o) => ({
                   value: (o as { label?: string; value: string }).label ?? o.value,
                   count: o.count,
@@ -422,7 +423,10 @@ export default function ShopAllFurnitureClient() {
 
       <SteppedSidebar
         steps={steps.map((step) => ({
-          ...step,
+          id: step.id,
+          label: step.label,
+          dependsOn: step.dependsOn,
+          hideAllPill: step.hideAllPill,
           options: step.options.map((o) => ({
             value: (o as { label?: string; value: string }).label ?? o.value,
             count: o.count,
