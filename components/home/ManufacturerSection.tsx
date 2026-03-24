@@ -1,14 +1,5 @@
-import Link from "next/link";
 import Image from "next/image";
-
-const BRAND_COLORS: Record<string, string> = {
-  "Nationwide FD": "#1B3A6B",
-  "United Furniture": "#5C3A1E",
-  ACME: "#2D2D2D",
-  Zinatex: "#2D4A3E",
-  Artisan: "#4A3728",
-  Interpraise: "#1A3A4A",
-};
+import Link from "next/link";
 
 const COMING_SOON = ["Artisan", "Interpraise"];
 
@@ -40,11 +31,15 @@ export default function ManufacturerSection({
           {manufacturers.filter(m => m.is_active && (m.count ?? 0) > 0).map((m) => {
             const isComing =
               m.comingSoon || COMING_SOON.includes(m.name);
-            const bgColor = BRAND_COLORS[m.name] ?? "#1C1C1C";
-            const validLogo =
-              m.logo_url && m.logo_url.startsWith("https://")
-                ? m.logo_url
-                : null;
+            const cardBgClass =
+              m.slug === "nationwide-fd" ? "bg-[#1C1C1C]" : "bg-[#FAF8F5]";
+            const infoBgClass =
+              m.slug === "nationwide-fd" ? "bg-[#1C1C1C]" : "bg-[#FAF8F5]";
+            const nameClass =
+              m.slug === "nationwide-fd" ? "text-[#FAF8F5]" : "text-[#1C1C1C]";
+            const labelClass =
+              m.slug === "nationwide-fd" ? "text-[#FAF8F5]/70" : "text-[#1C1C1C]/60";
+            const validLogo = m.logo_url ? m.logo_url : null;
 
             const countLabel =
               isComing
@@ -59,25 +54,22 @@ export default function ManufacturerSection({
                 href={`/brands/${m.slug}`}
                 className={isComing ? "pointer-events-none" : ""}
               >
-                <div
-                  className="relative flex min-h-[180px] flex-col overflow-hidden rounded-lg border border-white/10 transition-all duration-200 hover:-translate-y-1 hover:border-[#2D4A3E] hover:shadow-[0_4px_20px_rgba(45,74,62,0.4)]"
-                  style={{ opacity: isComing ? 0.6 : 1 }}
-                >
+                <div className="relative flex min-h-[180px] flex-col overflow-hidden rounded-lg border border-white/10 transition-all duration-200 hover:-translate-y-1 hover:border-[#2D4A3E] hover:shadow-[0_4px_20px_rgba(45,74,62,0.4)]">
                   {/* Logo area */}
                   <div
-                    className="flex min-h-[110px] flex-1 items-center justify-center p-6"
-                    style={{ background: bgColor }}
+                    className={`relative flex min-h-[130px] flex-1 items-center justify-center p-6 ${cardBgClass}`}
+                    style={{ opacity: isComing ? 0.6 : 1 }}
                   >
                     {validLogo ? (
                       <Image
                         src={validLogo}
                         alt={m.name}
-                        width={140}
-                        height={60}
-                        className="object-contain"
+                        width={220}
+                        height={80}
+                        className="max-h-[80px] w-auto object-contain"
                       />
                     ) : (
-                      <span className="text-center text-xl font-bold leading-tight text-[#FAF8F5]">
+                      <span className="text-center text-xl font-bold leading-tight text-[#1C1C1C]">
                         {m.name}
                       </span>
                     )}
@@ -89,12 +81,14 @@ export default function ManufacturerSection({
                   </div>
 
                   {/* Info area */}
-                  <div className="flex items-center justify-between bg-[#1C1C1C] px-4 py-3">
-                    <div>
-                      <p className="text-sm font-semibold text-[#FAF8F5]">
+                  <div className={`flex items-center justify-between px-4 py-3 ${infoBgClass}`}>
+                    <div className="min-w-0">
+                      <p className={`truncate text-sm font-semibold ${nameClass}`}>
                         {m.name}
                       </p>
-                      <p className="text-xs text-[#FAF8F5]/50">{countLabel}</p>
+                      <p className={`text-xs ${labelClass}`}>
+                        {countLabel}
+                      </p>
                     </div>
                     {!isComing && (
                       <span className="text-lg text-[#2D4A3E]">&rarr;</span>

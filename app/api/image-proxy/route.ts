@@ -4,7 +4,15 @@ import { FALLBACK_IMAGE } from "@/lib/utils";
 const ALLOWED_ORIGIN = "https://nationwidefd.com";
 
 export async function GET(request: NextRequest) {
-  const url = request.nextUrl.searchParams.get("url");
+  const searchParams = request.nextUrl.searchParams;
+  const rawUrl = searchParams.get("url") ?? "";
+
+  // Reject non-absolute URLs immediately — prevents malformed fetch crashes.
+  if (!rawUrl.startsWith("https://") && !rawUrl.startsWith("http://")) {
+    return new Response("Invalid URL", { status: 400 });
+  }
+
+  const url = rawUrl;
 
   if (!url) {
     return NextResponse.json(

@@ -213,6 +213,9 @@ export default async function CollectionPage({
     case "price-asc":
       productQuery = productQuery.order("price", { ascending: true });
       break;
+    case "created-desc":
+      productQuery = productQuery.order("created_at", { ascending: false });
+      break;
     case "price-desc":
       productQuery = productQuery.order("price", { ascending: false });
       break;

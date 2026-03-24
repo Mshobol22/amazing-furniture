@@ -7,7 +7,7 @@ import { ProductImage } from "@/components/ui/ProductImage";
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import type { Product } from "@/types";
-import { cn, extractSku } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface ProductCardProps {
   product: Product;
@@ -18,7 +18,8 @@ export default function ProductCard({ product, className }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const toggleWishlist = useWishlistStore((state) => state.toggleItem);
   const isInWishlist = useWishlistStore((state) => state.isInWishlist(product.id));
-  const sku = extractSku(product.slug);
+  const firstImage = product.images[0];
+  const safeImage = firstImage?.startsWith("https://") ? firstImage : null;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -61,13 +62,17 @@ export default function ProductCard({ product, className }: ProductCardProps) {
           />
         </button>
         <div className="relative aspect-[4/3] p-2 md:p-3">
-          <ProductImage
-            src={product.images[0]}
-            alt={product.name}
-            fill
-            className="object-contain transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          />
+          {safeImage ? (
+            <ProductImage
+              src={safeImage}
+              alt={product.name}
+              fill
+              className="object-contain transition-transform duration-300 group-hover:scale-105"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            />
+          ) : (
+            <div className="h-full w-full rounded bg-gray-100" aria-hidden="true" />
+          )}
         </div>
         {/* Hover overlay CTA */}
         <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-200 group-hover:translate-y-0">
@@ -81,11 +86,6 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         </div>
       </div>
       <div className="flex flex-col gap-1.5 p-3">
-        {sku && (
-          <span className="text-xs uppercase tracking-wide text-gray-400">
-            {sku}
-          </span>
-        )}
         <h3 className="line-clamp-2 text-sm font-medium text-gray-900">
           {product.name}
         </h3>

@@ -22,6 +22,7 @@ export function extractSku(slug: string): string | null {
 
 export function proxyImage(url: string | null | undefined): string {
   if (!url || url.trim() === "") return FALLBACK_IMAGE;
+  if (!url.startsWith("https://")) return FALLBACK_IMAGE;
   if (url.includes("nationwidefd.com")) {
     return `/api/image-proxy?url=${encodeURIComponent(url)}`;
   }

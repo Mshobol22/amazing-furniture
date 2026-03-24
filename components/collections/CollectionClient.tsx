@@ -13,9 +13,11 @@ interface CollectionClientProps {
   initialProducts: Product[];
   initialTotal: number;
   availableSubcategories: SubcategoryCount[];
+  categoryCounts?: { slug: string; name: string; count: number }[];
+  allBrands?: { name: string; count: number }[];
 }
 
-const SORT_OPTIONS = [
+const BASE_SORT_OPTIONS = [
   { value: "price-desc", label: "Price: High to Low" },
   { value: "price-asc", label: "Price: Low to High" },
   { value: "name-asc", label: "Name: A to Z" },
@@ -33,6 +35,8 @@ export default function CollectionClient({
   initialProducts,
   initialTotal,
   availableSubcategories,
+  categoryCounts = [],
+  allBrands = [],
 }: CollectionClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -45,6 +49,10 @@ export default function CollectionClient({
 
   const isInitialMount = useRef(true);
 
+  const isAll = slug === "all";
+  const sortOptions = isAll
+    ? [...BASE_SORT_OPTIONS, { value: "created-desc", label: "Newest Arrivals" }]
+    : BASE_SORT_OPTIONS;
   const sort = searchParams.get("sort") || "price-desc";
   const page = Math.max(1, Number(searchParams.get("page") || "1"));
   const totalPages = Math.ceil(total / LIMIT);
@@ -52,11 +60,16 @@ export default function CollectionClient({
   const end = Math.min(page * LIMIT, total);
 
   const activeFilterCount =
-    parseArr(searchParams.get("type")).length +
-    parseArr(searchParams.get("manufacturers")).length +
-    parseArr(searchParams.get("colors")).length +
-    (searchParams.get("priceMin") ? 1 : 0) +
-    (searchParams.get("priceMax") ? 1 : 0);
+    (isAll
+      ? parseArr(searchParams.get("category")).length +
+        parseArr(searchParams.get("manufacturer")).length +
+        (searchParams.get("minPrice") ? 1 : 0) +
+        (searchParams.get("maxPrice") ? 1 : 0)
+      : parseArr(searchParams.get("type")).length +
+        parseArr(searchParams.get("manufacturers")).length +
+        parseArr(searchParams.get("colors")).length +
+        (searchParams.get("priceMin") ? 1 : 0) +
+        (searchParams.get("priceMax") ? 1 : 0));
 
   // ── Fetch products whenever URL changes ──────────────────────────────────
 
@@ -108,6 +121,8 @@ export default function CollectionClient({
         <CollectionSidebar
           slug={slug}
           availableSubcategories={availableSubcategories}
+          categoryCounts={categoryCounts}
+          allBrands={allBrands}
         />
       </aside>
 
@@ -134,6 +149,8 @@ export default function CollectionClient({
             <CollectionSidebar
               slug={slug}
               availableSubcategories={availableSubcategories}
+              categoryCounts={categoryCounts}
+              allBrands={allBrands}
             />
             <button
               type="button"
@@ -170,12 +187,7 @@ export default function CollectionClient({
                   d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
                 />
               </svg>
-              Filters
-              {activeFilterCount > 0 && (
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#2D4A3E] text-xs text-[#FAF8F5]">
-                  {activeFilterCount}
-                </span>
-              )}
+              {activeFilterCount > 0 ? `Filters (${activeFilterCount})` : "Filters"}
             </button>
 
             {total > 0 && (
@@ -192,7 +204,7 @@ export default function CollectionClient({
             onChange={(e) => handleSortChange(e.target.value)}
             className="rounded-lg border border-[#1C1C1C]/15 bg-white px-3 py-2 text-sm text-[#1C1C1C] focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]"
           >
-            {SORT_OPTIONS.map((opt) => (
+            {sortOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>

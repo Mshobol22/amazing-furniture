@@ -12,6 +12,8 @@ import type { SubcategoryCount } from "@/lib/supabase/products";
 interface CollectionSidebarProps {
   slug: string;
   availableSubcategories: SubcategoryCount[];
+  categoryCounts?: { slug: string; name: string; count: number }[];
+  allBrands?: { name: string; count: number }[];
 }
 
 function parseArr(v: string | null): string[] {
@@ -22,21 +24,30 @@ function parseArr(v: string | null): string[] {
 export default function CollectionSidebar({
   slug,
   availableSubcategories,
+  categoryCounts = [],
+  allBrands = [],
 }: CollectionSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   // Derive selections from URL (stable string deps for effects)
+  const isAll = slug === "all";
   const typeParam = searchParams.get("type") ?? "";
   const manufacturerParam = searchParams.get("manufacturers") ?? "";
   const colorsParam = searchParams.get("colors") ?? "";
   const priceMinParam = searchParams.get("priceMin") ?? "";
   const priceMaxParam = searchParams.get("priceMax") ?? "";
+  const allCategoryParam = searchParams.get("category") ?? "";
+  const allManufacturerParam = searchParams.get("manufacturer") ?? "";
+  const allPriceMinParam = searchParams.get("minPrice") ?? "";
+  const allPriceMaxParam = searchParams.get("maxPrice") ?? "";
 
   const selectedTypes = parseArr(typeParam);
   const selectedManufacturers = parseArr(manufacturerParam);
   const selectedColors = parseArr(colorsParam);
+  const selectedAllCategories = parseArr(allCategoryParam);
+  const selectedAllManufacturers = parseArr(allManufacturerParam);
 
   // Dynamic filter options
   const [manufacturers, setManufacturers] = useState<{ name: string; count: number }[]>([]);
@@ -46,8 +57,8 @@ export default function CollectionSidebar({
   const [colorsLoading, setColorsLoading] = useState(false);
 
   // Local pending price (synced to URL on Apply)
-  const [pendingMin, setPendingMin] = useState(priceMinParam);
-  const [pendingMax, setPendingMax] = useState(priceMaxParam);
+  const [pendingMin, setPendingMin] = useState(isAll ? allPriceMinParam : priceMinParam);
+  const [pendingMax, setPendingMax] = useState(isAll ? allPriceMaxParam : priceMaxParam);
 
   const isRug = slug === "rug";
 
@@ -106,6 +117,13 @@ export default function CollectionSidebar({
   // ── Price ─────────────────────────────────────────────────────────────────
 
   const applyPrice = () => {
+    if (isAll) {
+      pushParams({
+        minPrice: pendingMin || null,
+        maxPrice: pendingMax || null,
+      });
+      return;
+    }
     pushParams({
       priceMin: pendingMin || null,
       priceMax: pendingMax || null,
@@ -113,17 +131,21 @@ export default function CollectionSidebar({
   };
 
   // Sync pending price with URL (e.g. browser back or clearAll)
-  useEffect(() => { setPendingMin(priceMinParam); }, [priceMinParam]);
-  useEffect(() => { setPendingMax(priceMaxParam); }, [priceMaxParam]);
+  useEffect(() => { setPendingMin(isAll ? allPriceMinParam : priceMinParam); }, [isAll, allPriceMinParam, priceMinParam]);
+  useEffect(() => { setPendingMax(isAll ? allPriceMaxParam : priceMaxParam); }, [isAll, allPriceMaxParam, priceMaxParam]);
 
   // ── Clear all ─────────────────────────────────────────────────────────────
 
-  const activeCount =
-    selectedTypes.length +
-    selectedManufacturers.length +
-    selectedColors.length +
-    (priceMinParam ? 1 : 0) +
-    (priceMaxParam ? 1 : 0);
+  const activeCount = isAll
+    ? selectedAllCategories.length +
+      selectedAllManufacturers.length +
+      (allPriceMinParam ? 1 : 0) +
+      (allPriceMaxParam ? 1 : 0)
+    : selectedTypes.length +
+      selectedManufacturers.length +
+      selectedColors.length +
+      (priceMinParam ? 1 : 0) +
+      (priceMaxParam ? 1 : 0);
 
   const clearAll = () => {
     setPendingMin("");
@@ -133,6 +155,24 @@ export default function CollectionSidebar({
     if (sort) p.set("sort", sort);
     const qs = p.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
+  const toggleAllCategory = (category: string) => {
+    const next = selectedAllCategories.includes(category)
+      ? selectedAllCategories.filter((c) => c !== category)
+      : [...selectedAllCategories, category];
+    pushParams({
+      category: next.length > 0 ? next.join(",") : null,
+    });
+  };
+
+  const toggleAllManufacturer = (manufacturer: string) => {
+    const next = selectedAllManufacturers.includes(manufacturer)
+      ? selectedAllManufacturers.filter((m) => m !== manufacturer)
+      : [...selectedAllManufacturers, manufacturer];
+    pushParams({
+      manufacturer: next.length > 0 ? next.join(",") : null,
+    });
   };
 
   // ── Fetch manufacturers when type changes ─────────────────────────────────
@@ -193,8 +233,60 @@ export default function CollectionSidebar({
         </button>
       )}
 
+      {isAll && (
+        <>
+          <FilterSection title="Category">
+            <div className="max-h-[220px] space-y-2 overflow-y-auto">
+              {categoryCounts.map(({ slug: categorySlug, name, count }) => (
+                <label
+                  key={categorySlug}
+                  className="flex cursor-pointer items-center justify-between gap-2 text-sm text-[#1C1C1C]/80 hover:text-[#1C1C1C]"
+                >
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedAllCategories.includes(categorySlug)}
+                      onChange={() => toggleAllCategory(categorySlug)}
+                      className="h-4 w-4 rounded border-[#1C1C1C]/20 text-[#2D4A3E] focus:ring-[#2D4A3E]"
+                    />
+                    {name}
+                  </span>
+                  <span className="text-xs text-[#1C1C1C]/40">
+                    {count.toLocaleString()}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </FilterSection>
+
+          <FilterSection title="Brand">
+            <div className="max-h-[220px] space-y-2 overflow-y-auto">
+              {allBrands.map(({ name, count }) => (
+                <label
+                  key={name}
+                  className="flex cursor-pointer items-center justify-between gap-2 text-sm text-[#1C1C1C]/80 hover:text-[#1C1C1C]"
+                >
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedAllManufacturers.includes(name)}
+                      onChange={() => toggleAllManufacturer(name)}
+                      className="h-4 w-4 rounded border-[#1C1C1C]/20 text-[#2D4A3E] focus:ring-[#2D4A3E]"
+                    />
+                    {name}
+                  </span>
+                  <span className="text-xs text-[#1C1C1C]/40">
+                    {count.toLocaleString()}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </FilterSection>
+        </>
+      )}
+
       {/* Step 1 — Type: always shown when multiple options exist */}
-      {availableSubcategories.length > 1 && (
+      {!isAll && availableSubcategories.length > 1 && (
         <FilterSection title="Type">
           <div className="max-h-[220px] space-y-2 overflow-y-auto">
             {availableSubcategories.map(({ name, count }) => (
@@ -221,7 +313,7 @@ export default function CollectionSidebar({
       )}
 
       {/* Step 2 — Brand: only after type is selected */}
-      {selectedTypes.length > 0 && (
+      {!isAll && selectedTypes.length > 0 && (
         <FilterSection title="Brand">
           {mfrsLoading ? (
             <p className="text-xs text-[#1C1C1C]/40">Loading…</p>
@@ -254,7 +346,7 @@ export default function CollectionSidebar({
       )}
 
       {/* Step 3 — Color: only after brand selected AND colors exist */}
-      {selectedManufacturers.length > 0 && colorsAvailable && (
+      {!isAll && selectedManufacturers.length > 0 && colorsAvailable && (
         <FilterSection title="Color">
           {colorsLoading ? (
             <p className="text-xs text-[#1C1C1C]/40">Loading…</p>

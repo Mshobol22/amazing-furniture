@@ -66,6 +66,8 @@ export async function GET(
   const url = request.nextUrl.searchParams;
 
   const manufacturers = parseStringArray(url.get("manufacturers"));
+  const allManufacturers = parseStringArray(url.get("manufacturer"));
+  const allCategories = parseStringArray(url.get("category"));
   const collections = parseStringArray(url.get("collections"));
   const colors = parseStringArray(url.get("colors"));
   const sizes = parseStringArray(url.get("sizes"));
@@ -74,8 +76,8 @@ export async function GET(
     .map(sanitizeType)
     .filter((t) => t.length > 0);
   const inStockOnly = url.get("inStock") === "true";
-  const priceMin = parsePrice(url.get("priceMin"));
-  const priceMax = parsePrice(url.get("priceMax"));
+  const priceMin = parsePrice(url.get("priceMin") ?? url.get("minPrice"));
+  const priceMax = parsePrice(url.get("priceMax") ?? url.get("maxPrice"));
   const page = parsePageNumber(url.get("page"));
   const sort = sanitize(url.get("sort") || "price-desc");
 
@@ -97,8 +99,14 @@ export async function GET(
   }
 
   // Manufacturer filter
-  if (manufacturers.length > 0) {
-    query = query.in("manufacturer", manufacturers);
+  const manufacturerFilter = slug === "all" ? allManufacturers : manufacturers;
+  if (manufacturerFilter.length > 0) {
+    query = query.in("manufacturer", manufacturerFilter);
+  }
+
+  // Category filter when browsing all products
+  if (slug === "all" && allCategories.length > 0) {
+    query = query.in("category", allCategories);
   }
 
   // Collection filter
@@ -145,6 +153,7 @@ export async function GET(
     case "price-desc":
       query = query.order("price", { ascending: false });
       break;
+    case "created-desc":
     case "newest":
       query = query.order("created_at", { ascending: false });
       break;

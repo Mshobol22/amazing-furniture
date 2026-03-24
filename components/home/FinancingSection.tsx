@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { CreditCard } from "lucide-react";
+import Image from "next/image";
 
 const FINANCING_OPTIONS = [
   {
@@ -8,6 +8,7 @@ const FINANCING_OPTIONS = [
       "0% APR financing for 6–12 months on qualifying purchases. Apply online in minutes.",
     href: "https://www.mysynchrony.com/mmc/GI235655800",
     cta: "Apply with Synchrony",
+    logo: "/logos/synchrony.png",
   },
   {
     name: "Koalafi",
@@ -15,6 +16,7 @@ const FINANCING_OPTIONS = [
       "Lease-to-own financing with flexible payment plans. No credit needed — approval in seconds.",
     href: "http://dealer.koalafi.com/ApplicationForm/IntroScreen?publicStoreId=828ad4f3-138a-4ccc-ac65-2bf170a430aa&cm=Copy",
     cta: "Apply with Koalafi",
+    logo: "/logos/koalafi.png",
   },
 ];
 
@@ -42,6 +44,15 @@ export default function FinancingSection() {
               rel="noopener noreferrer"
               className="group rounded-lg border border-[#ede8e3] bg-white p-6 transition-shadow hover:shadow-md"
             >
+              <div className="mb-4 flex h-20 items-center justify-center rounded-md bg-[#FAF8F5] p-3">
+                <Image
+                  src={opt.logo}
+                  alt={opt.name}
+                  width={220}
+                  height={80}
+                  className="max-h-[56px] w-auto object-contain"
+                />
+              </div>
               <h3 className="font-display text-lg font-semibold text-charcoal group-hover:text-[#2D4A3E]">
                 {opt.name}
               </h3>
