@@ -1,5 +1,7 @@
 "use client";
 
+import { getPageWindow } from "@/lib/pagination";
+
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
@@ -13,29 +15,7 @@ export default function Pagination({
 }: PaginationProps) {
   if (totalPages <= 1) return null;
 
-  // Build page numbers: first, last, current ±2
-  const pages: (number | "...")[] = [];
-  const addPage = (p: number) => {
-    if (p >= 1 && p <= totalPages && !pages.includes(p)) {
-      pages.push(p);
-    }
-  };
-
-  addPage(1);
-  for (let i = currentPage - 2; i <= currentPage + 2; i++) {
-    addPage(i);
-  }
-  addPage(totalPages);
-
-  // Insert ellipses
-  const withEllipses: (number | "...")[] = [];
-  for (let i = 0; i < pages.length; i++) {
-    const p = pages[i] as number;
-    if (i > 0 && p - (pages[i - 1] as number) > 1) {
-      withEllipses.push("...");
-    }
-    withEllipses.push(p);
-  }
+  const withEllipses = getPageWindow(currentPage, totalPages);
 
   return (
     <nav className="flex items-center justify-center gap-1 pt-8" aria-label="Pagination">
@@ -51,7 +31,7 @@ export default function Pagination({
       {withEllipses.map((item, i) =>
         item === "..." ? (
           <span key={`ellipsis-${i}`} className="px-2 text-sm text-[#1C1C1C]/40">
-            ...
+            …
           </span>
         ) : (
           <button
