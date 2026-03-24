@@ -21,7 +21,7 @@ export default function RugsSpotlight({ products }: RugsSpotlightProps) {
   if (!products.length) return null;
 
   return (
-    <section className="bg-forest px-4 py-10 sm:px-6 lg:px-8">
+    <section className="on-forest-surface bg-forest px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
           <div>

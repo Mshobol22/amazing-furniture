@@ -98,3 +98,70 @@ html, body {
     display: none;
   }
 }
+
+/**
+ * Clickable hover affordances (links, buttons, role="button"):
+ * - Default: forest ring + slight lift on light/cream backgrounds.
+ * - .on-forest-surface: cream ring + stronger lift (children sit on forest/green).
+ * - Green-filled controls (.bg-forest, .bg-walnut, etc.): cream ring + scale pop.
+ * Opt out: data-no-interactive-pop on the element.
+ */
+@layer components {
+  a[href]:not([data-no-interactive-pop]):not(.pointer-events-none),
+  button:not(:disabled):not([data-no-interactive-pop]):not(.pointer-events-none),
+  [role="button"]:not([aria-disabled="true"]):not([data-no-interactive-pop]):not(
+      .pointer-events-none
+    ),
+  summary:not([data-no-interactive-pop]),
+  input[type="submit"]:not(:disabled):not([data-no-interactive-pop]),
+  input[type="button"]:not(:disabled):not([data-no-interactive-pop]) {
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  a[href]:not([data-no-interactive-pop]):not(.pointer-events-none):hover,
+  button:not(:disabled):not([data-no-interactive-pop]):not(.pointer-events-none):hover,
+  [role="button"]:not([aria-disabled="true"]):not([data-no-interactive-pop]):not(
+      .pointer-events-none
+    ):hover,
+  summary:not([data-no-interactive-pop]):hover,
+  input[type="submit"]:not(:disabled):not([data-no-interactive-pop]):hover,
+  input[type="button"]:not(:disabled):not([data-no-interactive-pop]):hover {
+    box-shadow: 0 0 0 2px #2d4a3e;
+    transform: translateY(-1px);
+  }
+
+  .on-forest-surface a[href]:not([data-no-interactive-pop]):not(.pointer-events-none):hover,
+  .on-forest-surface
+    button:not(:disabled):not([data-no-interactive-pop]):not(.pointer-events-none):hover,
+  .on-forest-surface
+    [role="button"]:not([aria-disabled="true"]):not([data-no-interactive-pop]):not(
+      .pointer-events-none
+    ):hover,
+  .on-forest-surface summary:not([data-no-interactive-pop]):hover,
+  .on-forest-surface
+    input[type="submit"]:not(:disabled):not([data-no-interactive-pop]):hover,
+  .on-forest-surface
+    input[type="button"]:not(:disabled):not([data-no-interactive-pop]):hover {
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.22),
+      0 0 0 2px #faf8f5;
+    transform: translateY(-2px);
+  }
+
+  /* Forest / walnut filled controls — pop with cream ring (any parent) */
+  button.bg-forest:hover:not(:disabled):not([data-no-interactive-pop]),
+  a.bg-forest:hover:not([data-no-interactive-pop]),
+  button.bg-walnut:hover:not(:disabled):not([data-no-interactive-pop]),
+  a.bg-walnut:hover:not([data-no-interactive-pop]),
+  button.bg-forest-light:hover:not(:disabled):not([data-no-interactive-pop]),
+  a.bg-forest-light:hover:not([data-no-interactive-pop]),
+  a[class*="bg-"][class*="2D4A3E"]:not([data-no-interactive-pop]):not(.pointer-events-none):hover,
+  button[class*="bg-"][class*="2D4A3E"]:not([data-no-interactive-pop]):not(:disabled):hover {
+    box-shadow:
+      0 6px 22px rgba(29, 51, 41, 0.35),
+      0 0 0 2px #faf8f5;
+    transform: translateY(-2px) scale(1.02);
+  }
+}

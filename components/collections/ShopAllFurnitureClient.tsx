@@ -277,7 +277,7 @@ export default function ShopAllFurnitureClient() {
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#1C1C1C]">
-      <header className="w-full bg-[#2D4A3E] px-4 py-10 sm:px-6 lg:px-8">
+      <header className="on-forest-surface w-full bg-[#2D4A3E] px-4 py-10 sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-4 text-center">
           <h1 className="text-3xl font-semibold text-[#FAF8F5] sm:text-4xl">Shop All Furniture</h1>
           <p className="max-w-3xl text-sm text-[#FAF8F5]/90 sm:text-base">
