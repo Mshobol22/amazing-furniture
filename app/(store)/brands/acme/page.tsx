@@ -8,7 +8,7 @@ export const metadata = {
 }
 
 export default async function ACMEPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: manufacturer } = await supabase
     .from('manufacturers')
     .select('*')
