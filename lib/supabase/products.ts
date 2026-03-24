@@ -1,5 +1,4 @@
 import { createAdminClient } from "./admin";
-import { createClient as createServerAnonClient } from "./server";
 import { brandLogoSrc, proxyIfNfdManufacturer } from "@/lib/nfd-image-proxy";
 import type { Product } from "@/types";
 
@@ -54,8 +53,7 @@ function filterRowsWithValidLeadImage<T extends { images?: string[] | null }>(ro
 
 export function applyAcmePlaceholderImageFilter(query: any): any {
   return query
-    .not("images", "is", null)
-    .not("images", "eq", "{}");
+    .not("images", "is", null);
 }
 
 export async function getProducts(category?: string): Promise<Product[]> {
@@ -287,7 +285,7 @@ function safeHttpsUrl(url: unknown): string | null {
  * (manufacturer), id ASC in SQL).
  */
 export async function getManufacturersWithCounts(): Promise<ManufacturerWithCount[]> {
-  const supabase = await createServerAnonClient();
+  const supabase = createAdminClient();
 
   const { data: mfrs, error: mfrError } = await supabase
     .from("manufacturers")
