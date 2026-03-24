@@ -8,7 +8,8 @@ const FINANCING_OPTIONS = [
       "0% APR financing for 6–12 months on qualifying purchases. Apply online in minutes.",
     href: "https://www.mysynchrony.com/mmc/GI235655800",
     cta: "Apply with Synchrony",
-    logo: "/logos/synchrony.png",
+    image: "/logos/synchrony.png",
+    fallbackClass: "bg-black",
   },
   {
     name: "Koalafi",
@@ -16,7 +17,8 @@ const FINANCING_OPTIONS = [
       "Lease-to-own financing with flexible payment plans. No credit needed — approval in seconds.",
     href: "http://dealer.koalafi.com/ApplicationForm/IntroScreen?publicStoreId=828ad4f3-138a-4ccc-ac65-2bf170a430aa&cm=Copy",
     cta: "Apply with Koalafi",
-    logo: "/logos/koalafi.png",
+    image: "/logos/koalafi.png",
+    fallbackClass: "bg-[#0D2640]",
   },
 ];
 
@@ -42,26 +44,32 @@ export default function FinancingSection() {
               href={opt.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="group rounded-lg border border-[#ede8e3] bg-white p-6 transition-shadow hover:shadow-md"
+              className={`group relative flex min-h-[280px] flex-col justify-end overflow-hidden rounded-lg shadow-sm transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2D4A3E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF8F5] sm:min-h-[300px] ${opt.fallbackClass}`}
             >
-              <div className="mb-4 flex h-20 items-center justify-center rounded-md bg-[#FAF8F5] p-3">
-                <Image
-                  src={opt.logo}
-                  alt={opt.name}
-                  width={220}
-                  height={80}
-                  className="max-h-[56px] w-auto object-contain"
-                />
+              <Image
+                src={opt.image}
+                alt=""
+                fill
+                className="object-cover object-center transition-transform duration-300 group-hover:scale-[1.02]"
+                sizes="(max-width: 640px) 100vw, 50vw"
+                priority={false}
+              />
+              {/* Bottom scrim so description + CTA stay readable on branded artwork */}
+              <div
+                className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent"
+                aria-hidden
+              />
+              <div className="relative z-10 flex flex-col p-6">
+                <h3 className="font-display text-lg font-semibold text-white drop-shadow-md sm:text-xl">
+                  {opt.name}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-white/95 drop-shadow-sm sm:text-[0.9375rem]">
+                  {opt.description}
+                </p>
+                <span className="mt-4 inline-block text-sm font-semibold text-[#FAF8F5] drop-shadow-md group-hover:underline">
+                  {opt.cta} &rarr;
+                </span>
               </div>
-              <h3 className="font-display text-lg font-semibold text-charcoal group-hover:text-[#2D4A3E]">
-                {opt.name}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-warm-gray">
-                {opt.description}
-              </p>
-              <span className="mt-4 inline-block text-sm font-medium text-[#2D4A3E] group-hover:underline">
-                {opt.cta} &rarr;
-              </span>
             </a>
           ))}
         </div>
