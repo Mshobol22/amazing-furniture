@@ -386,6 +386,15 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
 
   if (process.env.NODE_ENV !== "production") {
     console.log("getManufacturersWithCounts countMap keys:", Array.from(countMap.keys()));
+    const debugNames = ["Nationwide FD", "ACME", "United Furniture", "Zinatex"];
+    console.log(
+      "getManufacturersWithCounts debug manufacturer counts:",
+      debugNames.map((name) => ({
+        name,
+        exactCount: countMap.get(name) ?? 0,
+        fallbackCaseCount: lowercaseCountMap.get(name.toLowerCase()) ?? 0,
+      }))
+    );
   }
 
   const hydrated = await Promise.all(
@@ -423,7 +432,6 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
         break;
       }
 
-      const numericCount = Number(exactCount ?? 0);
       const logoUrl = brandLogoSrc(name, m.logo_url as string | null | undefined);
       return {
         name,
@@ -432,8 +440,8 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
         logo_url: logoUrl,
         backgroundImage,
         is_active: Boolean(m.is_active),
-        count: numericCount,
-        comingSoon: numericCount === 0,
+        count: Number(exactCount ?? fallbackCaseCount ?? 0),
+        comingSoon: Number(exactCount ?? fallbackCaseCount ?? 0) === 0,
       };
     })
   );

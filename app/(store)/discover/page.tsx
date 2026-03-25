@@ -44,35 +44,37 @@ export default function DiscoverPage() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-30 bg-black">
-      <Link
-        href="/"
-        className="fixed left-4 top-4 z-[60] rounded-full bg-[#2D4A3E] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3B5E4F]"
-      >
-        ← Back
-      </Link>
+    <div className="fixed inset-0 z-30 bg-black md:bg-[#111]">
+      <div className="relative h-screen w-[100vw] md:w-full md:max-w-[480px] md:mx-auto">
+        <Link
+          href="/"
+          className="absolute left-4 top-4 z-[60] rounded-full bg-[#2D4A3E] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3B5E4F]"
+        >
+          ← Back
+        </Link>
 
-      {isLoading ? (
-        <div className="flex h-screen w-full items-center justify-center text-white/80">
-          Loading discover...
-        </div>
-      ) : error ? (
-        <div className="flex h-screen w-full flex-col items-center justify-center gap-3 px-4 text-center text-white/90">
-          <p>{error}</p>
-          <Link
-            href="/"
-            className="rounded-md bg-[#2D4A3E] px-4 py-2 text-sm font-medium text-white"
-          >
-            Return home
-          </Link>
-        </div>
-      ) : (
-        <DiscoverReel
-          initialProducts={products}
-          initialNextCursor={nextCursor}
-          seed={seedRef.current}
-        />
-      )}
+        {isLoading ? (
+          <div className="flex h-screen w-full items-center justify-center text-white/80">
+            Loading discover...
+          </div>
+        ) : error ? (
+          <div className="flex h-screen w-full flex-col items-center justify-center gap-3 px-4 text-center text-white/90">
+            <p>{error}</p>
+            <Link
+              href="/"
+              className="rounded-md bg-[#2D4A3E] px-4 py-2 text-sm font-medium text-white"
+            >
+              Return home
+            </Link>
+          </div>
+        ) : (
+          <DiscoverReel
+            initialProducts={products}
+            initialNextCursor={nextCursor}
+            seed={seedRef.current}
+          />
+        )}
+      </div>
     </div>
   );
 }
