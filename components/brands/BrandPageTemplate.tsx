@@ -13,7 +13,7 @@ import {
 import { getPageWindow } from "@/lib/pagination";
 import BrandProductGridCard from "@/components/products/BrandProductGridCard";
 import { brandLogoSrc } from "@/lib/nfd-image-proxy";
-import SteppedSidebar, { type SteppedSidebarStep } from "@/components/filters/SteppedSidebar";
+import FilterSidebar, { type ActiveFilters, type FilterSection } from "@/components/filters/FilterSidebar";
 import SmartSearchBar from "@/components/filters/SmartSearchBar";
 
 interface BrandPageTemplateProps {
@@ -37,17 +37,17 @@ const PER_PAGE = 24;
 const MISC_CATEGORY_VALUE = "__misc__";
 
 export default function BrandPageTemplate({ manufacturer, config }: BrandPageTemplateProps) {
-  const step2Label = config?.step2Label ?? "Collection";
-  const step3Label = config?.step3Label ?? "Refine";
-
   const [categories, setCategories] = useState<ValueCount[]>([]);
   const [collections, setCollections] = useState<ValueCount[]>([]);
   const [colors, setColors] = useState<string[]>([]);
   const [materials, setMaterials] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
+  const [priceMin, setPriceMin] = useState<number | null>(null);
+  const [priceMax, setPriceMax] = useState<number | null>(null);
+  const [sort, setSort] = useState<"default" | "price-asc" | "price-desc" | "name-asc">("default");
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [brandTotal, setBrandTotal] = useState(0);
@@ -116,7 +116,7 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
       if (ignore) return;
       setColors(colorsData);
       setMaterials(materialsData);
-      setSelectedColor((current) => (current && colorsData.includes(current) ? current : null));
+      setSelectedColors((current) => current.filter((c) => colorsData.includes(c)));
       setSelectedMaterial((current) =>
         current && materialsData.includes(current) ? current : null
       );
@@ -139,8 +139,11 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
             ? config.defaultCategory
             : undefined,
         collection: hasCollections ? selectedCollection ?? undefined : undefined,
-        color: selectedColor ?? undefined,
+        colors: selectedColors.length > 0 ? selectedColors : undefined,
         material: selectedMaterial ?? undefined,
+        priceMin: priceMin ?? undefined,
+        priceMax: priceMax ?? undefined,
+        sort,
         searchQuery: searchQuery || undefined,
         page,
         perPage: PER_PAGE,
@@ -155,8 +158,11 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
     manufacturer.name,
     selectedCategory,
     selectedCollection,
-    selectedColor,
+    selectedColors,
     selectedMaterial,
+    priceMin,
+    priceMax,
+    sort,
     searchQuery,
     page,
     hasCollections,
@@ -166,7 +172,7 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
 
   useEffect(() => {
     setPage(1);
-  }, [selectedCategory, selectedCollection, selectedColor, selectedMaterial, searchQuery]);
+  }, [selectedCategory, selectedCollection, selectedColors, selectedMaterial, priceMin, priceMax, sort, searchQuery]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -191,8 +197,11 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
         : categories[0]?.value ?? null;
     setSelectedCategory(fallbackCategory);
     setSelectedCollection(null);
-    setSelectedColor(null);
+    setSelectedColors([]);
     setSelectedMaterial(null);
+    setPriceMin(null);
+    setPriceMax(null);
+    setSort("default");
   }
 
   function goToPage(nextPage: number) {
@@ -202,56 +211,86 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
     if (anchor) anchor.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  const steps: SteppedSidebarStep[] = useMemo(() => {
-    const base: SteppedSidebarStep[] = [
+  const sections: FilterSection[] = useMemo(() => {
+    const list: FilterSection[] = [
       {
         id: "category",
         label: "Category",
+        type: "checkbox",
+        defaultOpen: true,
         options: [
           ...categories,
           ...(showMiscCategory
-            ? [{ value: config?.miscCategoryLabel ?? "Other", count: miscCount }]
+            ? [{ value: MISC_CATEGORY_VALUE, label: config?.miscCategoryLabel ?? "Other", count: miscCount }]
             : []),
         ],
       },
     ];
     if (hasCollections) {
-      base.push({
+      list.push({
         id: "collection",
-        label: step2Label,
-        dependsOn: "category",
+        label: "Collection",
+        type: "checkbox",
+        defaultOpen: true,
         options: selectedCategory && !isMiscCategorySelected ? collections : [],
       });
     }
-    base.push(
-      {
+    if (colors.length > 0) {
+      list.push({
         id: "color",
-        label: `${step3Label} - Color`,
-        dependsOn: "category",
+        label: "Color",
+        type: "checkbox",
+        defaultOpen: false,
         options: colors.map((c) => ({ value: c, count: 0 })),
-      },
-      {
+      });
+    }
+    if (materials.length > 0) {
+      list.push({
         id: "material",
-        label: `${step3Label} - Material`,
-        dependsOn: "category",
+        label: "Material",
+        type: "checkbox",
+        defaultOpen: false,
         options: materials.map((m) => ({ value: m, count: 0 })),
+      });
+    }
+    list.push(
+      { id: "price", label: "Price", type: "price_range", defaultOpen: false },
+      {
+        id: "sort",
+        label: "Sort By",
+        type: "sort",
+        defaultOpen: true,
+        options: [
+          { value: "default", label: "Default", count: 0 },
+          { value: "price-asc", label: "Price: Low to High", count: 0 },
+          { value: "price-desc", label: "Price: High to Low", count: 0 },
+          { value: "name-asc", label: "A to Z", count: 0 },
+        ],
       }
     );
-    return base;
+    return list;
   }, [
     categories,
     showMiscCategory,
     config?.miscCategoryLabel,
     miscCount,
     hasCollections,
-    step2Label,
     selectedCategory,
     isMiscCategorySelected,
     collections,
-    step3Label,
     colors,
     materials,
   ]);
+
+  const activeFilters: ActiveFilters = {
+    category: selectedCategory,
+    collection: selectedCollection,
+    color: selectedColors,
+    material: selectedMaterial,
+    priceMin,
+    priceMax,
+    sort,
+  };
 
   const headerLogoSrc = brandLogoSrc(manufacturer.name, manufacturer.logo_url);
 
@@ -298,39 +337,58 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
         <aside className="hidden lg:block">
           <div className="sticky top-20 max-h-[calc(100vh-120px)] overflow-y-auto rounded-xl border border-[#1C1C1C]/10 bg-[#FAF8F5] p-4">
-            <SteppedSidebar
-              steps={steps}
-              activeFilters={{
-                category:
-                  selectedCategory === MISC_CATEGORY_VALUE
-                    ? config?.miscCategoryLabel ?? "Other"
-                    : selectedCategory,
-                collection: selectedCollection,
-                color: selectedColor,
-                material: selectedMaterial,
-              }}
-              onChange={(stepId, value) => {
-                if (stepId === "category") {
-                  if (value === (config?.miscCategoryLabel ?? "Other")) {
-                    setSelectedCategory(MISC_CATEGORY_VALUE);
-                    setSelectedCollection(null);
-                    setSelectedColor(null);
-                    setSelectedMaterial(null);
-                    return;
-                  }
-                  setSelectedCategory(value);
+            <FilterSidebar
+              sections={sections}
+              activeFilters={activeFilters}
+              onChange={(sectionId, value) => {
+                if (sectionId === "category") {
+                  const allowed = new Set([
+                    ...categories.map((c) => c.value),
+                    ...(showMiscCategory ? [MISC_CATEGORY_VALUE] : []),
+                  ]);
+                  const next = typeof value === "string" && allowed.has(value) ? value : null;
+                  setSelectedCategory(next);
                   setSelectedCollection(null);
-                  setSelectedColor(null);
+                  setSelectedColors([]);
                   setSelectedMaterial(null);
                   return;
                 }
-                if (stepId === "collection") setSelectedCollection(value);
-                if (stepId === "color") setSelectedColor(value);
-                if (stepId === "material") setSelectedMaterial(value);
+                if (sectionId === "collection") {
+                  const allowed = new Set(collections.map((c) => c.value));
+                  const next = typeof value === "string" && allowed.has(value) ? value : null;
+                  setSelectedCollection(next);
+                  setSelectedColors([]);
+                  setSelectedMaterial(null);
+                  return;
+                }
+                if (sectionId === "color") {
+                  const allowed = new Set(colors);
+                  const raw = Array.isArray(value) ? value : value ? [value] : [];
+                  setSelectedColors(raw.filter((v) => allowed.has(v)));
+                  return;
+                }
+                if (sectionId === "material") {
+                  const allowed = new Set(materials);
+                  const next = typeof value === "string" && allowed.has(value) ? value : null;
+                  setSelectedMaterial(next);
+                  return;
+                }
+                if (sectionId === "priceMin") {
+                  setPriceMin(typeof value === "string" && value ? Number(value) : null);
+                  return;
+                }
+                if (sectionId === "priceMax") {
+                  setPriceMax(typeof value === "string" && value ? Number(value) : null);
+                  return;
+                }
+                if (sectionId === "sort") {
+                  const allowed = new Set(["default", "price-asc", "price-desc", "name-asc"]);
+                  if (typeof value === "string" && allowed.has(value)) {
+                    setSort(value as "default" | "price-asc" | "price-desc" | "name-asc");
+                  }
+                }
               }}
               onClear={clearFilters}
-              mobileOpen={false}
-              onMobileClose={() => setMobileFiltersOpen(false)}
             />
           </div>
         </aside>
@@ -430,40 +488,60 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
           </div>
         </main>
       </div>
-      <SteppedSidebar
-        steps={steps}
-        activeFilters={{
-          category:
-            selectedCategory === MISC_CATEGORY_VALUE
-              ? config?.miscCategoryLabel ?? "Other"
-              : selectedCategory,
-          collection: selectedCollection,
-          color: selectedColor,
-          material: selectedMaterial,
-        }}
-        onChange={(stepId, value) => {
-          if (stepId === "category") {
-            if (value === (config?.miscCategoryLabel ?? "Other")) {
-              setSelectedCategory(MISC_CATEGORY_VALUE);
-              setSelectedCollection(null);
-              setSelectedColor(null);
-              setSelectedMaterial(null);
-              return;
-            }
-            setSelectedCategory(value);
+      <FilterSidebar
+        sections={sections}
+        activeFilters={activeFilters}
+        onChange={(sectionId, value) => {
+          if (sectionId === "category") {
+            const allowed = new Set([
+              ...categories.map((c) => c.value),
+              ...(showMiscCategory ? [MISC_CATEGORY_VALUE] : []),
+            ]);
+            const next = typeof value === "string" && allowed.has(value) ? value : null;
+            setSelectedCategory(next);
             setSelectedCollection(null);
-            setSelectedColor(null);
+            setSelectedColors([]);
             setSelectedMaterial(null);
             return;
           }
-          if (stepId === "collection") setSelectedCollection(value);
-          if (stepId === "color") setSelectedColor(value);
-          if (stepId === "material") setSelectedMaterial(value);
+          if (sectionId === "collection") {
+            const allowed = new Set(collections.map((c) => c.value));
+            const next = typeof value === "string" && allowed.has(value) ? value : null;
+            setSelectedCollection(next);
+            setSelectedColors([]);
+            setSelectedMaterial(null);
+            return;
+          }
+          if (sectionId === "color") {
+            const allowed = new Set(colors);
+            const raw = Array.isArray(value) ? value : value ? [value] : [];
+            setSelectedColors(raw.filter((v) => allowed.has(v)));
+            return;
+          }
+          if (sectionId === "material") {
+            const allowed = new Set(materials);
+            const next = typeof value === "string" && allowed.has(value) ? value : null;
+            setSelectedMaterial(next);
+            return;
+          }
+          if (sectionId === "priceMin") {
+            setPriceMin(typeof value === "string" && value ? Number(value) : null);
+            return;
+          }
+          if (sectionId === "priceMax") {
+            setPriceMax(typeof value === "string" && value ? Number(value) : null);
+            return;
+          }
+          if (sectionId === "sort") {
+            const allowed = new Set(["default", "price-asc", "price-desc", "name-asc"]);
+            if (typeof value === "string" && allowed.has(value)) {
+              setSort(value as "default" | "price-asc" | "price-desc" | "name-asc");
+            }
+          }
         }}
         onClear={clearFilters}
         mobileOpen={mobileFiltersOpen}
         onMobileClose={() => setMobileFiltersOpen(false)}
-        renderInline={false}
       />
     </div>
   );

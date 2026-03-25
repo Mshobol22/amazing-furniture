@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import {
-  FilterSection,
-  ColorSwatchGrid,
-  COLOR_HEX,
-} from "@/components/ui/filter-helpers";
+import FilterSidebar, {
+  type ActiveFilters,
+  type FilterSection,
+} from "@/components/filters/FilterSidebar";
 import type { SubcategoryCount } from "@/lib/supabase/products";
 
 interface CollectionSidebarProps {
@@ -60,8 +59,6 @@ export default function CollectionSidebar({
   const [pendingMin, setPendingMin] = useState(isAll ? allPriceMinParam : priceMinParam);
   const [pendingMax, setPendingMax] = useState(isAll ? allPriceMaxParam : priceMaxParam);
 
-  const isRug = slug === "rug";
-
   // ── URL helper ────────────────────────────────────────────────────────────
 
   const pushParams = useCallback(
@@ -78,74 +75,9 @@ export default function CollectionSidebar({
     [searchParams, router, pathname]
   );
 
-  // ── Toggle handlers ───────────────────────────────────────────────────────
-
-  const toggleType = (name: string) => {
-    const next = selectedTypes.includes(name)
-      ? selectedTypes.filter((t) => t !== name)
-      : [...selectedTypes, name];
-    // Cascade: changing type resets brand + color
-    pushParams({
-      type: next.length > 0 ? next.join(",") : null,
-      manufacturers: null,
-      colors: null,
-    });
-  };
-
-  const toggleManufacturer = (name: string) => {
-    const next = selectedManufacturers.includes(name)
-      ? selectedManufacturers.filter((m) => m !== name)
-      : [...selectedManufacturers, name];
-    // Cascade: changing brand resets color
-    pushParams({
-      manufacturers: next.length > 0 ? next.join(",") : null,
-      colors: null,
-    });
-  };
-
-  const toggleColor = (color: string) => {
-    const next = selectedColors.includes(color)
-      ? selectedColors.filter((c) => c !== color)
-      : [...selectedColors, color];
-    pushParams({ colors: next.length > 0 ? next.join(",") : null });
-  };
-
-  const setColorArray = (arr: string[]) => {
-    pushParams({ colors: arr.length > 0 ? arr.join(",") : null });
-  };
-
-  // ── Price ─────────────────────────────────────────────────────────────────
-
-  const applyPrice = () => {
-    if (isAll) {
-      pushParams({
-        minPrice: pendingMin || null,
-        maxPrice: pendingMax || null,
-      });
-      return;
-    }
-    pushParams({
-      priceMin: pendingMin || null,
-      priceMax: pendingMax || null,
-    });
-  };
-
   // Sync pending price with URL (e.g. browser back or clearAll)
   useEffect(() => { setPendingMin(isAll ? allPriceMinParam : priceMinParam); }, [isAll, allPriceMinParam, priceMinParam]);
   useEffect(() => { setPendingMax(isAll ? allPriceMaxParam : priceMaxParam); }, [isAll, allPriceMaxParam, priceMaxParam]);
-
-  // ── Clear all ─────────────────────────────────────────────────────────────
-
-  const activeCount = isAll
-    ? selectedAllCategories.length +
-      selectedAllManufacturers.length +
-      (allPriceMinParam ? 1 : 0) +
-      (allPriceMaxParam ? 1 : 0)
-    : selectedTypes.length +
-      selectedManufacturers.length +
-      selectedColors.length +
-      (priceMinParam ? 1 : 0) +
-      (priceMaxParam ? 1 : 0);
 
   const clearAll = () => {
     setPendingMin("");
@@ -155,24 +87,6 @@ export default function CollectionSidebar({
     if (sort) p.set("sort", sort);
     const qs = p.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  };
-
-  const toggleAllCategory = (category: string) => {
-    const next = selectedAllCategories.includes(category)
-      ? selectedAllCategories.filter((c) => c !== category)
-      : [...selectedAllCategories, category];
-    pushParams({
-      category: next.length > 0 ? next.join(",") : null,
-    });
-  };
-
-  const toggleAllManufacturer = (manufacturer: string) => {
-    const next = selectedAllManufacturers.includes(manufacturer)
-      ? selectedAllManufacturers.filter((m) => m !== manufacturer)
-      : [...selectedAllManufacturers, manufacturer];
-    pushParams({
-      manufacturer: next.length > 0 ? next.join(",") : null,
-    });
   };
 
   // ── Fetch manufacturers when type changes ─────────────────────────────────
@@ -219,203 +133,151 @@ export default function CollectionSidebar({
       .finally(() => setColorsLoading(false));
   }, [typeParam, manufacturerParam, slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const sections: FilterSection[] = [];
+
+  if (isAll) {
+    sections.push(
+      {
+        id: "category",
+        label: "Category",
+        type: "checkbox",
+        defaultOpen: true,
+        options: categoryCounts.map(({ slug: categorySlug, name, count }) => ({
+          value: categorySlug,
+          label: name,
+          count,
+        })),
+      },
+      {
+        id: "manufacturer",
+        label: "Brand",
+        type: "checkbox",
+        defaultOpen: true,
+        options: allBrands.map(({ name, count }) => ({ value: name, count, label: name })),
+      }
+    );
+  } else {
+    if (availableSubcategories.length > 1) {
+      sections.push({
+        id: "type",
+        label: "Type",
+        type: "checkbox",
+        defaultOpen: true,
+        options: availableSubcategories.map(({ name, count }) => ({ value: name, count, label: name })),
+      });
+    }
+    if (selectedTypes.length > 0 && !mfrsLoading && manufacturers.length > 0) {
+      sections.push({
+        id: "manufacturers",
+        label: "Brand",
+        type: "checkbox",
+        defaultOpen: true,
+        options: manufacturers.map(({ name, count }) => ({ value: name, count, label: name })),
+      });
+    }
+    if (selectedManufacturers.length > 0 && !colorsLoading && colorsAvailable) {
+      sections.push({
+        id: "colors",
+        label: "Color",
+        type: "checkbox",
+        defaultOpen: false,
+        options: colors.map(({ color, count }) => ({ value: color, count, label: color })),
+      });
+    }
+  }
+
+  sections.push({
+    id: "price",
+    label: "Price",
+    type: "price_range",
+    defaultOpen: false,
+  });
+
+  const activeFilters: ActiveFilters = isAll
+    ? {
+        category: selectedAllCategories,
+        manufacturer: selectedAllManufacturers,
+        priceMin: allPriceMinParam ? Number(allPriceMinParam) : null,
+        priceMax: allPriceMaxParam ? Number(allPriceMaxParam) : null,
+      }
+    : {
+        type: selectedTypes,
+        manufacturers: selectedManufacturers,
+        colors: selectedColors,
+        priceMin: priceMinParam ? Number(priceMinParam) : null,
+        priceMax: priceMaxParam ? Number(priceMaxParam) : null,
+      };
 
   return (
-    <div className="space-y-1">
-      {activeCount > 0 && (
-        <button
-          type="button"
-          onClick={clearAll}
-          className="mb-3 text-xs font-medium text-[#2D4A3E] hover:underline"
-        >
-          Clear all filters ({activeCount})
-        </button>
-      )}
+    <FilterSidebar
+      sections={sections}
+      activeFilters={activeFilters}
+      onChange={(filterId, value) => {
+        if (filterId === "priceMin" || filterId === "priceMax") {
+          const nextValue = typeof value === "string" ? value : null;
+          if (isAll) {
+            pushParams({
+              minPrice: filterId === "priceMin" ? nextValue : pendingMin || null,
+              maxPrice: filterId === "priceMax" ? nextValue : pendingMax || null,
+            });
+          } else {
+            pushParams({
+              priceMin: filterId === "priceMin" ? nextValue : pendingMin || null,
+              priceMax: filterId === "priceMax" ? nextValue : pendingMax || null,
+            });
+          }
+          if (filterId === "priceMin") setPendingMin(typeof value === "string" ? value : "");
+          if (filterId === "priceMax") setPendingMax(typeof value === "string" ? value : "");
+          return;
+        }
 
-      {isAll && (
-        <>
-          <FilterSection title="Category">
-            <div className="max-h-[220px] space-y-2 overflow-y-auto">
-              {categoryCounts.map(({ slug: categorySlug, name, count }) => (
-                <label
-                  key={categorySlug}
-                  className="flex cursor-pointer items-center justify-between gap-2 text-sm text-[#1C1C1C]/80 hover:text-[#1C1C1C]"
-                >
-                  <span className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedAllCategories.includes(categorySlug)}
-                      onChange={() => toggleAllCategory(categorySlug)}
-                      className="h-4 w-4 rounded border-[#1C1C1C]/20 text-[#2D4A3E] focus:ring-[#2D4A3E]"
-                    />
-                    {name}
-                  </span>
-                  <span className="text-xs text-[#1C1C1C]/40">
-                    {count.toLocaleString()}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </FilterSection>
+        if (filterId === "type") {
+          const allowed = new Set(availableSubcategories.map((s) => s.name));
+          const raw = Array.isArray(value) ? value : value ? [value] : [];
+          const safe = raw.filter((v) => allowed.has(v));
+          pushParams({
+            type: safe.length > 0 ? safe.join(",") : null,
+            manufacturers: null,
+            colors: null,
+          });
+          return;
+        }
 
-          <FilterSection title="Brand">
-            <div className="max-h-[220px] space-y-2 overflow-y-auto">
-              {allBrands.map(({ name, count }) => (
-                <label
-                  key={name}
-                  className="flex cursor-pointer items-center justify-between gap-2 text-sm text-[#1C1C1C]/80 hover:text-[#1C1C1C]"
-                >
-                  <span className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedAllManufacturers.includes(name)}
-                      onChange={() => toggleAllManufacturer(name)}
-                      className="h-4 w-4 rounded border-[#1C1C1C]/20 text-[#2D4A3E] focus:ring-[#2D4A3E]"
-                    />
-                    {name}
-                  </span>
-                  <span className="text-xs text-[#1C1C1C]/40">
-                    {count.toLocaleString()}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </FilterSection>
-        </>
-      )}
+        if (filterId === "manufacturers") {
+          const allowed = new Set(manufacturers.map((m) => m.name));
+          const raw = Array.isArray(value) ? value : value ? [value] : [];
+          const safe = raw.filter((v) => allowed.has(v));
+          pushParams({
+            manufacturers: safe.length > 0 ? safe.join(",") : null,
+            colors: null,
+          });
+          return;
+        }
 
-      {/* Step 1 — Type: always shown when multiple options exist */}
-      {!isAll && availableSubcategories.length > 1 && (
-        <FilterSection title="Type">
-          <div className="max-h-[220px] space-y-2 overflow-y-auto">
-            {availableSubcategories.map(({ name, count }) => (
-              <label
-                key={name}
-                className="flex cursor-pointer items-center justify-between gap-2 text-sm text-[#1C1C1C]/80 hover:text-[#1C1C1C]"
-              >
-                <span className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedTypes.includes(name)}
-                    onChange={() => toggleType(name)}
-                    className="h-4 w-4 rounded border-[#1C1C1C]/20 text-[#2D4A3E] focus:ring-[#2D4A3E]"
-                  />
-                  {name}
-                </span>
-                <span className="text-xs text-[#1C1C1C]/40">
-                  {count.toLocaleString()}
-                </span>
-              </label>
-            ))}
-          </div>
-        </FilterSection>
-      )}
+        if (filterId === "colors") {
+          const allowed = new Set(colors.map((c) => c.color));
+          const raw = Array.isArray(value) ? value : value ? [value] : [];
+          const safe = raw.filter((v) => allowed.has(v));
+          pushParams({ colors: safe.length > 0 ? safe.join(",") : null });
+          return;
+        }
 
-      {/* Step 2 — Brand: only after type is selected */}
-      {!isAll && selectedTypes.length > 0 && (
-        <FilterSection title="Brand">
-          {mfrsLoading ? (
-            <p className="text-xs text-[#1C1C1C]/40">Loading…</p>
-          ) : manufacturers.length === 0 ? (
-            <p className="text-xs text-[#1C1C1C]/40">No brands found</p>
-          ) : (
-            <div className="max-h-[220px] space-y-2 overflow-y-auto">
-              {manufacturers.map(({ name, count }) => (
-                <label
-                  key={name}
-                  className="flex cursor-pointer items-center justify-between gap-2 text-sm text-[#1C1C1C]/80 hover:text-[#1C1C1C]"
-                >
-                  <span className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedManufacturers.includes(name)}
-                      onChange={() => toggleManufacturer(name)}
-                      className="h-4 w-4 rounded border-[#1C1C1C]/20 text-[#2D4A3E] focus:ring-[#2D4A3E]"
-                    />
-                    {name}
-                  </span>
-                  <span className="text-xs text-[#1C1C1C]/40">
-                    {count.toLocaleString()}
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
-        </FilterSection>
-      )}
+        if (filterId === "category") {
+          const allowed = new Set(categoryCounts.map((c) => c.slug));
+          const raw = Array.isArray(value) ? value : value ? [value] : [];
+          const safe = raw.filter((v) => allowed.has(v));
+          pushParams({ category: safe.length > 0 ? safe.join(",") : null });
+          return;
+        }
 
-      {/* Step 3 — Color: only after brand selected AND colors exist */}
-      {!isAll && selectedManufacturers.length > 0 && colorsAvailable && (
-        <FilterSection title="Color">
-          {colorsLoading ? (
-            <p className="text-xs text-[#1C1C1C]/40">Loading…</p>
-          ) : isRug ? (
-            <ColorSwatchGrid
-              colors={colors.map((c) => c.color)}
-              selected={selectedColors}
-              onChange={setColorArray}
-            />
-          ) : (
-            <div className="max-h-[220px] space-y-2 overflow-y-auto">
-              {colors.map(({ color }) => (
-                <label
-                  key={color}
-                  className="flex cursor-pointer items-center gap-2 text-sm text-[#1C1C1C]/80 hover:text-[#1C1C1C]"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedColors.includes(color)}
-                    onChange={() => toggleColor(color)}
-                    className="h-4 w-4 rounded border-[#1C1C1C]/20 text-[#2D4A3E] focus:ring-[#2D4A3E]"
-                  />
-                  {COLOR_HEX[color] && (
-                    <span
-                      className="h-3 w-3 shrink-0 rounded-full border border-gray-300"
-                      style={{ background: COLOR_HEX[color] }}
-                    />
-                  )}
-                  <span>{color}</span>
-                </label>
-              ))}
-            </div>
-          )}
-        </FilterSection>
-      )}
-
-      {/* Step 4 — Price: always shown */}
-      <FilterSection title="Price">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              placeholder="Min"
-              value={pendingMin}
-              onChange={(e) => setPendingMin(e.target.value)}
-              min={0}
-              max={99999}
-              className="w-full rounded border border-[#1C1C1C]/15 px-2 py-1.5 text-sm focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]"
-            />
-            <span className="text-[#1C1C1C]/40">—</span>
-            <input
-              type="number"
-              placeholder="Max"
-              value={pendingMax}
-              onChange={(e) => setPendingMax(e.target.value)}
-              min={0}
-              max={99999}
-              className="w-full rounded border border-[#1C1C1C]/15 px-2 py-1.5 text-sm focus:border-[#2D4A3E] focus:outline-none focus:ring-1 focus:ring-[#2D4A3E]"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={applyPrice}
-            className="w-full rounded bg-[#2D4A3E] py-1.5 text-xs font-medium text-[#FAF8F5] hover:bg-[#3B5E4F] transition-colors"
-          >
-            Apply
-          </button>
-        </div>
-      </FilterSection>
-    </div>
+        if (filterId === "manufacturer") {
+          const allowed = new Set(allBrands.map((b) => b.name));
+          const raw = Array.isArray(value) ? value : value ? [value] : [];
+          const safe = raw.filter((v) => allowed.has(v));
+          pushParams({ manufacturer: safe.length > 0 ? safe.join(",") : null });
+        }
+      }}
+      onClear={clearAll}
+    />
   );
 }

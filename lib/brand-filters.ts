@@ -189,8 +189,11 @@ interface FetchBrandProductsParams {
   category?: string;
   excludeCategory?: string;
   collection?: string;
-  color?: string;
+  colors?: string[];
   material?: string;
+  priceMin?: number;
+  priceMax?: number;
+  sort?: "default" | "price-asc" | "price-desc" | "name-asc";
   searchQuery?: string;
   page: number;
   perPage: number;
@@ -209,8 +212,7 @@ export async function fetchBrandProducts(
     .from("products")
     .select("*", { count: "exact" })
     .eq("manufacturer", params.manufacturer)
-    .eq("in_stock", true)
-    .order("name", { ascending: true });
+    .eq("in_stock", true);
 
   query = applyAcmePlaceholderImageFilter(query);
 
@@ -218,8 +220,28 @@ export async function fetchBrandProducts(
   if (params.excludeCategory) query = query.neq("category", params.excludeCategory);
   if (params.collection) query = query.eq("collection", params.collection);
   if (params.material) query = query.eq("material", params.material);
-  if (params.color) query = query.ilike("color", `%${params.color}%`);
+  if (params.colors && params.colors.length > 0) {
+    const colorOr = params.colors.map((color) => `color.ilike.%${color}%`).join(",");
+    query = query.or(colorOr);
+  }
+  if (params.priceMin != null) query = query.gte("price", params.priceMin);
+  if (params.priceMax != null) query = query.lte("price", params.priceMax);
   if (params.searchQuery) query = query.ilike("name", `%${params.searchQuery}%`);
+
+  switch (params.sort ?? "default") {
+    case "price-asc":
+      query = query.order("price", { ascending: true });
+      break;
+    case "price-desc":
+      query = query.order("price", { ascending: false });
+      break;
+    case "name-asc":
+    case "default":
+      query = query.order("name", { ascending: true });
+      break;
+    default:
+      query = query.order("name", { ascending: true });
+  }
 
   const { data, error, count } = await query.range(start, end);
   if (error || !data) return { products: [], total: 0 };
@@ -238,8 +260,11 @@ export interface FetchAllProductsParams {
   manufacturer?: string;
   category?: string;
   collection?: string;
-  color?: string;
+  colors?: string[];
   material?: string;
+  priceMin?: number;
+  priceMax?: number;
+  sort?: "default" | "price-asc" | "price-desc" | "name-asc";
   searchQuery?: string;
   page: number;
   perPage: number;
@@ -257,8 +282,7 @@ export async function fetchAllProducts(
   let query = supabase
     .from("products")
     .select("*", { count: "exact" })
-    .eq("in_stock", true)
-    .order("name", { ascending: true });
+    .eq("in_stock", true);
 
   query = applyAcmePlaceholderImageFilter(query);
 
@@ -274,11 +298,29 @@ export async function fetchAllProducts(
   if (params.material) {
     query = query.eq("material", params.material);
   }
-  if (params.color) {
-    query = query.ilike("color", `%${params.color}%`);
+  if (params.colors && params.colors.length > 0) {
+    const colorOr = params.colors.map((color) => `color.ilike.%${color}%`).join(",");
+    query = query.or(colorOr);
   }
+  if (params.priceMin != null) query = query.gte("price", params.priceMin);
+  if (params.priceMax != null) query = query.lte("price", params.priceMax);
   if (params.searchQuery) {
     query = query.ilike("name", `%${params.searchQuery}%`);
+  }
+
+  switch (params.sort ?? "default") {
+    case "price-asc":
+      query = query.order("price", { ascending: true });
+      break;
+    case "price-desc":
+      query = query.order("price", { ascending: false });
+      break;
+    case "name-asc":
+    case "default":
+      query = query.order("name", { ascending: true });
+      break;
+    default:
+      query = query.order("name", { ascending: true });
   }
 
   const { data, error, count } = await query.range(start, end);

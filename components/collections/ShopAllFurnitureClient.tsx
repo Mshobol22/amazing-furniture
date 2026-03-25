@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import SteppedSidebar from "@/components/filters/SteppedSidebar";
+import FilterSidebar, { type ActiveFilters, type FilterSection } from "@/components/filters/FilterSidebar";
 import BrandProductGridCard from "@/components/products/BrandProductGridCard";
 import { getPageWindow } from "@/lib/pagination";
 import {
@@ -29,24 +29,27 @@ const CATEGORY_DISPLAY: Record<string, string> = {
 };
 
 type ValueCount = { value: string; count: number };
-type SidebarStep = {
-  id: string;
-  label: string;
-  dependsOn?: string;
-  hideAllPill?: boolean;
-  options: Array<{ value: string; count: number; label?: string }>;
-};
-
 export default function ShopAllFurnitureClient() {
   const [categoryOptions, setCategoryOptions] = useState<ValueCount[]>([]);
   const [manufacturers, setManufacturers] = useState<ValueCount[]>([]);
   const [colors, setColors] = useState<string[]>([]);
   const [materials, setMaterials] = useState<string[]>([]);
-  const [activeFilters, setActiveFilters] = useState<Record<string, string | null>>({
+  const [activeFilters, setActiveFilters] = useState<{
+    category: string | null;
+    brand: string | null;
+    color: string[];
+    material: string | null;
+    priceMin: number | null;
+    priceMax: number | null;
+    sort: "default" | "price-asc" | "price-desc" | "name-asc";
+  }>({
     category: null,
     brand: null,
-    color: null,
+    color: [],
     material: null,
+    priceMin: null,
+    priceMax: null,
+    sort: "default",
   });
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
@@ -145,10 +148,12 @@ export default function ShopAllFurnitureClient() {
 
   useEffect(() => {
     setActiveFilters((prev) => {
-      const nextC = prev.color && colors.includes(String(prev.color)) ? prev.color : null;
+      const nextC = prev.color.filter((c) => colors.includes(c));
       const nextM =
         prev.material && materials.includes(String(prev.material)) ? prev.material : null;
-      if (prev.color === nextC && prev.material === nextM) return prev;
+      const sameColors =
+        prev.color.length === nextC.length && prev.color.every((value) => nextC.includes(value));
+      if (sameColors && prev.material === nextM) return prev;
       return { ...prev, color: nextC, material: nextM };
     });
   }, [colors, materials]);
@@ -168,8 +173,11 @@ export default function ShopAllFurnitureClient() {
       const result = await fetchAllProducts({
         category: cat,
         manufacturer: effectiveManufacturer,
-        color: activeFilters.color ? String(activeFilters.color) : undefined,
+        colors: activeFilters.color.length > 0 ? activeFilters.color : undefined,
         material: activeFilters.material ? String(activeFilters.material) : undefined,
+        priceMin: activeFilters.priceMin ?? undefined,
+        priceMax: activeFilters.priceMax ?? undefined,
+        sort: activeFilters.sort,
         searchQuery: searchQuery || undefined,
         page,
         perPage: PER_PAGE,
@@ -183,6 +191,9 @@ export default function ShopAllFurnitureClient() {
     activeFilters.category,
     activeFilters.color,
     activeFilters.material,
+    activeFilters.priceMin,
+    activeFilters.priceMax,
+    activeFilters.sort,
     effectiveManufacturer,
     searchQuery,
     page,
@@ -196,6 +207,9 @@ export default function ShopAllFurnitureClient() {
     activeFilters.brand,
     activeFilters.color,
     activeFilters.material,
+    activeFilters.priceMin,
+    activeFilters.priceMax,
+    activeFilters.sort,
     searchQuery,
   ]);
 
@@ -205,12 +219,13 @@ export default function ShopAllFurnitureClient() {
     }
   }, [page, totalPages]);
 
-  const steps = useMemo(() => {
-    const list: SidebarStep[] = [
+  const sections = useMemo(() => {
+    const list: FilterSection[] = [
       {
         id: "category",
         label: "Category",
-        hideAllPill: true,
+        type: "checkbox",
+        defaultOpen: true,
         options: categoryOptions.map((c) => ({
           value: c.value,
           count: c.count,
@@ -219,37 +234,61 @@ export default function ShopAllFurnitureClient() {
       },
     ];
 
-    list.push({
-      id: "brand",
-      label: "Brand",
-      dependsOn: "category",
-      options: manufacturers.map((m) => ({ value: m.value, count: m.count, label: m.value })),
-    });
-
-    list.push(
-      {
+    if (activeFilters.category) {
+      list.push({
+        id: "brand",
+        label: "Brand",
+        type: "checkbox",
+        defaultOpen: true,
+        options: manufacturers.map((m) => ({ value: m.value, count: m.count, label: m.value })),
+      });
+    }
+    if (colors.length > 0) {
+      list.push({
         id: "color",
         label: "Color",
+        type: "checkbox",
+        defaultOpen: false,
         options: colors.map((c) => ({ value: c, count: 0, label: c })),
-        dependsOn: "brand",
-      },
-      {
+      });
+    }
+    if (materials.length > 0) {
+      list.push({
         id: "material",
         label: "Material",
+        type: "checkbox",
+        defaultOpen: false,
         options: materials.map((m) => ({ value: m, count: 0, label: m })),
-        dependsOn: "brand",
+      });
+    }
+    list.push(
+      { id: "price", label: "Price", type: "price_range", defaultOpen: false },
+      {
+        id: "sort",
+        label: "Sort By",
+        type: "sort",
+        defaultOpen: true,
+        options: [
+          { value: "default", label: "Default", count: 0 },
+          { value: "price-asc", label: "Price: Low to High", count: 0 },
+          { value: "price-desc", label: "Price: High to Low", count: 0 },
+          { value: "name-asc", label: "A to Z", count: 0 },
+        ],
       }
     );
 
     return list;
-  }, [categoryOptions, manufacturers, colors, materials]);
+  }, [activeFilters.category, categoryOptions, manufacturers, colors, materials]);
 
   const handleClear = useCallback(() => {
     setActiveFilters({
       category: null,
       brand: null,
-      color: null,
+      color: [],
       material: null,
+      priceMin: null,
+      priceMax: null,
+      sort: "default",
     });
     setPage(1);
   }, []);
@@ -266,6 +305,15 @@ export default function ShopAllFurnitureClient() {
 
   const from = total === 0 ? 0 : (page - 1) * PER_PAGE + 1;
   const to = Math.min(page * PER_PAGE, total);
+  const sidebarFilters: ActiveFilters = {
+    category: activeFilters.category,
+    brand: activeFilters.brand,
+    color: activeFilters.color,
+    material: activeFilters.material,
+    priceMin: activeFilters.priceMin,
+    priceMax: activeFilters.priceMax,
+    sort: activeFilters.sort,
+  };
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#1C1C1C]">
@@ -286,39 +334,65 @@ export default function ShopAllFurnitureClient() {
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
         <aside className="hidden lg:block">
           <div className="sticky top-20 max-h-[calc(100vh-120px)] overflow-y-auto rounded-xl border border-[#1C1C1C]/10 bg-[#FAF8F5] p-4">
-            <SteppedSidebar
-              steps={steps.map((step) => ({
-                id: step.id,
-                label: step.label,
-                dependsOn: step.dependsOn,
-                hideAllPill: step.hideAllPill,
-                options: step.options.map((o) => ({
-                  value: (o as { label?: string; value: string }).label ?? o.value,
-                  count: o.count,
-                })),
-              }))}
-              activeFilters={{
-                ...activeFilters,
-                category:
-                  activeFilters.category && CATEGORY_DISPLAY[activeFilters.category]
-                    ? CATEGORY_DISPLAY[activeFilters.category]
-                    : activeFilters.category,
-              }}
-              onChange={(stepId, value) => {
-                if (stepId === "category") {
-                  const categoryValue =
-                    value && Object.keys(CATEGORY_DISPLAY).find((k) => CATEGORY_DISPLAY[k] === value);
+            <FilterSidebar
+              sections={sections}
+              activeFilters={sidebarFilters}
+              onChange={(sectionId, value) => {
+                if (sectionId === "category") {
+                  const allowed = new Set(categoryOptions.map((c) => c.value));
+                  const next = typeof value === "string" && allowed.has(value) ? value : null;
                   setActiveFilters((prev) => ({
                     ...prev,
-                    category: categoryValue ?? value,
+                    category: next,
+                    brand: null,
+                    color: [],
+                    material: null,
                   }));
                   return;
                 }
-                setActiveFilters((prev) => ({ ...prev, [stepId]: value }));
+                if (sectionId === "brand") {
+                  const allowed = new Set(manufacturers.map((m) => m.value));
+                  const next = typeof value === "string" && allowed.has(value) ? value : null;
+                  setActiveFilters((prev) => ({ ...prev, brand: next, color: [], material: null }));
+                  return;
+                }
+                if (sectionId === "color") {
+                  const allowed = new Set(colors);
+                  const raw = Array.isArray(value) ? value : value ? [value] : [];
+                  setActiveFilters((prev) => ({ ...prev, color: raw.filter((v) => allowed.has(v)) }));
+                  return;
+                }
+                if (sectionId === "material") {
+                  const allowed = new Set(materials);
+                  const next = typeof value === "string" && allowed.has(value) ? value : null;
+                  setActiveFilters((prev) => ({ ...prev, material: next }));
+                  return;
+                }
+                if (sectionId === "priceMin") {
+                  setActiveFilters((prev) => ({
+                    ...prev,
+                    priceMin: typeof value === "string" && value ? Number(value) : null,
+                  }));
+                  return;
+                }
+                if (sectionId === "priceMax") {
+                  setActiveFilters((prev) => ({
+                    ...prev,
+                    priceMax: typeof value === "string" && value ? Number(value) : null,
+                  }));
+                  return;
+                }
+                if (sectionId === "sort") {
+                  const allowed = new Set(["default", "price-asc", "price-desc", "name-asc"]);
+                  if (typeof value === "string" && allowed.has(value)) {
+                    setActiveFilters((prev) => ({
+                      ...prev,
+                      sort: value as "default" | "price-asc" | "price-desc" | "name-asc",
+                    }));
+                  }
+                }
               }}
               onClear={handleClear}
-              mobileOpen={false}
-              onMobileClose={() => setMobileFiltersOpen(false)}
             />
           </div>
         </aside>
@@ -425,40 +499,67 @@ export default function ShopAllFurnitureClient() {
         </main>
       </div>
 
-      <SteppedSidebar
-        steps={steps.map((step) => ({
-          id: step.id,
-          label: step.label,
-          dependsOn: step.dependsOn,
-          hideAllPill: step.hideAllPill,
-          options: step.options.map((o) => ({
-            value: (o as { label?: string; value: string }).label ?? o.value,
-            count: o.count,
-          })),
-        }))}
-        activeFilters={{
-          ...activeFilters,
-          category:
-            activeFilters.category && CATEGORY_DISPLAY[activeFilters.category]
-              ? CATEGORY_DISPLAY[activeFilters.category]
-              : activeFilters.category,
-        }}
-        onChange={(stepId, value) => {
-          if (stepId === "category") {
-            const categoryValue =
-              value && Object.keys(CATEGORY_DISPLAY).find((k) => CATEGORY_DISPLAY[k] === value);
+      <FilterSidebar
+        sections={sections}
+        activeFilters={sidebarFilters}
+        onChange={(sectionId, value) => {
+          if (sectionId === "category") {
+            const allowed = new Set(categoryOptions.map((c) => c.value));
+            const next = typeof value === "string" && allowed.has(value) ? value : null;
             setActiveFilters((prev) => ({
               ...prev,
-              category: categoryValue ?? value,
+              category: next,
+              brand: null,
+              color: [],
+              material: null,
             }));
             return;
           }
-          setActiveFilters((prev) => ({ ...prev, [stepId]: value }));
+          if (sectionId === "brand") {
+            const allowed = new Set(manufacturers.map((m) => m.value));
+            const next = typeof value === "string" && allowed.has(value) ? value : null;
+            setActiveFilters((prev) => ({ ...prev, brand: next, color: [], material: null }));
+            return;
+          }
+          if (sectionId === "color") {
+            const allowed = new Set(colors);
+            const raw = Array.isArray(value) ? value : value ? [value] : [];
+            setActiveFilters((prev) => ({ ...prev, color: raw.filter((v) => allowed.has(v)) }));
+            return;
+          }
+          if (sectionId === "material") {
+            const allowed = new Set(materials);
+            const next = typeof value === "string" && allowed.has(value) ? value : null;
+            setActiveFilters((prev) => ({ ...prev, material: next }));
+            return;
+          }
+          if (sectionId === "priceMin") {
+            setActiveFilters((prev) => ({
+              ...prev,
+              priceMin: typeof value === "string" && value ? Number(value) : null,
+            }));
+            return;
+          }
+          if (sectionId === "priceMax") {
+            setActiveFilters((prev) => ({
+              ...prev,
+              priceMax: typeof value === "string" && value ? Number(value) : null,
+            }));
+            return;
+          }
+          if (sectionId === "sort") {
+            const allowed = new Set(["default", "price-asc", "price-desc", "name-asc"]);
+            if (typeof value === "string" && allowed.has(value)) {
+              setActiveFilters((prev) => ({
+                ...prev,
+                sort: value as "default" | "price-asc" | "price-desc" | "name-asc",
+              }));
+            }
+          }
         }}
         onClear={handleClear}
         mobileOpen={mobileFiltersOpen}
         onMobileClose={() => setMobileFiltersOpen(false)}
-        renderInline={false}
       />
     </div>
   );

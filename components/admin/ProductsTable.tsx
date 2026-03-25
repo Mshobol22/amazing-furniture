@@ -2,75 +2,25 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Suspense } from "react";
 import { Pencil, Check, X } from "lucide-react";
 import { extractSku } from "@/lib/utils";
 import { ProductImage } from "@/components/ui/ProductImage";
 import type { Product } from "@/types";
-
-const CATEGORIES = ["bed", "chair", "sofa", "table", "cabinet", "tv-stand", "rug"];
-const MANUFACTURERS = ["ACME", "United Furniture", "Zinatex", "Nationwide FD"];
+import FilterSidebar, { type ActiveFilters, type FilterSection } from "@/components/filters/FilterSidebar";
+import SmartSearchBar from "@/components/filters/SmartSearchBar";
 
 interface ProductsTableProps {
   products: Product[];
 }
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debouncedValue;
-}
-
 function ProductsTableInner({ products }: ProductsTableProps) {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
-
-  const qFromUrl = searchParams.get("q") ?? "";
-  const categoryFromUrl = searchParams.get("category") ?? "all";
-  const manufacturerFromUrl = searchParams.get("manufacturer") ?? "all";
-  const statusFromUrl = searchParams.get("status") ?? "";
-  const promotionsFromUrl = searchParams.get("promotions") ?? "";
-
-  const [searchInput, setSearchInput] = useState(qFromUrl);
-  const debouncedSearch = useDebounce(searchInput, 300);
-
-  useEffect(() => {
-    setSearchInput(qFromUrl);
-  }, [qFromUrl]);
-
-  const updateUrl = useCallback(
-    (updates: { q?: string; category?: string; manufacturer?: string }) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if ("q" in updates) {
-        if (updates.q?.trim()) params.set("q", updates.q.trim());
-        else params.delete("q");
-      }
-      if ("category" in updates) {
-        if (updates.category && updates.category !== "all")
-          params.set("category", updates.category);
-        else params.delete("category");
-      }
-      if ("manufacturer" in updates) {
-        if (updates.manufacturer && updates.manufacturer !== "all")
-          params.set("manufacturer", updates.manufacturer);
-        else params.delete("manufacturer");
-      }
-      const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, {
-        scroll: false,
-      });
-    },
-    [pathname, router, searchParams]
-  );
-
-  useEffect(() => {
-    updateUrl({ q: debouncedSearch });
-  }, [debouncedSearch, updateUrl]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [manufacturer, setManufacturer] = useState<string | null>(null);
+  const [category, setCategory] = useState<string | null>(null);
+  const [stock, setStock] = useState<string | null>(null);
+  const [sort, setSort] = useState<string>("default");
 
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [editingPriceValue, setEditingPriceValue] = useState("");
@@ -84,38 +34,60 @@ function ProductsTableInner({ products }: ProductsTableProps) {
 
   const getDisplayName = (p: Product) => nameOverrides[p.id] ?? p.name;
 
-  const filtered = products.filter((p) => {
+  const manufacturerCounts = React.useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of products) {
+      const name = p.manufacturer ?? "Unknown";
+      map.set(name, (map.get(name) ?? 0) + 1);
+    }
+    return Array.from(map.entries()).map(([value, count]) => ({ value, count }));
+  }, [products]);
+
+  const categoryCounts = React.useMemo(() => {
+    const source = manufacturer
+      ? products.filter((p) => (p.manufacturer ?? "Unknown") === manufacturer)
+      : [];
+    const map = new Map<string, number>();
+    for (const p of source) {
+      map.set(p.category, (map.get(p.category) ?? 0) + 1);
+    }
+    return Array.from(map.entries()).map(([value, count]) => ({ value, count }));
+  }, [manufacturer, products]);
+
+  const stockCounts = React.useMemo(() => {
+    let inStock = 0;
+    let outOfStock = 0;
+    for (const p of products) {
+      if (p.in_stock) inStock += 1;
+      else outOfStock += 1;
+    }
+    return { inStock, outOfStock };
+  }, [products]);
+
+  const filteredBase = products.filter((p) => {
     const sku = extractSku(p.slug) ?? "";
     const displayName = getDisplayName(p);
     const matchSearch =
-      !qFromUrl ||
-      displayName.toLowerCase().includes(qFromUrl.toLowerCase()) ||
-      sku.toLowerCase().includes(qFromUrl.toLowerCase());
-    const matchCategory =
-      categoryFromUrl === "all" || p.category === categoryFromUrl;
-    const matchManufacturer =
-      manufacturerFromUrl === "all" || (p.manufacturer ?? "") === manufacturerFromUrl;
+      !searchQuery ||
+      displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      sku.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchCategory = !category || p.category === category;
+    const matchManufacturer = !manufacturer || (p.manufacturer ?? "Unknown") === manufacturer;
     const matchStatus =
-      !statusFromUrl ||
-      (statusFromUrl === "in-stock" && p.in_stock) ||
-      (statusFromUrl === "out-of-stock" && !p.in_stock);
-    const matchPromotions =
-      !promotionsFromUrl ||
-      (promotionsFromUrl === "active" && p.on_sale);
-    return matchSearch && matchCategory && matchManufacturer && matchStatus && matchPromotions;
+      !stock ||
+      (stock === "in_stock" && p.in_stock) ||
+      (stock === "out_of_stock" && !p.in_stock);
+    return matchSearch && matchCategory && matchManufacturer && matchStatus;
   });
 
-  const handleClearFilters = () => {
-    setSearchInput("");
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("q");
-    params.delete("category");
-    params.delete("manufacturer");
-    params.delete("status");
-    params.delete("promotions");
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  };
+  const filtered = React.useMemo(() => {
+    const list = [...filteredBase];
+    if (sort === "price-asc") list.sort((a, b) => a.price - b.price);
+    else if (sort === "price-desc") list.sort((a, b) => b.price - a.price);
+    else if (sort === "name-asc") list.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sort === "newest") list.sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+    return list;
+  }, [filteredBase, sort]);
 
   const handleNameSave = async (product: Product) => {
     const trimmed = editingNameValue.trim();
@@ -200,53 +172,122 @@ function ProductsTableInner({ products }: ProductsTableProps) {
     setEditingPriceId(null);
   };
 
-  const hasFilters = qFromUrl || (categoryFromUrl && categoryFromUrl !== "all") || (manufacturerFromUrl && manufacturerFromUrl !== "all");
+  const hasFilters = Boolean(searchQuery || manufacturer || category || stock || sort !== "default");
+  const sections: FilterSection[] = [
+    {
+      id: "manufacturer",
+      label: "Manufacturer",
+      type: "checkbox",
+      defaultOpen: true,
+      options: manufacturerCounts,
+    },
+    ...(manufacturer
+      ? [{
+          id: "category",
+          label: "Category",
+          type: "checkbox" as const,
+          defaultOpen: true,
+          options: categoryCounts,
+        }]
+      : []),
+    {
+      id: "stock",
+      label: "Stock",
+      type: "checkbox",
+      defaultOpen: true,
+      options: [
+        { value: "in_stock", label: "In Stock", count: stockCounts.inStock },
+        { value: "out_of_stock", label: "Out of Stock", count: stockCounts.outOfStock },
+      ],
+    },
+    {
+      id: "sort",
+      label: "Sort By",
+      type: "sort",
+      defaultOpen: true,
+      options: [
+        { value: "default", label: "Default", count: 0 },
+        { value: "price-asc", label: "Price: Low to High", count: 0 },
+        { value: "price-desc", label: "Price: High to Low", count: 0 },
+        { value: "name-asc", label: "A to Z", count: 0 },
+        { value: "newest", label: "Newest First", count: 0 },
+      ],
+    },
+  ];
+
+  const activeSidebar: ActiveFilters = { manufacturer, category, stock, sort };
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-center gap-4">
-        <input
-          type="text"
-          placeholder="Search by name or SKU..."
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          className="w-64 rounded-md border border-gray-200 px-3 py-2 text-sm"
-        />
-        <select
-          value={categoryFromUrl}
-          onChange={(e) => updateUrl({ category: e.target.value })}
-          className="rounded-md border border-gray-200 px-3 py-2 text-sm"
+      <div className="mb-4 flex items-center justify-between gap-3 lg:hidden">
+        <button
+          type="button"
+          className="rounded-lg border border-[#1C1C1C]/15 bg-white px-3 py-2 text-sm font-medium"
+          onClick={() => setMobileFiltersOpen(true)}
         >
-          <option value="all">All categories</option>
-          {CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-        <select
-          value={manufacturerFromUrl}
-          onChange={(e) => updateUrl({ manufacturer: e.target.value })}
-          className="rounded-md border border-gray-200 px-3 py-2 text-sm"
-        >
-          <option value="all">All manufacturers</option>
-          {MANUFACTURERS.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-        {hasFilters && (
+          Filters
+        </button>
+        {hasFilters ? (
           <button
-            onClick={handleClearFilters}
-            className="text-sm text-walnut hover:underline"
+            type="button"
+            onClick={() => {
+              setSearchQuery("");
+              setManufacturer(null);
+              setCategory(null);
+              setStock(null);
+              setSort("default");
+            }}
+            className="text-sm text-[#2D4A3E] hover:underline"
           >
             Clear filters
           </button>
-        )}
+        ) : null}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+      <div className="mb-6 grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="hidden lg:block">
+          <div className="sticky top-20 max-h-[calc(100vh-120px)] overflow-y-auto rounded-xl border border-[#1C1C1C]/10 bg-[#FAF8F5] p-4">
+            <FilterSidebar
+              sections={sections}
+              activeFilters={activeSidebar}
+              onChange={(id, value) => {
+                if (id === "manufacturer") {
+                  const allowed = new Set(manufacturerCounts.map((x) => x.value));
+                  const next = typeof value === "string" && allowed.has(value) ? value : null;
+                  setManufacturer(next);
+                  setCategory(null);
+                  return;
+                }
+                if (id === "category") {
+                  const allowed = new Set(categoryCounts.map((x) => x.value));
+                  setCategory(typeof value === "string" && allowed.has(value) ? value : null);
+                  return;
+                }
+                if (id === "stock") {
+                  if (value === "in_stock" || value === "out_of_stock") setStock(value);
+                  else setStock(null);
+                  return;
+                }
+                if (id === "sort") setSort(typeof value === "string" ? value : "default");
+              }}
+              onClear={() => {
+                setSearchQuery("");
+                setManufacturer(null);
+                setCategory(null);
+                setStock(null);
+                setSort("default");
+              }}
+            />
+          </div>
+        </aside>
+
+        <div className="space-y-4">
+          <SmartSearchBar
+            placeholder="Search by name or SKU..."
+            onSearch={setSearchQuery}
+            className="mb-0"
+          />
+          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
         <table className="w-full min-w-[700px] font-sans text-sm">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50">
@@ -461,7 +502,43 @@ function ProductsTableInner({ products }: ProductsTableProps) {
             ))}
           </tbody>
         </table>
+          </div>
+        </div>
       </div>
+
+      <FilterSidebar
+        sections={sections}
+        activeFilters={activeSidebar}
+        onChange={(id, value) => {
+          if (id === "manufacturer") {
+            const allowed = new Set(manufacturerCounts.map((x) => x.value));
+            const next = typeof value === "string" && allowed.has(value) ? value : null;
+            setManufacturer(next);
+            setCategory(null);
+            return;
+          }
+          if (id === "category") {
+            const allowed = new Set(categoryCounts.map((x) => x.value));
+            setCategory(typeof value === "string" && allowed.has(value) ? value : null);
+            return;
+          }
+          if (id === "stock") {
+            if (value === "in_stock" || value === "out_of_stock") setStock(value);
+            else setStock(null);
+            return;
+          }
+          if (id === "sort") setSort(typeof value === "string" ? value : "default");
+        }}
+        onClear={() => {
+          setSearchQuery("");
+          setManufacturer(null);
+          setCategory(null);
+          setStock(null);
+          setSort("default");
+        }}
+        mobileOpen={mobileFiltersOpen}
+        onMobileClose={() => setMobileFiltersOpen(false)}
+      />
     </div>
   );
 }
