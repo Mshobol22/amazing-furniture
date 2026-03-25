@@ -5,6 +5,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const dynamic = "force-dynamic";
 const COLLECTION_GROUP_REGEX = /^[a-zA-Z0-9-]*$/;
 
+function sanitizeHttpsImageUrl(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  if (lower.startsWith("javascript:") || lower.startsWith("data:")) return null;
+  if (!lower.startsWith("https://")) return null;
+  return trimmed;
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -62,6 +72,44 @@ export async function PATCH(
     if (typeof body.name === "string") {
       const trimmed = body.name.trim();
       if (trimmed) updates.name = trimmed;
+    }
+    if (body.images !== undefined) {
+      if (!Array.isArray(body.images)) {
+        return NextResponse.json(
+          { error: "images must be an array of URLs" },
+          { status: 400 }
+        );
+      }
+      const sanitizedImages = (body.images as unknown[])
+        .map((url) => sanitizeHttpsImageUrl(url))
+        .filter((url): url is string => Boolean(url));
+      if (sanitizedImages.length === 0) {
+        return NextResponse.json(
+          { error: "At least one valid https:// image URL is required" },
+          { status: 400 }
+        );
+      }
+      if (sanitizedImages.length !== (body.images as unknown[]).length) {
+        return NextResponse.json(
+          { error: "All image URLs must be valid https:// URLs" },
+          { status: 400 }
+        );
+      }
+      updates.images = sanitizedImages;
+      // Any manual image change must be re-validated.
+      updates.images_validated = null;
+    }
+    if (body.images_validated !== undefined) {
+      if (
+        body.images_validated !== null &&
+        typeof body.images_validated !== "boolean"
+      ) {
+        return NextResponse.json(
+          { error: "images_validated must be true, false, or null" },
+          { status: 400 }
+        );
+      }
+      updates.images_validated = body.images_validated;
     }
     if (typeof body.description === "string") updates.description = body.description;
     if (body.collection_group !== undefined) {

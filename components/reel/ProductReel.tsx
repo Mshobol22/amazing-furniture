@@ -14,6 +14,7 @@ interface ProductReelProps {
   onClose: () => void;
   collectionPieces: Product[];
   relatedProducts: Product[];
+  heroImageUrl?: string;
   initialWishlisted?: string[];
   onLoadMore?: () => Promise<void>;
   isLoadingMore?: boolean;
@@ -39,6 +40,7 @@ export default function ProductReel({
   onClose,
   collectionPieces,
   relatedProducts,
+  heroImageUrl,
   initialWishlisted = [],
   onLoadMore,
   isLoadingMore = false,
@@ -299,8 +301,24 @@ export default function ProductReel({
           const price = getPriceLabel(product);
           const activeImageIndex = activeImageIndexMap.get(product.id) ?? 0;
           const isCollectionHero = Boolean(product.is_collection_hero);
+          const usesSharedCollectionImage =
+            !isCollectionHero &&
+            Boolean(heroImageUrl) &&
+            product.images[0] === heroImageUrl;
           const isWishlisted = wishlistedIds.has(product.id);
           const isAdded = Boolean(isAddingToCart.get(product.id));
+          const orderedImages = (() => {
+            if (!product.images?.length) return [];
+            if (!isCollectionHero && product.images.length > 1) {
+              return [
+                { src: product.images[1], originalIndex: 1 },
+                ...product.images
+                  .map((src, index) => ({ src, originalIndex: index }))
+                  .filter((entry) => entry.originalIndex !== 1),
+              ];
+            }
+            return product.images.map((src, index) => ({ src, originalIndex: index }));
+          })();
 
           return (
             <section
@@ -328,8 +346,8 @@ export default function ProductReel({
                   });
                 }}
               >
-                {product.images.map((imageSrc, imageIndex) => {
-                  const failedForCard = imageErrorMap.get(product.id)?.has(imageIndex);
+                {orderedImages.map(({ src: imageSrc, originalIndex }, imageIndex) => {
+                  const failedForCard = imageErrorMap.get(product.id)?.has(originalIndex);
                   const src = failedForCard ? PLACEHOLDER_IMAGE : imageSrc;
                   const priority = cardIndex === 0 && imageIndex === 0;
 
@@ -345,15 +363,20 @@ export default function ProductReel({
                         className="object-cover"
                         priority={priority}
                         loading={priority ? undefined : "lazy"}
-                        onError={() => handleImageError(product.id, imageIndex)}
+                        onError={() => handleImageError(product.id, originalIndex)}
                       />
+                      {usesSharedCollectionImage && originalIndex === 0 ? (
+                        <span className="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-1 text-xs text-white">
+                          Collection View
+                        </span>
+                      ) : null}
                     </div>
                   );
                 })}
               </div>
 
               <div
-                className="absolute bottom-0 left-0 right-0 border-t border-white/15 bg-black/45 px-6 pb-10 pt-5 backdrop-blur-[12px] backdrop-saturate-[180%]"
+                className="absolute bottom-0 left-0 right-0 max-h-[60vh] overflow-hidden border-t border-white/15 bg-black/45 px-6 pb-14 pt-5 backdrop-blur-[12px] backdrop-saturate-[180%]"
                 style={{
                   transform: visibleCards.has(cardIndex)
                     ? "translateY(0)"
@@ -361,75 +384,77 @@ export default function ProductReel({
                   transition: "transform 0.35s ease-out",
                 }}
               >
-                {isCollectionHero ? (
-                  <span className="mb-2 inline-flex rounded-full bg-[#2D4A3E] px-2.5 py-1 text-xs text-white">
-                    Full Collection
-                  </span>
-                ) : product.collection_group ? (
-                  <span className="mb-2 inline-flex rounded-full bg-white/80 px-2.5 py-1 text-xs text-[#1C1C1C]">
-                    {product.piece_type ?? "Collection Piece"}
-                  </span>
-                ) : null}
+                <div className="max-h-full overflow-y-auto">
+                  {isCollectionHero ? (
+                    <span className="mb-2 inline-flex rounded-full bg-[#2D4A3E] px-2.5 py-1 text-xs text-white">
+                      Full Collection
+                    </span>
+                  ) : product.collection_group ? (
+                    <span className="mb-2 inline-flex rounded-full bg-white/80 px-2.5 py-1 text-xs text-[#1C1C1C]">
+                      {product.piece_type ?? "Collection Piece"}
+                    </span>
+                  ) : null}
 
-                <h3 className="line-clamp-2 text-lg font-semibold leading-tight text-white">
-                  {product.name}
-                </h3>
+                  <h3 className="line-clamp-2 text-lg font-semibold leading-tight text-white">
+                    {product.name}
+                  </h3>
 
-                <div className="mt-2 flex items-center justify-between gap-3">
-                  <div className="text-xl font-bold">
-                    {price.regular ? (
-                      <>
-                        <span className="text-[#2D4A3E]">{price.sale}</span>
-                        <span className="ml-2 text-base text-gray-300 line-through">
-                          {price.regular}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-white">{price.sale}</span>
-                    )}
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    <div className="text-xl font-bold">
+                      {price.regular ? (
+                        <>
+                          <span className="text-[#2D4A3E]">{price.sale}</span>
+                          <span className="ml-2 text-base text-gray-300 line-through">
+                            {price.regular}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-white">{price.sale}</span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleWishlist(product.id)}
+                      aria-label={
+                        isWishlisted ? "Remove from wishlist" : "Add to wishlist"
+                      }
+                    >
+                      <Heart
+                        className={`h-6 w-6 ${
+                          isWishlisted ? "fill-red-500 text-red-500" : "text-white"
+                        }`}
+                      />
+                    </button>
                   </div>
+
+                  <p className="mt-2 line-clamp-2 text-sm text-white/80">
+                    {product.description}
+                  </p>
 
                   <button
                     type="button"
-                    onClick={() => toggleWishlist(product.id)}
-                    aria-label={
-                      isWishlisted ? "Remove from wishlist" : "Add to wishlist"
-                    }
+                    onClick={() => addToCart(product)}
+                    className="mt-3 w-full rounded-md bg-[#2D4A3E] px-4 py-3 text-center font-semibold text-white transition-colors active:bg-[#1E3329]"
                   >
-                    <Heart
-                      className={`h-6 w-6 ${
-                        isWishlisted ? "fill-red-500 text-red-500" : "text-white"
-                      }`}
-                    />
+                    {isAdded ? "Added ✓" : "Add to Cart"}
                   </button>
+
+                  {orderedImages.length > 1 ? (
+                    <div className="mt-3 flex items-center justify-center gap-1.5">
+                      {orderedImages.map((_, dotIndex) => (
+                        <span
+                          key={`${product.id}-dot-${dotIndex}`}
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            activeImageIndex === dotIndex
+                              ? "bg-white"
+                              : "bg-white/40"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
-
-                <p className="mt-2 line-clamp-3 text-sm text-white/80">
-                  {product.description}
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() => addToCart(product)}
-                  className="mt-3 w-full rounded-md bg-[#2D4A3E] px-4 py-3 text-center font-semibold text-white transition-colors active:bg-[#1E3329]"
-                >
-                  {isAdded ? "Added ✓" : "Add to Cart"}
-                </button>
-
-                {product.images.length > 1 ? (
-                  <div className="mt-3 flex items-center justify-center gap-1.5">
-                    {product.images.map((_, dotIndex) => (
-                      <span
-                        key={`${product.id}-dot-${dotIndex}`}
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          activeImageIndex === dotIndex
-                            ? "bg-white"
-                            : "bg-white/40"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                ) : null}
               </div>
             </section>
           );

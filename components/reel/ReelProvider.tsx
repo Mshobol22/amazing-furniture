@@ -15,6 +15,7 @@ import type { Product } from "@/types";
 type ReelProps = {
   collectionPieces: Product[];
   relatedProducts: Product[];
+  heroImageUrl?: string;
   loadMore: () => Promise<void>;
   isLoading: boolean;
 };
@@ -32,6 +33,8 @@ export function ReelProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { isOpen, open, close, collectionPieces, relatedProducts, loadMore, isLoading } =
     useReel();
+  const heroImageUrl =
+    collectionPieces.find((p) => p.is_collection_hero)?.images?.[0] ?? undefined;
   const isAdminRoute = pathname?.startsWith("/admin");
 
   const openReel = useCallback(
@@ -50,11 +53,21 @@ export function ReelProvider({ children }: { children: ReactNode }) {
       reelProps: {
         collectionPieces,
         relatedProducts,
+        heroImageUrl,
         loadMore,
         isLoading,
       },
     }),
-    [collectionPieces, close, isLoading, isOpen, loadMore, openReel, relatedProducts]
+    [
+      collectionPieces,
+      close,
+      heroImageUrl,
+      isLoading,
+      isOpen,
+      loadMore,
+      openReel,
+      relatedProducts,
+    ]
   );
 
   return (
@@ -66,6 +79,7 @@ export function ReelProvider({ children }: { children: ReactNode }) {
           onClose={close}
           collectionPieces={collectionPieces}
           relatedProducts={relatedProducts}
+          heroImageUrl={heroImageUrl}
           onLoadMore={loadMore}
           isLoadingMore={isLoading}
           initialWishlisted={[]}

@@ -18,6 +18,8 @@ export default function ProductDetailReelTrigger({
 }: ProductDetailReelTriggerProps) {
   const { isOpen, open, close, collectionPieces, relatedProducts, loadMore, isLoading } =
     useReel();
+  const heroImageUrl =
+    collectionPieces.find((p) => p.is_collection_hero)?.images?.[0] ?? undefined;
 
   return (
     <>
@@ -32,6 +34,7 @@ export default function ProductDetailReelTrigger({
         onClose={close}
         collectionPieces={collectionPieces}
         relatedProducts={relatedProducts}
+        heroImageUrl={heroImageUrl}
         initialWishlisted={initialWishlisted}
         onLoadMore={loadMore}
         isLoadingMore={isLoading}
