@@ -537,13 +537,13 @@ export default function Navbar() {
             </div>
             <div className="overflow-y-auto py-4">
               <Link
-                href="/collections/all"
+                href="/discover"
                 onClick={() => setMobileMenuOpen(false)}
                 className={`block px-4 py-3 font-medium hover:bg-gray-50 ${
-                  pathname === "/collections/all" ? "text-[#2D4A3E] font-semibold" : "text-[#1C1C1C]"
+                  pathname === "/discover" ? "text-[#2D4A3E] font-semibold" : "text-[#1C1C1C]"
                 }`}
               >
-                Shop All
+                Explore Now
               </Link>
               <Link
                 href="/sale"

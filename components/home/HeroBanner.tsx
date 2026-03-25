@@ -78,7 +78,7 @@ export default function HeroBanner() {
               asChild
               className="bg-walnut text-cream hover:bg-walnut/90"
             >
-              <Link href="/collections/all">Shop Now</Link>
+              <Link href="/discover">Explore Now</Link>
             </Button>
             <Button
               asChild

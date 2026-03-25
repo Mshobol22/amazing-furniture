@@ -1,4 +1,7 @@
+"use client";
+
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import ConditionalStoreNav from "@/components/layout/ConditionalStoreNav";
 import Footer from "@/components/layout/Footer";
 import CartDrawer from "@/components/cart/CartDrawer";
@@ -17,17 +20,20 @@ export default function StoreLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const isDiscover = pathname === "/discover";
+
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-[#FAF8F5]">
-      <SplashScreen />
-      <AnnouncementBanner />
-      <ExitIntentPopup />
-      <ConditionalStoreNav />
-      <main className="flex-1 pt-14 lg:pt-24">{children}</main>
-      <Footer />
+      {isDiscover ? null : <SplashScreen />}
+      {isDiscover ? null : <AnnouncementBanner />}
+      {isDiscover ? null : <ExitIntentPopup />}
+      {isDiscover ? null : <ConditionalStoreNav />}
+      <main className={isDiscover ? "flex-1" : "flex-1 pt-14 lg:pt-24"}>{children}</main>
+      {isDiscover ? null : <Footer />}
       <CartDrawer />
-      <BackToTop />
-      <ChatWidget />
+      {isDiscover ? null : <BackToTop />}
+      {isDiscover ? null : <ChatWidget />}
     </div>
   );
 }

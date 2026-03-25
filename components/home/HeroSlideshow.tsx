@@ -57,6 +57,12 @@ export default function HeroSlideshow({ slides }: HeroSlideshowProps) {
   if (!slides.length) return null;
 
   const slide = slides[current];
+  const primaryCtaHref =
+    slide.cta_href === "/shop" ||
+    slide.cta_href === "/collections/all" ||
+    slide.cta_href === "/products"
+      ? "/discover"
+      : slide.cta_href;
 
   return (
     <section className="relative w-full overflow-hidden bg-forest-dark h-[60vh] lg:h-[85vh]">
@@ -109,14 +115,14 @@ export default function HeroSlideshow({ slides }: HeroSlideshowProps) {
               asChild
               className="bg-forest font-sans font-medium tracking-wide text-cream hover:bg-forest-light px-6 py-2.5 text-sm"
             >
-              <Link href={slide.cta_href}>{slide.cta_label}</Link>
+              <Link href={primaryCtaHref}>{slide.cta_label}</Link>
             </Button>
             <Button
               asChild
               variant="outline"
               className="border border-white/60 bg-transparent font-sans font-medium tracking-wide text-white hover:bg-white/10 hover:text-white px-6 py-2.5 text-sm"
             >
-              <Link href="/collections/all">Browse All</Link>
+              <Link href="/discover">Explore Now</Link>
             </Button>
           </div>
         </div>
