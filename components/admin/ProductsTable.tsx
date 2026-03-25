@@ -91,10 +91,13 @@ function ProductsTableInner({ products }: ProductsTableProps) {
   const filteredBase = products.filter((p) => {
     const sku = extractSku(p.slug) ?? "";
     const displayName = getDisplayName(p);
+    const query = searchQuery.toLowerCase();
     const matchSearch =
       !searchQuery ||
-      displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sku.toLowerCase().includes(searchQuery.toLowerCase());
+      displayName.toLowerCase().includes(query) ||
+      sku.toLowerCase().includes(query) ||
+      p.slug.toLowerCase().includes(query) ||
+      (p.manufacturer ?? "").toLowerCase().includes(query);
     const matchCategory = !category || p.category === category;
     const matchManufacturer = !manufacturer || (p.manufacturer ?? "Unknown") === manufacturer;
     const matchStatus =
@@ -323,7 +326,7 @@ function ProductsTableInner({ products }: ProductsTableProps) {
 
         <div className="space-y-4">
           <SmartSearchBar
-            placeholder="Search by name or SKU..."
+            placeholder="Search by name, SKU, slug, or manufacturer..."
             onSearch={setSearchQuery}
             className="mb-0"
           />
