@@ -1,6 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Heart, Loader2, X } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
@@ -45,6 +48,7 @@ export default function ProductReel({
   onLoadMore,
   isLoadingMore = false,
 }: ProductReelProps) {
+  const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
   const outerScrollRef = useRef<HTMLDivElement | null>(null);
@@ -230,6 +234,15 @@ export default function ProductReel({
     [addItem]
   );
 
+  const handleProductNavigation = useCallback(
+    (event: MouseEvent<HTMLAnchorElement>, slug: string) => {
+      event.preventDefault();
+      onClose();
+      router.push(`/products/${slug}`);
+    },
+    [onClose, router]
+  );
+
   const hiddenCardIds = useMemo(() => {
     const hidden = new Set<string>();
     for (const product of cards) {
@@ -396,7 +409,13 @@ export default function ProductReel({
                   ) : null}
 
                   <h3 className="line-clamp-2 text-lg font-semibold leading-tight text-white">
-                    {product.name}
+                    <Link
+                      href={`/products/${product.slug}`}
+                      onClick={(event) => handleProductNavigation(event, product.slug)}
+                      className="text-white transition-colors hover:underline"
+                    >
+                      {product.name}
+                    </Link>
                   </h3>
 
                   <div className="mt-2 flex items-center justify-between gap-3">
@@ -431,6 +450,14 @@ export default function ProductReel({
                   <p className="mt-2 line-clamp-2 text-sm text-white/80">
                     {product.description}
                   </p>
+
+                  <Link
+                    href={`/products/${product.slug}`}
+                    onClick={(event) => handleProductNavigation(event, product.slug)}
+                    className="mt-1 inline-block text-xs font-medium text-[#2D4A3E] transition-colors hover:underline"
+                  >
+                    View Product →
+                  </Link>
 
                   <button
                     type="button"

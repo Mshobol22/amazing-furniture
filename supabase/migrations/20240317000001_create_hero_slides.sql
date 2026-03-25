@@ -36,7 +36,7 @@ INSERT INTO hero_slides (headline, subheading, cta_label, cta_href, image_url, s
     2
   ),
   (
-    'Artisan Rugs by Zinatex',
+    'Premium Rugs by Zinatex',
     'Handwoven area rugs that anchor every room with warmth',
     'Shop Rugs',
     '/collections/rug',

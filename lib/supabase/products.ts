@@ -347,9 +347,9 @@ export interface ManufacturerWithCount {
  * (manufacturer), id ASC in SQL).
  */
 export async function getManufacturersWithCounts(): Promise<ManufacturerWithCount[]> {
-  const supabase = createAdminClient();
+  const adminClient = createAdminClient();
 
-  const { data: mfrs, error: mfrError } = await supabase
+  const { data: mfrs, error: mfrError } = await adminClient
     .from("manufacturers")
     .select("name, slug, description, logo_url, is_active")
     .eq("is_active", true)
@@ -361,10 +361,10 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
   }
   if (!mfrs || mfrs.length === 0) return [];
 
-  let backgroundQuery = supabase
+  let backgroundQuery = adminClient
     .from("products")
     .select("manufacturer, id, images")
-    .eq("in_stock", true);
+    .not("manufacturer", "is", null);
   backgroundQuery = applyAcmePlaceholderImageFilter(backgroundQuery);
   backgroundQuery = backgroundQuery
     .order("manufacturer", { ascending: true })
@@ -372,7 +372,7 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
 
   const [{ data: countRows, error: countError }, { data: productRows, error: prodError }] =
     await Promise.all([
-      supabase.from("products").select("manufacturer").eq("in_stock", true),
+      adminClient.from("products").select("manufacturer").not("manufacturer", "is", null),
       backgroundQuery,
     ]);
 
