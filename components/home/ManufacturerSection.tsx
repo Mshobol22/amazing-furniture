@@ -21,6 +21,15 @@ interface ManufacturerSectionProps {
 export default function ManufacturerSection({
   manufacturers,
 }: ManufacturerSectionProps) {
+  const getInitials = (name: string) =>
+    name
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
   return (
     <section className="bg-[#FAF8F5] px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-7xl">
@@ -29,7 +38,7 @@ export default function ManufacturerSection({
         </h2>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {manufacturers.filter(m => m.is_active && (m.count ?? 0) > 0).map((m) => {
+          {manufacturers.filter((m) => m.is_active && Number(m.count ?? 0) > 0).map((m) => {
             const isComing =
               m.comingSoon || COMING_SOON.includes(m.name);
             const safeLogo =
@@ -71,8 +80,10 @@ export default function ManufacturerSection({
                         className="object-contain object-center"
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center px-2 text-center font-playfair text-lg font-semibold text-[#1C1C1C]">
-                        {m.name}
+                      <div className="flex h-full w-full items-center justify-center rounded-md bg-[#2D4A3E]">
+                        <span className="text-2xl font-semibold tracking-wide text-white">
+                          {getInitials(m.name)}
+                        </span>
                       </div>
                     )}
                   </div>

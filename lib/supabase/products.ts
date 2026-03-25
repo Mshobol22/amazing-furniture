@@ -361,68 +361,95 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
   }
   if (!mfrs || mfrs.length === 0) return [];
 
-  let backgroundQuery = adminClient
+  // Build count map from all products with no explicit limit.
+  const { data: countRows, error: countError } = await adminClient
     .from("products")
-    .select("manufacturer, id, images")
+    .select("manufacturer")
     .not("manufacturer", "is", null);
-  backgroundQuery = applyAcmePlaceholderImageFilter(backgroundQuery);
-  backgroundQuery = backgroundQuery
-    .order("manufacturer", { ascending: true })
-    .order("id", { ascending: true });
-
-  const [{ data: countRows, error: countError }, { data: productRows, error: prodError }] =
-    await Promise.all([
-      adminClient.from("products").select("manufacturer").not("manufacturer", "is", null),
-      backgroundQuery,
-    ]);
 
   if (countError) {
     console.error("getManufacturersWithCounts count query error:", countError);
   }
-  if (prodError) {
-    console.error("getManufacturersWithCounts products error:", prodError);
+
+  const countMap = (countRows ?? []).reduce((acc, p) => {
+    const manufacturer = typeof p.manufacturer === "string" ? p.manufacturer.trim() : "";
+    if (!manufacturer) return acc;
+    acc.set(manufacturer, (acc.get(manufacturer) ?? 0) + 1);
+    return acc;
+  }, new Map<string, number>());
+
+  const lowercaseCountMap = new Map<string, number>();
+  for (const [name, count] of countMap.entries()) {
+    lowercaseCountMap.set(name.toLowerCase(), (lowercaseCountMap.get(name.toLowerCase()) ?? 0) + count);
   }
 
-  const countByManufacturer = new Map<string, number>();
-  for (const row of countRows ?? []) {
-    const mName = row.manufacturer as string | null;
-    if (!mName) continue;
-    countByManufacturer.set(mName, (countByManufacturer.get(mName) ?? 0) + 1);
+  if (process.env.NODE_ENV !== "production") {
+    console.log("getManufacturersWithCounts countMap keys:", Array.from(countMap.keys()));
   }
 
-  const backgroundByManufacturer = new Map<string, string>();
-  for (const row of productRows ?? []) {
-    const mName = row.manufacturer as string | null;
-    if (!mName) continue;
-    if (backgroundByManufacturer.has(mName)) continue;
+  const hydrated = await Promise.all(
+    mfrs.map(async (m) => {
+      const name = m.name as string;
+      const normalizedName = name.trim();
+      const exactCount = countMap.get(normalizedName);
+      const fallbackCaseCount = lowercaseCountMap.get(normalizedName.toLowerCase());
+      if (exactCount == null && (fallbackCaseCount ?? 0) > 0) {
+        console.warn(
+          `getManufacturersWithCounts case mismatch for "${name}" (exact miss, lowercase hit: ${fallbackCaseCount})`
+        );
+      }
 
-    const images = row.images as string[] | null;
-    if (!Array.isArray(images) || images.length === 0) continue;
+      let bgQuery = adminClient
+        .from("products")
+        .select("images")
+        .eq("manufacturer", name)
+        .order("id", { ascending: true })
+        .limit(50);
+      bgQuery = applyAcmePlaceholderImageFilter(bgQuery);
+      const { data: bgRows, error: bgError } = await bgQuery;
+      if (bgError) {
+        console.error(`getManufacturersWithCounts background query error for ${name}:`, bgError);
+      }
 
-    const first = images[0];
-    if (typeof first !== "string" || !first.startsWith("https://")) continue;
-    if (isHiddenAcmePlaceholderProduct({ images })) continue;
+      let backgroundImage: string | null = null;
+      for (const row of bgRows ?? []) {
+        const images = row.images as string[] | null;
+        if (!Array.isArray(images) || images.length === 0) continue;
+        if (isHiddenAcmePlaceholderProduct({ images })) continue;
+        const first = images[0];
+        if (typeof first !== "string" || !first.startsWith("https://")) continue;
+        backgroundImage = proxyIfNfdManufacturer(name, first);
+        break;
+      }
 
-    backgroundByManufacturer.set(mName, first);
-  }
+      const numericCount = Number(exactCount ?? 0);
+      const logoUrl = brandLogoSrc(name, m.logo_url as string | null | undefined);
+      return {
+        name,
+        slug: m.slug as string,
+        description: m.description as string,
+        logo_url: logoUrl,
+        backgroundImage,
+        is_active: Boolean(m.is_active),
+        count: numericCount,
+        comingSoon: numericCount === 0,
+      };
+    })
+  );
 
-  return mfrs.map((m) => {
+  return hydrated
+    .filter((m) => m.is_active && Number(m.count) > 0)
+    .map((m) => {
     const name = m.name as string;
-    const count = countByManufacturer.get(name) ?? 0;
-    const logoUrl = brandLogoSrc(name, m.logo_url as string | null | undefined);
-    const bg = backgroundByManufacturer.get(name) ?? null;
-    const resolvedBg = bg && bg.startsWith("https://") ? bg : null;
-    const backgroundImage = proxyIfNfdManufacturer(name, resolvedBg);
-
     return {
       name,
       slug: m.slug as string,
       description: m.description as string,
-      logo_url: logoUrl,
-      backgroundImage,
+      logo_url: m.logo_url,
+      backgroundImage: m.backgroundImage,
       is_active: Boolean(m.is_active),
-      count,
-      comingSoon: count === 0,
+      count: Number(m.count),
+      comingSoon: Number(m.count) === 0,
     };
   });
 }
