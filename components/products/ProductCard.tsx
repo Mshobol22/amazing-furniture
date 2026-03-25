@@ -35,9 +35,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
     toggleWishlist(product.id);
   };
 
-  const handleReelClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleReelClick = () => {
     if (!product.collection_group) return;
     void openReel(product.collection_group, product.category);
   };

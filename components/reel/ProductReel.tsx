@@ -44,7 +44,7 @@ export default function ProductReel({
   isLoadingMore = false,
 }: ProductReelProps) {
   const addItem = useCartStore((state) => state.addItem);
-  const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const cardRefs = useRef<Array<HTMLElement | null>>([]);
   const outerScrollRef = useRef<HTMLDivElement | null>(null);
   const loadingMoreRef = useRef(false);
   const [activeCardIndex, setActiveCardIndex] = useState(0);

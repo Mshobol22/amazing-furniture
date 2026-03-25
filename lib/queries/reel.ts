@@ -23,27 +23,19 @@ export async function getReelProducts(
 ): Promise<ReelQueryResult> {
   const supabase = getAnonClient();
 
-  // Determine the image filter condition.
-  // TODO: Once image validation has been run across all products,
-  // remove the `images_validated IS NULL` fallback and query only
-  // `images_validated = TRUE` to ensure only confirmed-valid images surface.
-  const validatedFilter = (query: ReturnType<typeof supabase.from>) =>
-    query
-      // Accept fully validated OR not-yet-checked (pre-validation fallback)
-      .or("images_validated.eq.true,images_validated.is.null")
-      .not("images", "is", null)
-      .filter("images", "neq", "{}");
-
   // Step 1: All pieces from this collection with validated images
   const collectionQuery = supabase
     .from("products")
     .select("*")
     .eq("collection_group", collectionGroup)
+    // Accept fully validated OR not-yet-checked (pre-validation fallback)
+    .or("images_validated.eq.true,images_validated.is.null")
+    .not("images", "is", null)
+    .filter("images", "neq", "{}")
     .order("is_collection_hero", { ascending: false })
     .order("piece_type", { ascending: true });
 
-  const { data: collectionPieces, error: collectionError } =
-    await validatedFilter(collectionQuery as never);
+  const { data: collectionPieces, error: collectionError } = await collectionQuery;
 
   if (collectionError) {
     console.error("getReelProducts collection error:", collectionError);
@@ -56,13 +48,15 @@ export async function getReelProducts(
     .eq("category", category)
     .or(`collection_group.is.null,collection_group.neq.${collectionGroup}`)
     .eq("in_stock", true)
+    .or("images_validated.eq.true,images_validated.is.null")
+    .not("images", "is", null)
+    .filter("images", "neq", "{}")
     .limit(limit);
 
   // Supabase JS v2 does not support ORDER BY RANDOM() natively;
   // results will be in default insertion order. For true randomness,
   // use a Supabase RPC or shuffle client-side.
-  const { data: relatedProducts, error: relatedError } =
-    await validatedFilter(relatedQuery as never);
+  const { data: relatedProducts, error: relatedError } = await relatedQuery;
 
   if (relatedError) {
     console.error("getReelProducts related error:", relatedError);

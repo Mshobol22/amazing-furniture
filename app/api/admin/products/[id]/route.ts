@@ -20,7 +20,7 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const body = await request.json();
+    const body = (await request.json()) as Record<string, unknown>;
 
     const updates: Record<string, unknown> = {};
     const admin = createAdminClient();
@@ -95,7 +95,8 @@ export async function PATCH(
           { status: 400 }
         );
       }
-      const normalized = body.bundle_skus
+      const bundleSkus = body.bundle_skus as unknown[];
+      const normalized = bundleSkus
         .filter((sku): sku is string => typeof sku === "string")
         .map((sku) => sku.trim())
         .filter(Boolean);
