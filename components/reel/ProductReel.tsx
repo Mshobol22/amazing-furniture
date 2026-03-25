@@ -1,11 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Heart, Loader2, MessageCircle, X } from "lucide-react";
+import {
+  ChevronDown,
+  ExternalLink,
+  Heart,
+  Loader2,
+  MessageCircle,
+  X,
+} from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { toast } from "@/hooks/use-toast";
 import type { Product } from "@/types";
@@ -25,7 +30,6 @@ interface ProductReelProps {
 }
 
 const PLACEHOLDER_IMAGE = "/images/placeholder-product.svg";
-const COLLAPSED_PANEL_HEIGHT_PX = 160;
 
 const USD_FORMATTER = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -290,15 +294,6 @@ export default function ProductReel({
     [addItem]
   );
 
-  const handleProductNavigation = useCallback(
-    (event: MouseEvent<HTMLAnchorElement>, slug: string) => {
-      event.preventDefault();
-      onClose();
-      router.push(`/products/${slug}`);
-    },
-    [onClose, router]
-  );
-
   const hiddenCardIds = useMemo(() => {
     const hidden = new Set<string>();
     for (const product of cards) {
@@ -348,7 +343,7 @@ export default function ProductReel({
                   cardRefs.current[cardIndex] = el;
                 }}
                 data-card-index={cardIndex}
-                className="relative flex h-screen w-full snap-start items-center justify-center overflow-hidden bg-gradient-to-b from-[#2D4A3E] to-[#1C1C1C]"
+                className="relative flex h-[100dvh] w-full shrink-0 snap-start items-center justify-center overflow-hidden bg-gradient-to-b from-[#2D4A3E] to-[#1C1C1C]"
               >
                 <div className="flex flex-col items-center gap-3 text-center">
                   <p className="text-2xl font-light text-white">
@@ -399,6 +394,8 @@ export default function ProductReel({
             return product.images.map((src, index) => ({ src, originalIndex: index }));
           })();
 
+          const overlayVisible = visibleCards.has(cardIndex);
+
           return (
             <section
               key={product.id}
@@ -406,10 +403,11 @@ export default function ProductReel({
                 cardRefs.current[cardIndex] = el;
               }}
               data-card-index={cardIndex}
-              className="relative flex h-screen w-full snap-start flex-col overflow-hidden"
+              className="relative h-[100dvh] w-full shrink-0 snap-start overflow-hidden bg-black text-white"
             >
+              {/* LAYER 1 — full bleed image + horizontal strip */}
               <div
-                className="relative min-h-0 flex-1 overflow-hidden"
+                className="absolute inset-0 z-0 overflow-hidden"
                 onTouchStart={(event) => {
                   if (event.touches.length !== 1) return;
                   const t = event.touches[0];
@@ -429,7 +427,6 @@ export default function ProductReel({
                   const now = Date.now();
                   clickSuppressedUntilRef.current = now + 400;
 
-                  // Ignore swipes / scroll gestures.
                   if (dist >= 10) {
                     if (tapTimeoutRef.current != null) {
                       window.clearTimeout(tapTimeoutRef.current);
@@ -456,7 +453,6 @@ export default function ProductReel({
                       const didToggle = await toggleWishlist(product.id);
                       if (!didToggle) return;
 
-                      // If adding: filled red, if removing: outlined white.
                       setImageHeartBurst({
                         productId: product.id,
                         isFilled: !wasWishlisted,
@@ -486,9 +482,7 @@ export default function ProductReel({
                 }}
                 onClick={(event) => {
                   const now = Date.now();
-                  // Prevent "click" after a touch tap.
                   if (now < clickSuppressedUntilRef.current) return;
-                  // Avoid navigating twice on double-click.
                   if (event.detail > 1) return;
                   navigateToProduct(product.slug);
                 }}
@@ -499,121 +493,95 @@ export default function ProductReel({
                     size={64}
                     className={`reel-heart-burst pointer-events-none absolute left-1/2 top-1/2 z-[5] -translate-x-1/2 -translate-y-1/2 ${
                       imageHeartBurst.isFilled
-                        ? "text-[#ef4444] fill-[#ef4444]"
-                        : "text-white fill-none"
+                        ? "fill-[#ef4444] text-[#ef4444]"
+                        : "fill-none text-white"
                     }`}
                   />
                 ) : null}
                 <div
-                  className="reel-inner flex h-full overflow-x-scroll"
-                style={{
-                  scrollSnapType: "x mandatory",
-                  WebkitOverflowScrolling: "touch",
-                  touchAction: "pan-x",
-                }}
-                onScroll={(event) => {
-                  const target = event.currentTarget;
-                  const nextIndex = Math.round(target.scrollLeft / target.clientWidth);
-                  setActiveImageIndexMap((prev) => {
-                    const next = new Map(prev);
-                    next.set(product.id, nextIndex);
-                    return next;
-                  });
-                }}
-              >
-                {orderedImages.map(({ src: imageSrc, originalIndex }, imageIndex) => {
-                  const failedForCard = imageErrorMap.get(product.id)?.has(originalIndex);
-                  const src = failedForCard ? PLACEHOLDER_IMAGE : imageSrc;
-                  const priority = cardIndex === 0 && imageIndex === 0;
+                  className="reel-inner flex h-full w-full overflow-x-scroll"
+                  style={{
+                    scrollSnapType: "x mandatory",
+                    WebkitOverflowScrolling: "touch",
+                    touchAction: "pan-x",
+                  }}
+                  onScroll={(event) => {
+                    const target = event.currentTarget;
+                    const nextIndex = Math.round(
+                      target.scrollLeft / target.clientWidth
+                    );
+                    setActiveImageIndexMap((prev) => {
+                      const next = new Map(prev);
+                      next.set(product.id, nextIndex);
+                      return next;
+                    });
+                  }}
+                >
+                  {orderedImages.map(({ src: imageSrc, originalIndex }, imageIndex) => {
+                    const failedForCard = imageErrorMap
+                      .get(product.id)
+                      ?.has(originalIndex);
+                    const src = failedForCard ? PLACEHOLDER_IMAGE : imageSrc;
+                    const priority = cardIndex === 0 && imageIndex === 0;
 
-                  return (
-                    <div
-                      key={`${product.id}-${imageIndex}`}
-                      className="relative h-full w-full shrink-0 snap-start"
-                    >
-                      <Image
-                        src={src}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                        priority={priority}
-                        loading={priority ? undefined : "lazy"}
-                        onError={() => handleImageError(product.id, originalIndex)}
-                      />
-                      {usesSharedCollectionImage && originalIndex === 0 ? (
-                        <span className="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-1 text-xs text-white">
-                          Collection View
-                        </span>
-                      ) : null}
-                    </div>
-                  );
-                })}
+                    return (
+                      <div
+                        key={`${product.id}-${imageIndex}`}
+                        className="relative h-full w-full shrink-0 snap-start"
+                      >
+                        <Image
+                          src={src}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          priority={priority}
+                          loading={priority ? undefined : "lazy"}
+                          onError={() => handleImageError(product.id, originalIndex)}
+                        />
+                        {usesSharedCollectionImage && originalIndex === 0 ? (
+                          <span className="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-1 text-xs text-white">
+                            Collection View
+                          </span>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
-
-                {orderedImages.length > 1 ? (
-                  <div className="pointer-events-none absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center justify-center gap-1.5">
-                    {orderedImages.map((_, dotIndex) => (
-                      <span
-                        key={`${product.id}-dot-${dotIndex}`}
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          activeImageIndex === dotIndex ? "bg-white" : "bg-white/40"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                ) : null}
               </div>
 
-              {/* Tap outside to close the description drawer */}
-              {isDescriptionOpen ? (
-                <button
-                  type="button"
-                  onClick={() => setExpandedDescriptionProductId(null)}
-                  aria-label="Close description drawer"
-                  className="absolute left-0 right-0 top-0 z-[9] bg-transparent"
-                  style={{ bottom: COLLAPSED_PANEL_HEIGHT_PX }}
-                />
+              {/* LAYER 5 — image dots */}
+              {orderedImages.length > 1 ? (
+                <div
+                  className="pointer-events-none absolute bottom-4 left-0 right-0 z-[12] flex items-center justify-center gap-1.5"
+                  style={{
+                    opacity: overlayVisible ? 1 : 0,
+                    transition: "opacity 0.3s ease-out",
+                  }}
+                >
+                  {orderedImages.map((_, dotIndex) => (
+                    <span
+                      key={`${product.id}-dot-${dotIndex}`}
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        activeImageIndex === dotIndex ? "bg-white" : "bg-white/40"
+                      }`}
+                    />
+                  ))}
+                </div>
               ) : null}
 
-              {/* Description drawer (slides up from bottom) */}
+              {/* LAYER 2 — bottom-left overlay */}
               <div
-                className={`absolute left-0 right-0 z-[10] flex max-h-[50vh] flex-col rounded-t-xl bg-black/90 p-4 backdrop-blur-[12px] backdrop-saturate-[180%] transition-transform duration-300 ease-out ${
-                  isDescriptionOpen
-                    ? "translate-y-0 pointer-events-auto"
-                    : "translate-y-full pointer-events-none"
-                }`}
+                className="pointer-events-none absolute bottom-20 left-4 right-20 z-[15]"
                 style={{
-                  bottom: COLLAPSED_PANEL_HEIGHT_PX,
-                  opacity: visibleCards.has(cardIndex) ? 1 : 0,
-                }}
-              >
-                <div className="mb-3 flex items-center justify-center">
-                  <div className="h-1.5 w-11 rounded-full bg-white/80" />
-                </div>
-                <div className="mb-2 text-sm font-medium text-white/70">Description</div>
-
-                <div className="flex-1 overflow-y-auto pr-2 text-sm leading-relaxed text-white/90">
-                  {product.description}
-                </div>
-
-                <Link
-                  href={`/products/${product.slug}`}
-                  onClick={(event) => handleProductNavigation(event, product.slug)}
-                  className="mt-3 inline-block text-sm font-medium text-[#2D4A3E] transition-colors hover:underline"
-                >
-                  View Product →
-                </Link>
-              </div>
-
-              {/* Collapsed panel (always visible) */}
-              <div
-                className="h-[160px] w-full shrink-0 overflow-hidden border-t border-white/15 bg-black/45 px-6 py-3 backdrop-blur-[12px] backdrop-saturate-[180%]"
-                style={{
-                  opacity: visibleCards.has(cardIndex) ? 1 : 0,
+                  opacity: overlayVisible ? 1 : 0,
                   transition: "opacity 0.3s ease-out",
                 }}
               >
-                <div className="flex h-full flex-col">
+                <div
+                  className="pointer-events-auto"
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
                   {isCollectionHero ? (
                     <span className="inline-flex rounded-full bg-[#2D4A3E] px-2.5 py-1 text-xs text-white">
                       Full Collection
@@ -624,125 +592,211 @@ export default function ProductReel({
                     </span>
                   ) : null}
 
-                  <div className="mt-1 flex items-center justify-between gap-3 shrink-0">
-                    <p className="min-w-0 flex-1 truncate text-base font-semibold text-white">
-                      {product.name}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void toggleWishlist(product.id);
-                      }}
-                      aria-label={
-                        isWishlisted ? "Remove from wishlist" : "Add to wishlist"
-                      }
-                      className="rounded-full p-1"
-                    >
-                      <Heart
-                        className={`h-6 w-6 ${
-                          isWishlisted ? "fill-red-500 text-red-500" : "text-white"
-                        }`}
-                      />
-                    </button>
-                  </div>
+                  <h2
+                    className="mt-1 line-clamp-2 text-lg font-bold text-white"
+                    style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}
+                  >
+                    {product.name}
+                  </h2>
 
-                  <div className="mt-2 flex items-center justify-between gap-3 shrink-0">
-                    <div className="text-xl font-bold text-white">
-                      {price.regular ? (
-                        <>
-                          <span className="text-white">{price.sale}</span>
-                          <span className="ml-2 text-base text-white/50 line-through">
-                            {price.regular}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-white">{price.sale}</span>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setExpandedDescriptionProductId((prev) =>
-                          prev === product.id ? null : product.id
-                        )
-                      }
-                      aria-label={
-                        isDescriptionOpen ? "Close description" : "Open description"
-                      }
-                      className="inline-flex items-center justify-center rounded-full bg-white/10 p-1.5"
-                    >
-                      {isDescriptionOpen ? (
-                        <X className="h-[22px] w-[22px] text-white" />
-                      ) : (
-                        <MessageCircle
-                          className="h-[22px] w-[22px] text-white"
-                        />
-                      )}
-                    </button>
+                  <div
+                    className="text-xl font-bold text-white"
+                    style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}
+                  >
+                    {price.regular ? (
+                      <>
+                        <span>{price.sale}</span>
+                        <span className="ml-2 text-base font-bold text-white/70 line-through">
+                          {price.regular}
+                        </span>
+                      </>
+                    ) : (
+                      <span>{price.sale}</span>
+                    )}
                   </div>
 
                   <button
                     type="button"
                     onClick={() => addToCart(product)}
-                    className={`h-[44px] w-full rounded-md bg-[#2D4A3E] px-4 text-center font-semibold text-white transition-colors active:bg-[#1E3329] ${
-                      isCollectionHero &&
-                      (product.bundle_skus?.length ?? 0) > 0 &&
-                      nonHeroCollectionPieces.length > 0 &&
-                      !isDescriptionOpen
-                        ? ""
-                        : "mt-auto"
-                    }`}
+                    className="mt-2 min-w-[140px] w-fit rounded-full bg-[#2D4A3E] px-4 py-2 text-sm font-semibold text-white active:bg-[#1E3329]"
                   >
                     {isAdded ? "Added ✓" : "Add to Cart"}
                   </button>
-
-                  {isCollectionHero &&
-                  (product.bundle_skus?.length ?? 0) > 0 &&
-                  !isDescriptionOpen &&
-                  nonHeroCollectionPieces.length > 0 ? (
-                    <div className="flex min-h-0 flex-1 flex-col">
-                      <div className="mb-2 mt-3 text-xs font-medium text-white/70">
-                        What&apos;s in this collection
-                      </div>
-                      <div className="collection-pieces-row flex gap-2 overflow-x-auto pb-1">
-                        {nonHeroCollectionPieces.map((piece) => {
-                          const piecePrice = getPriceLabel(piece);
-                          return (
-                            <div
-                              key={piece.id}
-                              className="flex min-w-[90px] flex-shrink-0 items-center justify-between gap-2 rounded-lg bg-white/10 px-3 py-2"
-                            >
-                              <div className="min-w-0">
-                                <div className="truncate text-xs font-medium text-white">
-                                  {piece.piece_type ?? "Piece"}
-                                </div>
-                                <div className="text-sm font-bold text-white">
-                                  {piecePrice.sale}
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => addToCart(piece)}
-                                aria-label={`Add ${piece.piece_type ?? "piece"} to cart`}
-                                className="h-6 w-6 shrink-0 rounded-full bg-[#2D4A3E] text-white transition-colors hover:bg-[#3B5E4F] active:bg-[#1E3329]"
-                              >
-                                +
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
               </div>
+
+              {/* LAYER 3 — right sidebar */}
+              <div
+                className="absolute bottom-[100px] right-3 z-[20] flex flex-col items-center gap-[20px]"
+                style={{
+                  opacity: overlayVisible ? 1 : 0,
+                  transition: "opacity 0.3s ease-out",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void toggleWishlist(product.id);
+                  }}
+                  className="flex flex-col items-center gap-0.5 bg-transparent p-0 text-white"
+                  aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                >
+                  <Heart
+                    size={28}
+                    strokeWidth={isWishlisted ? 0 : 2}
+                    className={
+                      isWishlisted
+                        ? "fill-[#ef4444] text-[#ef4444]"
+                        : "fill-none text-white"
+                    }
+                  />
+                  <span className="text-xs text-white/80">Save</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedDescriptionProductId((prev) =>
+                      prev === product.id ? null : product.id
+                    );
+                  }}
+                  className="flex flex-col items-center gap-0.5 bg-transparent p-0 text-white"
+                  aria-label={
+                    isDescriptionOpen ? "Close description" : "Open description"
+                  }
+                >
+                  <MessageCircle size={28} className="text-white" />
+                  <span className="text-xs text-white/80">Details</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                    router.push(`/products/${product.slug}`);
+                  }}
+                  className="flex flex-col items-center gap-0.5 bg-transparent p-0 text-white"
+                  aria-label="View product page"
+                >
+                  <ExternalLink size={28} className="text-white" />
+                  <span className="text-xs text-white/80">View</span>
+                </button>
+              </div>
+
+              {/* LAYER 4 — description bottom sheet */}
+              {isDescriptionOpen ? (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Close description"
+                    className="absolute inset-0 z-[25] bg-transparent"
+                    onClick={() => setExpandedDescriptionProductId(null)}
+                  />
+                  <div
+                    className="reel-description-sheet absolute bottom-0 left-0 right-0 z-[26] max-h-[60vh] overflow-y-auto rounded-t-2xl bg-[rgba(0,0,0,0.92)] px-5 pb-12 pt-5 backdrop-blur-[8px]"
+                    style={{
+                      animation: "reelSheetUp 0.3s ease-out forwards",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby={`reel-desc-title-${product.id}`}
+                  >
+                    <div className="mb-4 flex justify-center">
+                      <div className="h-1 w-10 rounded-full bg-white/80" />
+                    </div>
+                    <p
+                      id={`reel-desc-title-${product.id}`}
+                      className="mb-1 text-base font-semibold text-white"
+                    >
+                      {product.name}
+                    </p>
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      {product.manufacturer ? (
+                        <span className="inline-flex rounded-full bg-white/80 px-2.5 py-1 text-xs text-[#1C1C1C]">
+                          {product.manufacturer}
+                        </span>
+                      ) : null}
+                      {product.category ? (
+                        <span className="inline-flex rounded-full bg-white/60 px-2.5 py-1 text-xs capitalize text-[#1C1C1C]">
+                          {product.category.replace("-", " ")}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="mb-3 text-xl font-bold text-white">
+                      {price.regular ? (
+                        <>
+                          <span>{price.sale}</span>
+                          <span className="ml-2 text-base font-bold text-white/50 line-through">
+                            {price.regular}
+                          </span>
+                        </>
+                      ) : (
+                        <span>{price.sale}</span>
+                      )}
+                    </div>
+                    <p className="text-sm leading-[1.6] text-white/80">
+                      {product.description}
+                    </p>
+
+                    {isCollectionHero &&
+                    (product.bundle_skus?.length ?? 0) > 0 &&
+                    nonHeroCollectionPieces.length > 0 ? (
+                      <div className="mt-4">
+                        <div className="mb-2 text-xs font-medium text-white/70">
+                          What&apos;s in this collection
+                        </div>
+                        <div className="collection-pieces-row flex gap-2 overflow-x-auto pb-1">
+                          {nonHeroCollectionPieces.map((piece) => {
+                            const piecePrice = getPriceLabel(piece);
+                            return (
+                              <div
+                                key={piece.id}
+                                className="flex min-w-[90px] shrink-0 items-center justify-between gap-2 rounded-lg bg-white/10 px-3 py-2"
+                              >
+                                <div className="min-w-0">
+                                  <div className="truncate text-xs font-medium text-white">
+                                    {piece.piece_type ?? "Piece"}
+                                  </div>
+                                  <div className="text-sm font-bold text-white">
+                                    {piecePrice.sale}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => addToCart(piece)}
+                                  aria-label={`Add ${piece.piece_type ?? "piece"} to cart`}
+                                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#2D4A3E] text-sm text-white transition-colors hover:bg-[#3B5E4F] active:bg-[#1E3329]"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={() => navigateToProduct(product.slug)}
+                      className="mt-4 block w-full text-left text-sm font-medium text-[#2D4A3E] hover:underline"
+                    >
+                      View Full Product →
+                    </button>
+                  </div>
+                </>
+              ) : null}
             </section>
           );
         })}
 
         {isLoadingMore ? (
-          <section className="flex h-screen w-full snap-start items-center justify-center bg-black">
+          <section className="flex h-[100dvh] w-full shrink-0 snap-start items-center justify-center bg-black">
             <Loader2 className="h-8 w-8 animate-spin text-white/80" />
           </section>
         ) : null}
@@ -767,6 +821,14 @@ export default function ProductReel({
         }
         .collection-pieces-row::-webkit-scrollbar {
           display: none;
+        }
+        @keyframes reelSheetUp {
+          from {
+            transform: translateY(100%);
+          }
+          to {
+            transform: translateY(0);
+          }
         }
         @keyframes reelHeartFade {
           0% {
