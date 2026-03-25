@@ -33,6 +33,7 @@ export function mapRowToProduct(row: Record<string, unknown>): Product {
     bundle_skus: (row.bundle_skus as string[]) ?? [],
     images_validated:
       row.images_validated == null ? null : Boolean(row.images_validated),
+    color: row.color != null ? (row.color as string) : null,
   };
 }
 

@@ -24,6 +24,7 @@ export interface Product {
   is_collection_hero?: boolean;
   bundle_skus?: string[];
   images_validated?: boolean | null;
+  color?: string | null;
 }
 
 export type ProductVariant = {

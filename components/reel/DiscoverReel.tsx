@@ -7,6 +7,15 @@ import { ExternalLink, Heart, Loader2, MessageCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
+import { zinatexColorNameToCss } from "@/components/reel/zinatex-reel-colors";
+
+type ReelSlide = {
+  product: Product;
+  imageUrl: string;
+  errorProductId: string;
+  errorImageIndex: number;
+  showCollectionViewBadge?: boolean;
+};
 
 interface DiscoverReelProps {
   initialProducts: Product[];
@@ -66,6 +75,26 @@ export default function DiscoverReel({
   const [activeImageIndexMap, setActiveImageIndexMap] = useState<Map<string, number>>(
     new Map()
   );
+  const activeImageIndexMapRef = useRef(activeImageIndexMap);
+  activeImageIndexMapRef.current = activeImageIndexMap;
+  const [variantsMap, setVariantsMap] = useState<Map<string, Product[]>>(new Map());
+  const variantsFetchStartedRef = useRef<Set<string>>(new Set());
+  const slidesByProductRef = useRef<Map<string, ReelSlide[]>>(new Map());
+
+  const fetchColorVariants = useCallback(async (product: Product): Promise<Product[]> => {
+    if (product.manufacturer !== "Zinatex") return [];
+    if (!product.sku) return [];
+
+    const designNumber = product.sku.split("-")[0];
+    if (!designNumber || Number.isNaN(Number(designNumber))) return [];
+
+    const res = await fetch(
+      `/api/products/color-variants?design_number=${encodeURIComponent(designNumber)}&manufacturer=${encodeURIComponent("Zinatex")}&exclude_id=${encodeURIComponent(product.id)}`
+    );
+    if (!res.ok) return [];
+    const data = (await res.json()) as { variants?: Product[] };
+    return data.variants ?? [];
+  }, []);
 
   // Touch/double-tap handling on the image area.
   const tapTimeoutRef = useRef<number | null>(null);
@@ -159,6 +188,9 @@ export default function DiscoverReel({
     }
   }, [fetchWishlistStatus, nextCursor, seed]);
 
+  const productsRef = useRef(products);
+  productsRef.current = products;
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -168,10 +200,25 @@ export default function DiscoverReel({
             const index = Number(entry.target.getAttribute("data-card-index"));
             if (entry.isIntersecting) {
               next.add(index);
+              const p = productsRef.current[index];
+              if (
+                p &&
+                p.manufacturer === "Zinatex" &&
+                p.sku &&
+                !variantsFetchStartedRef.current.has(p.id)
+              ) {
+                const designNumber = p.sku.split("-")[0];
+                if (designNumber && !Number.isNaN(Number(designNumber))) {
+                  variantsFetchStartedRef.current.add(p.id);
+                  void fetchColorVariants(p).then((variants) => {
+                    setVariantsMap((prevMap) => new Map(prevMap).set(p.id, variants));
+                  });
+                }
+              }
               if (entry.intersectionRatio > 0.65) {
                 setActiveCardIndex(index);
               }
-              if (index >= products.length - 3 && nextCursor != null) {
+              if (index >= productsRef.current.length - 3 && nextCursor != null) {
                 void loadMore();
               }
             }
@@ -187,7 +234,7 @@ export default function DiscoverReel({
     });
 
     return () => observer.disconnect();
-  }, [loadMore, nextCursor, products.length]);
+  }, [fetchColorVariants, loadMore, nextCursor, products.length]);
 
   const toggleWishlist = useCallback(
     async (productId: string): Promise<boolean> => {
@@ -324,7 +371,6 @@ export default function DiscoverReel({
             );
           }
 
-          const price = getPriceLabel(product);
           const activeImageIndex = activeImageIndexMap.get(product.id) ?? 0;
           const isCollectionHero = Boolean(product.is_collection_hero);
           const groupHeroImage = product.collection_group
@@ -334,9 +380,47 @@ export default function DiscoverReel({
             !isCollectionHero &&
             Boolean(groupHeroImage) &&
             product.images[0] === groupHeroImage;
-          const isWishlisted = wishlistedIds.has(product.id);
-          const isAdded = Boolean(isAddingToCart.get(product.id));
           const isDescriptionOpen = expandedDescriptionProductId === product.id;
+
+          const variants = variantsMap.get(product.id) ?? [];
+          const baseSlides: ReelSlide[] = product.images.map((src, originalIndex) => ({
+            product,
+            imageUrl: src,
+            errorProductId: product.id,
+            errorImageIndex: originalIndex,
+            showCollectionViewBadge: Boolean(usesSharedCollectionImage && originalIndex === 0),
+          }));
+          const slides: ReelSlide[] =
+            product.manufacturer === "Zinatex"
+              ? [
+                  ...baseSlides,
+                  ...variants
+                    .filter((v) => v.images?.[0])
+                    .map((v) => ({
+                      product: v,
+                      imageUrl: v.images[0],
+                      errorProductId: v.id,
+                      errorImageIndex: 0,
+                      showCollectionViewBadge: false,
+                    })),
+                ]
+              : baseSlides;
+
+          slidesByProductRef.current.set(product.id, slides);
+
+          const clampedSlideIndex = Math.min(
+            activeImageIndex,
+            Math.max(0, slides.length - 1)
+          );
+          const activeSlide = slides[clampedSlideIndex];
+          const activeProduct = activeSlide?.product ?? product;
+          const activePrice = getPriceLabel(activeProduct);
+          const isWishlisted = wishlistedIds.has(activeProduct.id);
+          const isAdded = Boolean(isAddingToCart.get(activeProduct.id));
+          const useColorDots =
+            slides.length > 1 &&
+            product.manufacturer === "Zinatex" &&
+            variants.length > 0;
 
           const overlayVisible = visibleCards.has(cardIndex);
 
@@ -391,13 +475,17 @@ export default function DiscoverReel({
                     lastTapAtRef.current = 0;
                     pendingSingleTapSlugRef.current = null;
 
-                    const wasWishlisted = wishlistedIds.has(product.id);
+                    const slideList = slidesByProductRef.current.get(product.id) ?? [];
+                    const idx = activeImageIndexMapRef.current.get(product.id) ?? 0;
+                    const c = Math.min(idx, Math.max(0, slideList.length - 1));
+                    const tapProduct = slideList[c]?.product ?? product;
+                    const wasWishlisted = wishlistedIds.has(tapProduct.id);
                     void (async () => {
-                      const didToggle = await toggleWishlist(product.id);
+                      const didToggle = await toggleWishlist(tapProduct.id);
                       if (!didToggle) return;
 
                       setImageHeartBurst({
-                        productId: product.id,
+                        productId: tapProduct.id,
                         isFilled: !wasWishlisted,
                         burstId: Date.now(),
                       });
@@ -416,21 +504,28 @@ export default function DiscoverReel({
                   pendingSingleTapSlugRef.current = product.slug;
                   tapTimeoutRef.current = window.setTimeout(() => {
                     tapTimeoutRef.current = null;
-                    const slug = pendingSingleTapSlugRef.current;
                     pendingSingleTapSlugRef.current = null;
                     lastTapAtRef.current = 0;
-                    if (!slug) return;
-                    navigateToProduct(slug);
+                    const slideList = slidesByProductRef.current.get(product.id) ?? [];
+                    const idx = activeImageIndexMapRef.current.get(product.id) ?? 0;
+                    const c = Math.min(idx, Math.max(0, slideList.length - 1));
+                    const ap = slideList[c]?.product ?? product;
+                    navigateToProduct(ap.slug);
                   }, 250);
                 }}
                 onClick={(event) => {
                   const now = Date.now();
                   if (now < clickSuppressedUntilRef.current) return;
                   if (event.detail > 1) return;
-                  navigateToProduct(product.slug);
+                  const slideList = slidesByProductRef.current.get(product.id) ?? [];
+                  const idx = activeImageIndexMapRef.current.get(product.id) ?? 0;
+                  const c = Math.min(idx, Math.max(0, slideList.length - 1));
+                  const ap = slideList[c]?.product ?? product;
+                  navigateToProduct(ap.slug);
                 }}
               >
-                {imageHeartBurst?.productId === product.id ? (
+                {imageHeartBurst &&
+                slides.some((s) => s.product.id === imageHeartBurst.productId) ? (
                   <Heart
                     key={imageHeartBurst.burstId}
                     size={64}
@@ -459,27 +554,31 @@ export default function DiscoverReel({
                     });
                   }}
                 >
-                  {product.images.map((imageSrc, imageIndex) => {
-                    const failedForCard = imageErrorMap.get(product.id)?.has(imageIndex);
-                    const src = failedForCard ? PLACEHOLDER_IMAGE : imageSrc;
+                  {slides.map((slide, imageIndex) => {
+                    const failedForCard = imageErrorMap
+                      .get(slide.errorProductId)
+                      ?.has(slide.errorImageIndex);
+                    const src = failedForCard ? PLACEHOLDER_IMAGE : slide.imageUrl;
                     const priority = cardIndex === 0 && imageIndex === 0;
 
                     return (
                       <div
-                        key={`${product.id}-${imageIndex}`}
+                        key={`${slide.errorProductId}-${imageIndex}-${slide.imageUrl}`}
                         className="relative h-full w-full shrink-0 snap-start"
                         style={{ background: "#111" }}
                       >
                         <Image
                           src={src}
-                          alt={product.name}
+                          alt={slide.product.name}
                           fill
                           style={{ objectFit: "contain" }}
                           priority={priority}
                           loading={priority ? undefined : "lazy"}
-                          onError={() => handleImageError(product.id, imageIndex)}
+                          onError={() =>
+                            handleImageError(slide.errorProductId, slide.errorImageIndex)
+                          }
                         />
-                        {usesSharedCollectionImage && imageIndex === 0 ? (
+                        {slide.showCollectionViewBadge ? (
                           <span className="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-1 text-xs text-white">
                             Collection View
                           </span>
@@ -490,7 +589,7 @@ export default function DiscoverReel({
                 </div>
               </div>
 
-              {product.images.length > 1 ? (
+              {slides.length > 1 ? (
                 <div
                   className="pointer-events-none absolute bottom-4 left-0 right-0 z-[12] flex items-center justify-center gap-1.5"
                   style={{
@@ -498,14 +597,34 @@ export default function DiscoverReel({
                     transition: "opacity 0.3s ease-out",
                   }}
                 >
-                  {product.images.map((_, dotIndex) => (
-                    <span
-                      key={`${product.id}-dot-${dotIndex}`}
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        activeImageIndex === dotIndex ? "bg-white" : "bg-white/40"
-                      }`}
-                    />
-                  ))}
+                  {slides.map((slide, dotIndex) => {
+                    const dotColor = zinatexColorNameToCss(slide.product.color);
+                    if (useColorDots) {
+                      const active = activeImageIndex === dotIndex;
+                      return (
+                        <span
+                          key={`${product.id}-dot-${dotIndex}`}
+                          className="rounded-full border border-white"
+                          style={{
+                            width: 6,
+                            height: 6,
+                            backgroundColor: dotColor,
+                            opacity: active ? 1 : 0.5,
+                            transform: active ? "scale(1.4)" : "scale(1)",
+                            transition: "opacity 0.2s, transform 0.2s",
+                          }}
+                        />
+                      );
+                    }
+                    return (
+                      <span
+                        key={`${product.id}-dot-${dotIndex}`}
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          activeImageIndex === dotIndex ? "bg-white" : "bg-white/40"
+                        }`}
+                      />
+                    );
+                  })}
                 </div>
               ) : null}
 
@@ -522,14 +641,14 @@ export default function DiscoverReel({
                   onPointerDown={(e) => e.stopPropagation()}
                 >
                   <div className="flex flex-wrap gap-2">
-                    {product.manufacturer ? (
+                    {activeProduct.manufacturer ? (
                       <span className="inline-flex rounded-full bg-white/80 px-2.5 py-1 text-xs text-[#1C1C1C]">
-                        {product.manufacturer}
+                        {activeProduct.manufacturer}
                       </span>
                     ) : null}
-                    {product.category ? (
+                    {activeProduct.category ? (
                       <span className="inline-flex rounded-full bg-white/60 px-2.5 py-1 text-xs capitalize text-[#1C1C1C]">
-                        {product.category.replace("-", " ")}
+                        {activeProduct.category.replace("-", " ")}
                       </span>
                     ) : null}
                   </div>
@@ -538,28 +657,34 @@ export default function DiscoverReel({
                     className="mt-1 line-clamp-2 text-lg font-bold text-white"
                     style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}
                   >
-                    {product.name}
+                    {activeProduct.name}
                   </h2>
 
+                  {activeProduct.color ? (
+                    <span className="mt-1 inline-flex rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">
+                      {activeProduct.color}
+                    </span>
+                  ) : null}
+
                   <div
-                    className="text-xl font-bold text-white"
+                    className="mt-1 text-xl font-bold text-white"
                     style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}
                   >
-                    {price.regular ? (
+                    {activePrice.regular ? (
                       <>
-                        <span>{price.sale}</span>
+                        <span>{activePrice.sale}</span>
                         <span className="ml-2 text-base font-bold text-white/70 line-through">
-                          {price.regular}
+                          {activePrice.regular}
                         </span>
                       </>
                     ) : (
-                      <span>{price.sale}</span>
+                      <span>{activePrice.sale}</span>
                     )}
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => addToCart(product)}
+                    onClick={() => addToCart(activeProduct)}
                     className="mt-2 min-w-[140px] w-fit rounded-full bg-[#2D4A3E] px-4 py-2 text-sm font-semibold text-white active:bg-[#1E3329]"
                   >
                     {isAdded ? "Added ✓" : "Add to Cart"}
@@ -578,7 +703,7 @@ export default function DiscoverReel({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    void toggleWishlist(product.id);
+                    void toggleWishlist(activeProduct.id);
                   }}
                   className="flex flex-col items-center gap-0.5 bg-transparent p-0 text-white"
                   aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
@@ -616,7 +741,7 @@ export default function DiscoverReel({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    router.push(`/products/${product.slug}`);
+                    router.push(`/products/${activeProduct.slug}`);
                   }}
                   className="flex flex-col items-center gap-0.5 bg-transparent p-0 text-white"
                   aria-label="View product page"
@@ -652,40 +777,40 @@ export default function DiscoverReel({
                       id={`discover-desc-title-${product.id}`}
                       className="mb-1 text-base font-semibold text-white"
                     >
-                      {product.name}
+                      {activeProduct.name}
                     </p>
                     <div className="mb-2 flex flex-wrap gap-2">
-                      {product.manufacturer ? (
+                      {activeProduct.manufacturer ? (
                         <span className="inline-flex rounded-full bg-white/80 px-2.5 py-1 text-xs text-[#1C1C1C]">
-                          {product.manufacturer}
+                          {activeProduct.manufacturer}
                         </span>
                       ) : null}
-                      {product.category ? (
+                      {activeProduct.category ? (
                         <span className="inline-flex rounded-full bg-white/60 px-2.5 py-1 text-xs capitalize text-[#1C1C1C]">
-                          {product.category.replace("-", " ")}
+                          {activeProduct.category.replace("-", " ")}
                         </span>
                       ) : null}
                     </div>
                     <div className="mb-3 text-xl font-bold text-white">
-                      {price.regular ? (
+                      {activePrice.regular ? (
                         <>
-                          <span>{price.sale}</span>
+                          <span>{activePrice.sale}</span>
                           <span className="ml-2 text-base font-bold text-white/50 line-through">
-                            {price.regular}
+                            {activePrice.regular}
                           </span>
                         </>
                       ) : (
-                        <span>{price.sale}</span>
+                        <span>{activePrice.sale}</span>
                       )}
                     </div>
                     <p className="text-sm leading-[1.6] text-white/80">
-                      {product.description}
+                      {activeProduct.description}
                     </p>
                     <button
                       type="button"
                       onClick={() => {
                         setExpandedDescriptionProductId(null);
-                        router.push(`/products/${product.slug}`);
+                        router.push(`/products/${activeProduct.slug}`);
                       }}
                       className="mt-4 block w-full text-left text-sm font-medium text-[#2D4A3E] hover:underline"
                     >
