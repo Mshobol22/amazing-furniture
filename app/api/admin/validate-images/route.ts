@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Parse body gracefully — default to limit 50
-  let limit = 50;
+  // Parse body gracefully — default to limit 200
+  let limit = 200;
   try {
     const body = await request.json();
     if (typeof body?.limit === "number" && body.limit > 0) {
@@ -41,6 +41,9 @@ export async function POST(request: NextRequest) {
   } catch {
     // Empty or invalid body — use default
   }
+
+  // Clamp to safe batch range for Vercel function runtime.
+  limit = Math.min(Math.max(Math.floor(limit), 1), 500);
 
   const admin = createAdminClient();
 
