@@ -444,6 +444,7 @@ export default function DiscoverReel({
                 <div
                   className="reel-inner flex h-full w-full overflow-x-scroll"
                   style={{
+                    background: "#111",
                     scrollSnapType: "x mandatory",
                     WebkitOverflowScrolling: "touch",
                     touchAction: "pan-x",
@@ -467,12 +468,13 @@ export default function DiscoverReel({
                       <div
                         key={`${product.id}-${imageIndex}`}
                         className="relative h-full w-full shrink-0 snap-start"
+                        style={{ background: "#111" }}
                       >
                         <Image
                           src={src}
                           alt={product.name}
                           fill
-                          className="object-cover"
+                          style={{ objectFit: "contain" }}
                           priority={priority}
                           loading={priority ? undefined : "lazy"}
                           onError={() => handleImageError(product.id, imageIndex)}
