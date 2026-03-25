@@ -338,129 +338,22 @@ export interface ManufacturerWithCount {
   backgroundImage: string | null;
   is_active: boolean;
   count: number;
+  product_count: number;
   comingSoon: boolean;
 }
 
-/**
- * Homepage manufacturers: anon Supabase client, manufacturers row + in-stock counts
- * and first valid https:// lead image per manufacturer (same ordering as DISTINCT ON
- * (manufacturer), id ASC in SQL).
- */
+/** Homepage manufacturers: server-side via `get_manufacturers_with_counts` RPC. */
 export async function getManufacturersWithCounts(): Promise<ManufacturerWithCount[]> {
   const adminClient = createAdminClient();
 
-  const { data: mfrs, error: mfrError } = await adminClient
-    .from("manufacturers")
-    .select("name, slug, description, logo_url, is_active")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
+  const { data, error } = await adminClient.rpc("get_manufacturers_with_counts");
 
-  if (mfrError) {
-    console.error("getManufacturersWithCounts manufacturers error:", mfrError);
+  if (error) {
+    console.error("getManufacturersWithCounts error:", error);
     return [];
   }
-  if (!mfrs || mfrs.length === 0) return [];
 
-  // Build count map from all products with no explicit limit.
-  const { data: countRows, error: countError } = await adminClient
-    .from("products")
-    .select("manufacturer")
-    .not("manufacturer", "is", null);
-
-  if (countError) {
-    console.error("getManufacturersWithCounts count query error:", countError);
-  }
-
-  const countMap = (countRows ?? []).reduce((acc, p) => {
-    const manufacturer = typeof p.manufacturer === "string" ? p.manufacturer.trim() : "";
-    if (!manufacturer) return acc;
-    acc.set(manufacturer, (acc.get(manufacturer) ?? 0) + 1);
-    return acc;
-  }, new Map<string, number>());
-
-  const lowercaseCountMap = new Map<string, number>();
-  countMap.forEach((count, name) => {
-    const key = name.toLowerCase();
-    lowercaseCountMap.set(key, (lowercaseCountMap.get(key) ?? 0) + count);
-  });
-
-  if (process.env.NODE_ENV !== "production") {
-    console.log("getManufacturersWithCounts countMap keys:", Array.from(countMap.keys()));
-    const debugNames = ["Nationwide FD", "ACME", "United Furniture", "Zinatex"];
-    console.log(
-      "getManufacturersWithCounts debug manufacturer counts:",
-      debugNames.map((name) => ({
-        name,
-        exactCount: countMap.get(name) ?? 0,
-        fallbackCaseCount: lowercaseCountMap.get(name.toLowerCase()) ?? 0,
-      }))
-    );
-  }
-
-  const hydrated = await Promise.all(
-    mfrs.map(async (m) => {
-      const name = m.name as string;
-      const normalizedName = name.trim();
-      const exactCount = countMap.get(normalizedName);
-      const fallbackCaseCount = lowercaseCountMap.get(normalizedName.toLowerCase());
-      if (exactCount == null && (fallbackCaseCount ?? 0) > 0) {
-        console.warn(
-          `getManufacturersWithCounts case mismatch for "${name}" (exact miss, lowercase hit: ${fallbackCaseCount})`
-        );
-      }
-
-      let bgQuery = adminClient
-        .from("products")
-        .select("images")
-        .eq("manufacturer", name)
-        .order("id", { ascending: true })
-        .limit(50);
-      bgQuery = applyAcmePlaceholderImageFilter(bgQuery);
-      const { data: bgRows, error: bgError } = await bgQuery;
-      if (bgError) {
-        console.error(`getManufacturersWithCounts background query error for ${name}:`, bgError);
-      }
-
-      let backgroundImage: string | null = null;
-      for (const row of bgRows ?? []) {
-        const images = row.images as string[] | null;
-        if (!Array.isArray(images) || images.length === 0) continue;
-        if (isHiddenAcmePlaceholderProduct({ images })) continue;
-        const first = images[0];
-        if (typeof first !== "string" || !first.startsWith("https://")) continue;
-        backgroundImage = proxyIfNfdManufacturer(name, first);
-        break;
-      }
-
-      const logoUrl = brandLogoSrc(name, m.logo_url as string | null | undefined);
-      return {
-        name,
-        slug: m.slug as string,
-        description: m.description as string,
-        logo_url: logoUrl,
-        backgroundImage,
-        is_active: Boolean(m.is_active),
-        count: Number(exactCount ?? fallbackCaseCount ?? 0),
-        comingSoon: Number(exactCount ?? fallbackCaseCount ?? 0) === 0,
-      };
-    })
-  );
-
-  return hydrated
-    .filter((m) => m.is_active && Number(m.count) > 0)
-    .map((m) => {
-    const name = m.name as string;
-    return {
-      name,
-      slug: m.slug as string,
-      description: m.description as string,
-      logo_url: m.logo_url,
-      backgroundImage: m.backgroundImage,
-      is_active: Boolean(m.is_active),
-      count: Number(m.count),
-      comingSoon: Number(m.count) === 0,
-    };
-  });
+  return data ?? [];
 }
 
 export interface CategoryImage {
