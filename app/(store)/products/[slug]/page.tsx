@@ -276,7 +276,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
         )}
 
         {product.collection_group &&
-        !product.is_collection_hero &&
         siblingCollectionProducts.length > 0 ? (
           <section className="mb-10">
             <h2 className="mb-4 font-cormorant text-xl font-semibold text-[#1C1C1C] md:text-2xl">
