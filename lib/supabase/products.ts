@@ -379,9 +379,10 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
   }, new Map<string, number>());
 
   const lowercaseCountMap = new Map<string, number>();
-  for (const [name, count] of countMap.entries()) {
-    lowercaseCountMap.set(name.toLowerCase(), (lowercaseCountMap.get(name.toLowerCase()) ?? 0) + count);
-  }
+  countMap.forEach((count, name) => {
+    const key = name.toLowerCase();
+    lowercaseCountMap.set(key, (lowercaseCountMap.get(key) ?? 0) + count);
+  });
 
   if (process.env.NODE_ENV !== "production") {
     console.log("getManufacturersWithCounts countMap keys:", Array.from(countMap.keys()));
