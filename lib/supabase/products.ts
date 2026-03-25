@@ -27,6 +27,12 @@ export function mapRowToProduct(row: Record<string, unknown>): Product {
     manufacturer: row.manufacturer != null ? (row.manufacturer as string) : null,
     has_variants: Boolean(row.has_variants),
     variant_type: row.variant_type != null ? (row.variant_type as string) : null,
+    collection_group: row.collection_group != null ? (row.collection_group as string) : null,
+    piece_type: row.piece_type != null ? (row.piece_type as string) : null,
+    is_collection_hero: Boolean(row.is_collection_hero),
+    bundle_skus: (row.bundle_skus as string[]) ?? [],
+    images_validated:
+      row.images_validated == null ? null : Boolean(row.images_validated),
   };
 }
 

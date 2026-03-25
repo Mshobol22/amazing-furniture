@@ -5,15 +5,27 @@ import Link from "next/link";
 import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
 import { productLeadImageSrc } from "@/lib/nfd-image-proxy";
+import { ReelTrigger } from "@/components/reel/ProductReel";
+import { useReelContext } from "@/components/reel/ReelProvider";
 
 export default function BrandProductGridCard({ product }: { product: Product }) {
   const addItem = useCartStore((state) => state.addItem);
+  const { openReel } = useReelContext();
   const safeImage = productLeadImageSrc(product.manufacturer, product.images?.[0]);
 
   return (
     <article className="overflow-hidden rounded-xl border border-[#1C1C1C]/10 bg-white shadow-sm">
       <Link href={`/products/${product.slug}`} className="block">
         <div className="relative aspect-[4/3] bg-[#FAF8F5]">
+          {product.is_collection_hero ? (
+            <span className="absolute left-2 top-2 z-10 rounded bg-[#2D4A3E] px-2 py-1 text-xs font-semibold text-white">
+              Collection
+            </span>
+          ) : product.collection_group ? (
+            <span className="absolute left-2 top-2 z-10 rounded bg-[#1C1C1C]/70 px-2 py-1 text-xs font-medium text-white">
+              Part of collection
+            </span>
+          ) : null}
           {safeImage ? (
             <Image
               src={safeImage}
@@ -33,6 +45,18 @@ export default function BrandProductGridCard({ product }: { product: Product }) 
         </div>
       </Link>
       <div className="space-y-2 p-3">
+        {product.collection_group ? (
+          <div>
+            <ReelTrigger
+              variant="compact"
+              label="Explore pieces"
+              onClick={() => {
+                if (!product.collection_group) return;
+                void openReel(product.collection_group, product.category);
+              }}
+            />
+          </div>
+        ) : null}
         <Link
           href={`/products/${product.slug}`}
           className="line-clamp-2 font-sans text-sm font-medium text-[#1C1C1C] hover:text-[#2D4A3E]"

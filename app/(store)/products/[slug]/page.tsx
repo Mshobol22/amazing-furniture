@@ -1,15 +1,18 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import {
   getProducts,
   resolveProductPageSlug,
 } from "@/lib/supabase/products";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import ProductDetailClient from "@/components/products/ProductDetailClient";
 import ProductImageGallery from "@/components/products/ProductImageGallery";
 import ProductVariantPageClient from "@/components/products/ProductVariantPageClient";
 import ProductCard from "@/components/products/ProductCard";
+import ProductDetailReelTrigger from "@/components/reel/ProductDetailReelTrigger";
 import type { Metadata } from "next";
 import type { ProductVariant } from "@/types";
 
@@ -97,9 +100,58 @@ export default async function ProductPage({ params }: ProductPageProps) {
     .filter((p) => p.id !== product.id)
     .slice(0, 4);
 
+  let collectionWishlistedIds: string[] = [];
+  let siblingCollectionProducts: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    images: string[] | null;
+    price: number;
+    sale_price: number | null;
+    on_sale: boolean | null;
+    piece_type: string | null;
+  }> = [];
+
+  if (product.collection_group) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const { data: siblingRows } = await supabase
+      .from("products")
+      .select("id, name, slug, images, price, sale_price, on_sale, piece_type")
+      .eq("collection_group", product.collection_group)
+      .neq("id", product.id)
+      .or("images_validated.eq.true,and(images_validated.is.null,images.not.is.null)")
+      .limit(8);
+
+    siblingCollectionProducts = (siblingRows ?? []) as typeof siblingCollectionProducts;
+
+    if (user) {
+      const siblingIds = siblingCollectionProducts.map((p) => p.id);
+      const collectionIds = [product.id, ...siblingIds];
+      const { data: wishlistedRows } = await supabase
+        .from("wishlists")
+        .select("product_id")
+        .eq("user_id", user.id)
+        .in("product_id", collectionIds);
+
+      collectionWishlistedIds = (wishlistedRows ?? []).map(
+        (row) => row.product_id as string
+      );
+    }
+  }
+
   const categoryLabel =
     product.category.charAt(0).toUpperCase() +
     product.category.slice(1).replace("-", " ");
+
+  const detailReelLabel = product.is_collection_hero
+    ? "Swipe to explore all pieces"
+    : product.piece_type
+      ? `Swipe to see the full ${product.piece_type} collection`
+      : "Swipe to explore this collection";
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] px-4 pt-4 pb-20 sm:px-6 sm:py-8 lg:px-8">
@@ -122,19 +174,41 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
         {/* Main layout: 55% image, 45% info */}
         {product.has_variants && variants.length > 0 ? (
-          /* Variant products (e.g. Zinatex rugs) — client wrapper handles image sync */
-          <ProductVariantPageClient product={product} variants={variants} />
+          <>
+            {/* Variant products (e.g. Zinatex rugs) — client wrapper handles image sync */}
+            <ProductVariantPageClient product={product} variants={variants} />
+            {product.collection_group ? (
+              <div className="mb-8">
+                <ProductDetailReelTrigger
+                  collectionGroup={product.collection_group}
+                  category={product.category}
+                  label={detailReelLabel}
+                  initialWishlisted={collectionWishlistedIds}
+                />
+              </div>
+            ) : null}
+          </>
         ) : (
           /* Standard products — existing layout unchanged */
           <div className="mb-8 grid gap-6 lg:grid-cols-[55%_1fr]">
             {/* Image gallery */}
-            <ProductImageGallery
-              rawImages={product.images}
-              productName={product.name}
-              manufacturer={product.manufacturer}
-              onSale={product.on_sale}
-              salePrice={product.sale_price}
-            />
+            <div className="space-y-3">
+              <ProductImageGallery
+                rawImages={product.images}
+                productName={product.name}
+                manufacturer={product.manufacturer}
+                onSale={product.on_sale}
+                salePrice={product.sale_price}
+              />
+              {product.collection_group ? (
+                <ProductDetailReelTrigger
+                  collectionGroup={product.collection_group}
+                  category={product.category}
+                  label={detailReelLabel}
+                  initialWishlisted={collectionWishlistedIds}
+                />
+              ) : null}
+            </div>
 
             {/* Product info */}
             <div>
@@ -200,6 +274,56 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
           </div>
         )}
+
+        {product.collection_group &&
+        !product.is_collection_hero &&
+        siblingCollectionProducts.length > 0 ? (
+          <section className="mb-10">
+            <h2 className="mb-4 font-cormorant text-xl font-semibold text-[#1C1C1C] md:text-2xl">
+              Also in this collection
+            </h2>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              {siblingCollectionProducts
+                .filter((sibling) => {
+                  const first = sibling.images?.[0];
+                  return Boolean(first && first.startsWith("https://"));
+                })
+                .map((sibling) => {
+                  const imageSrc = sibling.images?.[0] as string;
+                  return (
+                    <Link
+                      key={sibling.id}
+                      href={`/products/${sibling.slug}`}
+                      className="w-40 shrink-0 rounded-lg border border-[#1C1C1C]/15 bg-[#FAF8F5] p-2 transition-colors hover:border-[#2D4A3E] md:w-[200px]"
+                    >
+                      <div className="relative mb-2 aspect-[4/3] overflow-hidden rounded-md bg-white">
+                        <Image
+                          src={imageSrc}
+                          alt={sibling.name}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 160px, 200px"
+                        />
+                      </div>
+                      {sibling.piece_type ? (
+                        <p className="text-xs font-medium text-[#1C1C1C]/70">
+                          {sibling.piece_type}
+                        </p>
+                      ) : null}
+                      <p className="line-clamp-2 text-sm font-medium text-[#1C1C1C]">
+                        {sibling.name}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-[#1C1C1C]">
+                        {sibling.on_sale && sibling.sale_price != null
+                          ? `$${sibling.sale_price.toLocaleString()}`
+                          : `$${sibling.price.toLocaleString()}`}
+                      </p>
+                    </Link>
+                  );
+                })}
+            </div>
+          </section>
+        ) : null}
 
         {/* You May Also Like — horizontal scroll */}
         {relatedProducts.length > 0 && (

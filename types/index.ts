@@ -18,6 +18,12 @@ export interface Product {
   manufacturer?: string | null;
   has_variants?: boolean;
   variant_type?: string | null;
+  // Collection fields (added migration March 2026)
+  collection_group?: string | null;
+  piece_type?: string | null;
+  is_collection_hero?: boolean;
+  bundle_skus?: string[];
+  images_validated?: boolean | null;
 }
 
 export type ProductVariant = {
@@ -81,4 +87,9 @@ export interface Category {
   slug: string;
   image: string;
   product_count: number;
+}
+
+export type ReelQueryResult = {
+  collectionPieces: Product[]
+  relatedProducts: Product[]
 }

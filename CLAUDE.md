@@ -139,4 +139,6 @@
 - Migrations: `supabase/migrations/[timestamp]_description.sql`
 - Admin routes: `app/(admin)/admin/[feature]/page.tsx`
 - Store routes: `app/(store)/[feature]/page.tsx`
+- Category pages route: `app/(store)/collections/[category]/page.tsx`
+- Browse all page: `app/(store)/shop/page.tsx` (`products/page.tsx` is a wrapper)
 - API routes: `app/api/[feature]/route.ts`

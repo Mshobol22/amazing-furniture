@@ -8,6 +8,8 @@ import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import type { Product } from "@/types";
 import { cn } from "@/lib/utils";
+import { ReelTrigger } from "@/components/reel/ProductReel";
+import { useReelContext } from "@/components/reel/ReelProvider";
 
 interface ProductCardProps {
   product: Product;
@@ -18,6 +20,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const toggleWishlist = useWishlistStore((state) => state.toggleItem);
   const isInWishlist = useWishlistStore((state) => state.isInWishlist(product.id));
+  const { openReel } = useReelContext();
   const firstImage = product.images[0];
   const safeImage = firstImage?.startsWith("https://") ? firstImage : null;
 
@@ -32,18 +35,35 @@ export default function ProductCard({ product, className }: ProductCardProps) {
     toggleWishlist(product.id);
   };
 
+  const handleReelClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!product.collection_group) return;
+    void openReel(product.collection_group, product.category);
+  };
+
   return (
-    <Link
-      href={`/products/${product.slug}`}
+    <article
       className={cn(
-        "group block rounded-lg border border-gray-200 bg-white transition-transform duration-200 hover:-translate-y-1 hover:shadow-xl",
+        "group rounded-lg border border-gray-200 bg-white transition-transform duration-200 hover:-translate-y-1 hover:shadow-xl",
         className
       )}
     >
       <div className="relative overflow-hidden rounded-t-lg bg-gray-50">
+        {product.is_collection_hero ? (
+          <span className="absolute left-2 top-2 z-10 rounded bg-[#2D4A3E] px-2 py-0.5 text-xs font-semibold text-white">
+            Collection
+          </span>
+        ) : product.collection_group ? (
+          <span className="absolute left-2 top-2 z-10 rounded bg-[#1C1C1C]/70 px-2 py-0.5 text-xs font-medium text-white">
+            Part of collection
+          </span>
+        ) : null}
         {product.on_sale && product.sale_price != null && (
           <span
-            className="absolute left-2 top-2 z-10 rounded px-2 py-0.5 text-xs font-semibold text-white"
+            className={`absolute left-2 z-10 rounded px-2 py-0.5 text-xs font-semibold text-white ${
+              product.collection_group ? "top-8" : "top-2"
+            }`}
             style={{ backgroundColor: "#DC2626" }}
           >
             SALE
@@ -61,20 +81,22 @@ export default function ProductCard({ product, className }: ProductCardProps) {
             }`}
           />
         </button>
-        <div className="relative aspect-[4/3] p-2 md:p-3">
-          {safeImage ? (
-            <ProductImage
-              src={safeImage}
-              alt={product.name}
-              manufacturer={product.manufacturer}
-              fill
-              className="object-contain transition-transform duration-300 group-hover:scale-105"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            />
-          ) : (
-            <div className="h-full w-full rounded bg-gray-100" aria-hidden="true" />
-          )}
-        </div>
+        <Link href={`/products/${product.slug}`} className="block">
+          <div className="relative aspect-[4/3] p-2 md:p-3">
+            {safeImage ? (
+              <ProductImage
+                src={safeImage}
+                alt={product.name}
+                manufacturer={product.manufacturer}
+                fill
+                className="object-contain transition-transform duration-300 group-hover:scale-105"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              />
+            ) : (
+              <div className="h-full w-full rounded bg-gray-100" aria-hidden="true" />
+            )}
+          </div>
+        </Link>
         {/* Hover overlay CTA */}
         <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-200 group-hover:translate-y-0">
           <Button
@@ -87,9 +109,21 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         </div>
       </div>
       <div className="flex flex-col gap-1.5 p-3">
-        <h3 className="line-clamp-2 font-sans text-sm font-medium text-gray-900">
+        {product.collection_group ? (
+          <div>
+            <ReelTrigger
+              variant="compact"
+              label="Explore pieces"
+              onClick={handleReelClick}
+            />
+          </div>
+        ) : null}
+        <Link
+          href={`/products/${product.slug}`}
+          className="line-clamp-2 font-sans text-sm font-medium text-gray-900 hover:text-[#2D4A3E]"
+        >
           {product.name}
-        </h3>
+        </Link>
         <p className="font-sans text-base font-semibold tabular-nums text-gray-900">
           {product.on_sale && product.sale_price != null ? (
             <>
@@ -113,6 +147,6 @@ export default function ProductCard({ product, className }: ProductCardProps) {
           )}
         </p>
       </div>
-    </Link>
+    </article>
   );
 }

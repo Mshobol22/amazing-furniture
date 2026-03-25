@@ -14,6 +14,26 @@ interface ProductsTableProps {
   products: Product[];
 }
 
+const PIECE_TYPE_OPTIONS = [
+  "King Bed",
+  "Queen Bed",
+  "Full Bed",
+  "Twin Bed",
+  "Dresser",
+  "Mirror",
+  "Chest",
+  "Nightstand",
+  "Sofa",
+  "Loveseat",
+  "Recliner",
+  "Coffee Table",
+  "End Table",
+  "TV Stand",
+  "Bookcase",
+  "Bunk Bed",
+  "Other",
+];
+
 function ProductsTableInner({ products }: ProductsTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -30,6 +50,10 @@ function ProductsTableInner({ products }: ProductsTableProps) {
   const [nameOverrides, setNameOverrides] = useState<Record<string, string>>({});
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
   const [editingDescription, setEditingDescription] = useState("");
+  const [editingCollectionGroup, setEditingCollectionGroup] = useState("");
+  const [editingPieceType, setEditingPieceType] = useState("");
+  const [editingIsCollectionHero, setEditingIsCollectionHero] = useState(false);
+  const [editingBundleSkus, setEditingBundleSkus] = useState<string[]>([""]);
   const [savingDescriptionId, setSavingDescriptionId] = useState<string | null>(null);
 
   const getDisplayName = (p: Product) => nameOverrides[p.id] ?? p.name;
@@ -127,6 +151,14 @@ function ProductsTableInner({ products }: ProductsTableProps) {
     }
     setExpandedProductId(product.id);
     setEditingDescription(product.description ?? "");
+    setEditingCollectionGroup(product.collection_group ?? "");
+    setEditingPieceType(product.piece_type ?? "");
+    setEditingIsCollectionHero(Boolean(product.is_collection_hero));
+    setEditingBundleSkus(
+      product.bundle_skus && product.bundle_skus.length > 0
+        ? [...product.bundle_skus]
+        : [""]
+    );
   };
 
   const handleDescriptionSave = async (product: Product) => {
@@ -139,7 +171,15 @@ function ProductsTableInner({ products }: ProductsTableProps) {
     const res = await fetch(`/api/admin/products/${product.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description: editingDescription }),
+      body: JSON.stringify({
+        description: editingDescription,
+        collection_group: editingCollectionGroup.trim(),
+        piece_type: editingPieceType,
+        is_collection_hero: editingIsCollectionHero,
+        bundle_skus: editingBundleSkus
+          .map((sku) => sku.trim())
+          .filter(Boolean),
+      }),
     });
     setSavingDescriptionId(null);
     if (res.ok) {
@@ -474,6 +514,110 @@ function ProductsTableInner({ products }: ProductsTableProps) {
                         onChange={(e) => setEditingDescription(e.target.value)}
                         className="w-full rounded border border-gray-200 bg-cream px-3 py-2 text-sm focus:border-walnut focus:outline-none focus:ring-1 focus:ring-walnut"
                       />
+                      <div className="mt-5 rounded-lg border border-gray-200 bg-white p-4">
+                        <h3 className="text-sm font-semibold text-charcoal">Collection Settings</h3>
+                        <div className="mt-3 space-y-4">
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-warm-gray">
+                              Collection Group Code
+                            </label>
+                            <input
+                              type="text"
+                              value={editingCollectionGroup}
+                              onChange={(e) => setEditingCollectionGroup(e.target.value)}
+                              placeholder="e.g. B396"
+                              className="w-full rounded border border-gray-200 bg-cream px-3 py-2 text-sm focus:border-walnut focus:outline-none focus:ring-1 focus:ring-walnut"
+                            />
+                            <p className="mt-1 text-xs text-warm-gray">
+                              Shared code linking all pieces in a collection (e.g. B396 links B396-K, B396-D, B396-M)
+                            </p>
+                          </div>
+
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-warm-gray">
+                              Piece Type
+                            </label>
+                            <select
+                              value={editingPieceType}
+                              onChange={(e) => setEditingPieceType(e.target.value)}
+                              className="w-full rounded border border-gray-200 bg-cream px-3 py-2 text-sm focus:border-walnut focus:outline-none focus:ring-1 focus:ring-walnut"
+                            >
+                              <option value="">Not set</option>
+                              {PIECE_TYPE_OPTIONS.map((piece) => (
+                                <option key={piece} value={piece}>
+                                  {piece}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="flex items-start gap-2 text-sm text-charcoal">
+                              <input
+                                type="checkbox"
+                                checked={editingIsCollectionHero}
+                                onChange={(e) => setEditingIsCollectionHero(e.target.checked)}
+                                className="mt-0.5"
+                              />
+                              <span>
+                                Collection Hero
+                                <span className="mt-1 block text-xs text-warm-gray">
+                                  Check this for the product that shows the full room lifestyle image. This is the parent card shown in browse.
+                                </span>
+                              </span>
+                            </label>
+                          </div>
+
+                          {editingIsCollectionHero ? (
+                            <div>
+                              <label className="mb-1 block text-xs font-medium text-warm-gray">
+                                Bundle SKUs (pieces in this collection)
+                              </label>
+                              <div className="space-y-2">
+                                {editingBundleSkus.map((sku, idx) => (
+                                  <div key={`${idx}-${sku}`} className="flex items-center gap-2">
+                                    <input
+                                      type="text"
+                                      value={sku}
+                                      onChange={(e) => {
+                                        const next = [...editingBundleSkus];
+                                        next[idx] = e.target.value;
+                                        setEditingBundleSkus(next);
+                                      }}
+                                      placeholder="e.g. B396-D"
+                                      className="w-full rounded border border-gray-200 bg-cream px-3 py-2 text-sm focus:border-walnut focus:outline-none focus:ring-1 focus:ring-walnut"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (editingBundleSkus.length === 1) {
+                                          setEditingBundleSkus([""]);
+                                          return;
+                                        }
+                                        setEditingBundleSkus(editingBundleSkus.filter((_, i) => i !== idx));
+                                      }}
+                                      className="rounded border border-gray-300 px-2 py-1 text-xs text-warm-gray hover:text-charcoal"
+                                      aria-label="Remove SKU"
+                                    >
+                                      X
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setEditingBundleSkus([...editingBundleSkus, ""])}
+                                className="mt-2 text-sm font-medium text-[#2D4A3E] hover:underline"
+                              >
+                                + Add SKU
+                              </button>
+                              <p className="mt-1 text-xs text-warm-gray">
+                                List every individual piece SKU that belongs to this collection.
+                              </p>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
                       <div className="mt-2 flex gap-2">
                         <button
                           type="button"
@@ -487,6 +631,14 @@ function ProductsTableInner({ products }: ProductsTableProps) {
                           type="button"
                           onClick={() => {
                             setEditingDescription(product.description ?? "");
+                            setEditingCollectionGroup(product.collection_group ?? "");
+                            setEditingPieceType(product.piece_type ?? "");
+                            setEditingIsCollectionHero(Boolean(product.is_collection_hero));
+                            setEditingBundleSkus(
+                              product.bundle_skus && product.bundle_skus.length > 0
+                                ? [...product.bundle_skus]
+                                : [""]
+                            );
                             setExpandedProductId(null);
                           }}
                           className="text-sm text-warm-gray hover:text-charcoal"

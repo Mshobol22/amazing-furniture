@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/layout/Providers";
+import { ReelProvider } from "@/components/reel/ReelProvider";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -109,7 +110,9 @@ export default function RootLayout({
       <body
         className={`${playfair.variable} ${cormorant.variable} ${dmSans.variable} bg-cream text-charcoal antialiased`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          <ReelProvider>{children}</ReelProvider>
+        </Providers>
       </body>
     </html>
   );
