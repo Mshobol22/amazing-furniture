@@ -117,6 +117,10 @@
 - No 2-year warranty — remove any reference found
 - Financing partners: Synchrony and Koalafi ONLY (not Snap Finance)
 - Free shipping on all orders over $299
+- Returns page (`/returns`) was corrected in March 2026 to this exact policy:
+  Sales & Return Policy title, all sales final after delivery/installation,
+  48-hour damage reporting window with photo evidence, free shipping over $299,
+  financing copy limited to Synchrony + Koalafi.
 
 ## CSV Source Files (for re-imports)
 - Nationwide FD: `C:\Users\mshob\OneDrive\csv for AHF\NFD datasheet.xlsx`
@@ -128,7 +132,7 @@
 ## Known Bugs Still Pending (run in this order)
 1. Cart merge — guest cart disappears on sign-in
 2. Homepage combined fixes — Unsplash images, manufacturer counts,
-   returns page, Zinatex title, duplicate products
+   Zinatex title, duplicate products
 3. Brand logos + sale section — logo cards, On Sale Now section
 4. Rug image fix + immersive gallery — missing images, zoom/spin
 5. Prompt 8 — brand landing pages /brands/[slug]

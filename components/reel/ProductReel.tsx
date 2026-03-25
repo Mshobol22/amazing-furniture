@@ -17,6 +17,7 @@ interface ProductReelProps {
   onClose: () => void;
   collectionPieces: Product[];
   relatedProducts: Product[];
+  category?: string;
   heroImageUrl?: string;
   initialWishlisted?: string[];
   onLoadMore?: () => Promise<void>;
@@ -25,15 +26,20 @@ interface ProductReelProps {
 
 const PLACEHOLDER_IMAGE = "/images/placeholder-product.svg";
 
+const USD_FORMATTER = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
 function getPriceLabel(product: Product) {
   if (product.on_sale && product.sale_price != null) {
     return {
-      sale: `$${product.sale_price.toLocaleString()}`,
-      regular: `$${product.price.toLocaleString()}`,
+      sale: USD_FORMATTER.format(Number(product.sale_price.toFixed(2))),
+      regular: USD_FORMATTER.format(Number(product.price.toFixed(2))),
     };
   }
   return {
-    sale: `$${product.price.toLocaleString()}`,
+    sale: USD_FORMATTER.format(Number(product.price.toFixed(2))),
     regular: null,
   };
 }
@@ -43,6 +49,7 @@ export default function ProductReel({
   onClose,
   collectionPieces,
   relatedProducts,
+  category,
   heroImageUrl,
   initialWishlisted = [],
   onLoadMore,
@@ -68,6 +75,7 @@ export default function ProductReel({
     new Map()
   );
   const [cards, setCards] = useState<ReelCard[]>([]);
+  const normalizedCategory = (category ?? "").trim();
 
   useEffect(() => {
     setWishlistedIds(new Set(initialWishlisted));
@@ -290,7 +298,11 @@ export default function ProductReel({
                 className="relative flex h-screen w-full snap-start items-center justify-center overflow-hidden bg-gradient-to-b from-[#2D4A3E] to-[#1C1C1C]"
               >
                 <div className="flex flex-col items-center gap-3 text-center">
-                  <p className="text-2xl font-light text-white">More you might like</p>
+                  <p className="text-2xl font-light text-white">
+                    {normalizedCategory
+                      ? `More ${normalizedCategory} for you`
+                      : "More you might like"}
+                  </p>
                   <ChevronDown className="h-6 w-6 animate-bounce text-white/80" />
                 </div>
               </section>
@@ -340,10 +352,13 @@ export default function ProductReel({
                 cardRefs.current[cardIndex] = el;
               }}
               data-card-index={cardIndex}
-              className="relative h-screen w-full snap-start overflow-hidden"
+              className="flex h-screen w-full snap-start flex-col"
             >
               <div
-                className="reel-inner absolute inset-0 flex overflow-x-scroll"
+                className="relative min-h-0 flex-1 overflow-hidden"
+              >
+                <div
+                  className="reel-inner flex h-full overflow-x-scroll"
                 style={{
                   scrollSnapType: "x mandatory",
                   WebkitOverflowScrolling: "touch",
@@ -367,7 +382,7 @@ export default function ProductReel({
                   return (
                     <div
                       key={`${product.id}-${imageIndex}`}
-                      className="relative h-screen w-screen shrink-0 snap-start"
+                      className="relative h-full w-full shrink-0 snap-start"
                     >
                       <Image
                         src={src}
@@ -386,15 +401,27 @@ export default function ProductReel({
                     </div>
                   );
                 })}
+                </div>
+
+                {orderedImages.length > 1 ? (
+                  <div className="pointer-events-none absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center justify-center gap-1.5">
+                    {orderedImages.map((_, dotIndex) => (
+                      <span
+                        key={`${product.id}-dot-${dotIndex}`}
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          activeImageIndex === dotIndex ? "bg-white" : "bg-white/40"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                ) : null}
               </div>
 
               <div
-                className="absolute bottom-0 left-0 right-0 max-h-[60vh] overflow-hidden border-t border-white/15 bg-black/45 px-6 pb-14 pt-5 backdrop-blur-[12px] backdrop-saturate-[180%]"
+                className="w-full shrink-0 overflow-hidden border-t border-white/15 bg-black/45 px-6 pb-14 pt-5 backdrop-blur-[12px] backdrop-saturate-[180%] max-h-[45vh] md:max-h-[40vh]"
                 style={{
-                  transform: visibleCards.has(cardIndex)
-                    ? "translateY(0)"
-                    : "translateY(100%)",
-                  transition: "transform 0.35s ease-out",
+                  opacity: visibleCards.has(cardIndex) ? 1 : 0,
+                  transition: "opacity 0.3s ease-out",
                 }}
               >
                 <div className="max-h-full overflow-y-auto">
@@ -466,21 +493,6 @@ export default function ProductReel({
                   >
                     {isAdded ? "Added ✓" : "Add to Cart"}
                   </button>
-
-                  {orderedImages.length > 1 ? (
-                    <div className="mt-3 flex items-center justify-center gap-1.5">
-                      {orderedImages.map((_, dotIndex) => (
-                        <span
-                          key={`${product.id}-dot-${dotIndex}`}
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            activeImageIndex === dotIndex
-                              ? "bg-white"
-                              : "bg-white/40"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  ) : null}
                 </div>
               </div>
             </section>

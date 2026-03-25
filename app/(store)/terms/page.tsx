@@ -120,25 +120,21 @@ export default function TermsPage() {
               6. Returns and Refunds
             </h2>
             <p className="mt-3">
-              We want you to be fully satisfied with your purchase. To be
-              eligible for a return, items must be unused, unassembled, and in
-              their original packaging.
+              All sales are final after delivery and installation. We do not
+              accept returns or exchanges after delivery.
             </p>
             <p className="mt-3">
-              To initiate a return, contact us at{" "}
+              If an item arrives damaged or defective, contact us within 48
+              hours of delivery at{" "}
               <a
                 href="mailto:support@amazinghomefurniturestore.com"
                 className="text-walnut underline hover:text-walnut/80"
               >
                 support@amazinghomefurniturestore.com
               </a>{" "}
-              with your order number. Clearance and custom items are final sale.
-              Return shipping costs are the responsibility of the customer
-              unless the item arrived damaged or defective.
-            </p>
-            <p className="mt-3">
-              Refunds are issued to the original payment method within 5–10
-              business days of us receiving and inspecting the returned item.
+              with clear photographic evidence, your order number, and a
+              description of the issue. Claims submitted after 48 hours cannot
+              be accepted.
             </p>
           </section>
 
@@ -148,15 +144,16 @@ export default function TermsPage() {
             </h2>
             <p className="mt-3">
               If your item arrives damaged or defective, please contact us
-              within 7 days of delivery at{" "}
+              within 48 hours of delivery at{" "}
               <a
                 href="mailto:support@amazinghomefurniturestore.com"
                 className="text-walnut underline hover:text-walnut/80"
               >
                 support@amazinghomefurniturestore.com
               </a>{" "}
-              with photos of the damage and your order number. We will arrange a
-              replacement or full refund at no additional cost to you.
+              with clear photographic evidence, your order number, and a
+              description of the issue. Claims submitted after 48 hours cannot
+              be accepted.
             </p>
           </section>
 

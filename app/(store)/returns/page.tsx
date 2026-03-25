@@ -2,9 +2,9 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 export const metadata = {
-  title: "Sales Policy",
+  title: "Sales & Return Policy",
   description:
-    "Sales policy at Amazing Home Furniture. All sales are final.",
+    "Sales and return policy at Amazing Home Furniture. All sales are final after delivery and installation.",
 };
 
 export default function ReturnsPage() {
@@ -16,23 +16,22 @@ export default function ReturnsPage() {
             Home
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-charcoal">Sales Policy</span>
+          <span className="text-charcoal">Sales & Return Policy</span>
         </nav>
 
         <h1 className="mb-8 text-3xl font-semibold text-charcoal">
-          Sales Policy
+          Sales & Return Policy
         </h1>
 
         <div className="prose prose-charcoal max-w-none space-y-6 text-warm-gray">
           <section>
             <h2 className=" text-lg font-semibold text-charcoal">
-              All Sales Are Final
+              All Sales Final
             </h2>
             <p>
-              All purchases made at Amazing Home Furniture are final. We do not
-              accept returns, exchanges, or cancellations once an order has been
-              placed and confirmed. Please review your order carefully before
-              completing your purchase.
+              All purchases are final. We do not accept returns or exchanges
+              after delivery and installation. Please review all product details
+              carefully before completing your purchase.
             </p>
           </section>
 
@@ -41,22 +40,36 @@ export default function ReturnsPage() {
               Damaged or Defective Items
             </h2>
             <p>
-              If your item arrives damaged or with a manufacturing defect,
-              contact us within 48 hours of delivery with clear photos of the
-              damage. We will assess the claim and, at our sole discretion,
-              arrange a replacement or store credit for verified manufacturing
-              defects only.
+              If your item arrives damaged or defective, you must contact us
+              within 48 hours of delivery with:
+            </p>
+            <ul className="mt-3 list-disc pl-6">
+              <li>Clear photographic evidence of the damage</li>
+              <li>Your order number</li>
+              <li>A description of the issue</li>
+            </ul>
+            <p className="mt-3">
+              Claims submitted after 48 hours cannot be accepted.
             </p>
           </section>
 
           <section>
             <h2 className=" text-lg font-semibold text-charcoal">
-              Order Cancellations
+              Delivery
             </h2>
             <p>
-              Orders cannot be cancelled once submitted. If you have entered
-              incorrect shipping information, contact us immediately and we will
-              do our best to assist before the order ships.
+              We offer free shipping on all orders over $299. Our team will
+              contact you to schedule delivery after your order is confirmed.
+            </p>
+          </section>
+
+          <section>
+            <h2 className=" text-lg font-semibold text-charcoal">
+              Financing
+            </h2>
+            <p>
+              We partner with Synchrony and Koalafi to offer flexible financing
+              options. Contact us for details.
             </p>
           </section>
 

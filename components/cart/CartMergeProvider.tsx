@@ -8,19 +8,23 @@ async function triggerMerge() {
   const guestItems = readGuestCart();
   const storeItems = useCartStore.getState().items;
 
-  // Build a combined guest list (store items + localStorage)
-  const combined = new Map<string, { product_id: string; quantity: number }>();
+  // Build a combined guest list (store items + localStorage) keyed by product + variant
+  const combined = new Map<string, { product_id: string; variant_id?: string; quantity: number }>();
   for (const item of storeItems) {
-    combined.set(item.product.id, {
+    const key = `${item.product.id}:${item.variant_id ?? ""}`;
+    combined.set(key, {
       product_id: item.product.id,
+      variant_id: item.variant_id,
       quantity: item.quantity,
     });
   }
   for (const item of guestItems) {
-    const existing = combined.get(item.product.id);
-    combined.set(item.product.id, {
+    const key = `${item.product.id}:${item.variant_id ?? ""}`;
+    const existing = combined.get(key);
+    combined.set(key, {
       product_id: item.product.id,
-      quantity: Math.max(existing?.quantity ?? 0, item.quantity),
+      variant_id: item.variant_id,
+      quantity: (existing?.quantity ?? 0) + item.quantity,
     });
   }
 
@@ -35,9 +39,7 @@ async function triggerMerge() {
 
   if (res.ok) {
     const { items } = await res.json();
-    if (Array.isArray(items) && items.length > 0) {
-      useCartStore.getState().setItems(items);
-    }
+    if (Array.isArray(items)) useCartStore.getState().setItems(items);
     clearGuestCart();
   }
 }

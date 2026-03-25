@@ -15,6 +15,7 @@ import type { Product } from "@/types";
 type ReelProps = {
   collectionPieces: Product[];
   relatedProducts: Product[];
+  currentCategory: string;
   heroImageUrl?: string;
   loadMore: () => Promise<void>;
   isLoading: boolean;
@@ -31,8 +32,16 @@ const ReelContext = createContext<ReelContextValue | null>(null);
 
 export function ReelProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { isOpen, open, close, collectionPieces, relatedProducts, loadMore, isLoading } =
-    useReel();
+  const {
+    isOpen,
+    open,
+    close,
+    currentCategory,
+    collectionPieces,
+    relatedProducts,
+    loadMore,
+    isLoading,
+  } = useReel();
   const heroImageUrl =
     collectionPieces.find((p) => p.is_collection_hero)?.images?.[0] ?? undefined;
   const isAdminRoute = pathname?.startsWith("/admin");
@@ -51,6 +60,7 @@ export function ReelProvider({ children }: { children: ReactNode }) {
       openReel,
       closeReel: close,
       reelProps: {
+        currentCategory,
         collectionPieces,
         relatedProducts,
         heroImageUrl,
@@ -61,6 +71,7 @@ export function ReelProvider({ children }: { children: ReactNode }) {
     [
       collectionPieces,
       close,
+      currentCategory,
       heroImageUrl,
       isLoading,
       isOpen,
@@ -79,6 +90,7 @@ export function ReelProvider({ children }: { children: ReactNode }) {
           onClose={close}
           collectionPieces={collectionPieces}
           relatedProducts={relatedProducts}
+          category={currentCategory}
           heroImageUrl={heroImageUrl}
           onLoadMore={loadMore}
           isLoadingMore={isLoading}

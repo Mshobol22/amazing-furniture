@@ -23,11 +23,12 @@ function parsePositiveInt(input: string | null, fallback: number) {
 export async function GET(request: NextRequest) {
   try {
     const collectionGroup = request.nextUrl.searchParams.get("collection_group");
-    const category = request.nextUrl.searchParams.get("category");
+    const rawCategory = request.nextUrl.searchParams.get("category");
+    const category = rawCategory?.trim() ?? "";
 
-    if (!collectionGroup || !category) {
+    if (!collectionGroup) {
       return NextResponse.json(
-        { error: "collection_group and category are required" },
+        { error: "collection_group is required" },
         { status: 400 }
       );
     }
@@ -55,14 +56,19 @@ export async function GET(request: NextRequest) {
       throw collectionError;
     }
 
-    const { data: relatedData, error: relatedError } = await supabase
+    let relatedQuery = supabase
       .from("products")
       .select("*")
-      .eq("category", category)
       .or(`collection_group.is.null,collection_group.neq.${collectionGroup}`)
       .eq("in_stock", true)
       .or(imageFilter)
       .range(offset, offset + limit - 1);
+
+    if (category) {
+      relatedQuery = relatedQuery.eq("category", category);
+    }
+
+    const { data: relatedData, error: relatedError } = await relatedQuery;
 
     if (relatedError) {
       throw relatedError;

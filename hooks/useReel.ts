@@ -13,7 +13,7 @@ interface ReelResponse {
 export function useReel() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentCollection, setCurrentCollection] = useState<string | null>(null);
-  const [currentCategory, setCurrentCategory] = useState<string | null>(null);
+  const [currentCategory, setCurrentCategory] = useState("");
   const [collectionPieces, setCollectionPieces] = useState<Product[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,16 +25,17 @@ export function useReel() {
   }, []);
 
   const open = useCallback(async (collectionGroup: string, category: string) => {
+    const nextCategory = category?.trim() ?? "";
     setIsLoading(true);
     setCurrentCollection(collectionGroup);
-    setCurrentCategory(category);
+    setCurrentCategory(nextCategory);
     setOffset(0);
     setHasMore(true);
 
     try {
       const params = new URLSearchParams({
         collection_group: collectionGroup,
-        category,
+        category: nextCategory,
         offset: "0",
         limit: "20",
       });
@@ -55,7 +56,7 @@ export function useReel() {
   }, []);
 
   const loadMore = useCallback(async () => {
-    if (isLoading || !hasMore || !currentCollection || !currentCategory) {
+    if (isLoading || !hasMore || !currentCollection) {
       return;
     }
 
@@ -86,6 +87,7 @@ export function useReel() {
     open,
     close,
     currentCollection,
+    currentCategory,
     collectionPieces,
     relatedProducts,
     isLoading,

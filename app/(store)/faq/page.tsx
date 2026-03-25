@@ -27,7 +27,7 @@ const FAQ_ITEMS = [
   {
     value: "returns",
     q: "What is your return policy?",
-    a: "We accept returns on unused, unassembled items in original packaging. Contact us at support@amazinghomefurniturestore.com to initiate a return.",
+    a: "All sales are final after delivery and installation. If an item arrives damaged or defective, contact us within 48 hours with clear photos, your order number, and a description of the issue.",
   },
   {
     value: "delivery",
@@ -57,12 +57,12 @@ const FAQ_ITEMS = [
   {
     value: "damaged",
     q: "What if my item arrives damaged?",
-    a: "Contact us within 48 hours with photos. We'll replace or refund immediately.",
+    a: "Report damaged or defective items within 48 hours of delivery with photographic evidence, your order number, and a description of the issue. Claims submitted after 48 hours cannot be accepted.",
   },
   {
     value: "financing",
     q: "Do you offer financing?",
-    a: "Not currently. Coming soon.",
+    a: "Yes. We partner with Synchrony and Koalafi for flexible financing options.",
   },
 ];
 

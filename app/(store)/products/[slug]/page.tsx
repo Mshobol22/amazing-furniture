@@ -181,7 +181,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <div className="mb-8">
                 <ProductDetailReelTrigger
                   collectionGroup={product.collection_group}
-                  category={product.category}
+                  category={product.category?.trim() ?? ""}
                   label={detailReelLabel}
                   initialWishlisted={collectionWishlistedIds}
                 />
@@ -203,7 +203,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {product.collection_group ? (
                 <ProductDetailReelTrigger
                   collectionGroup={product.collection_group}
-                  category={product.category}
+                  category={product.category?.trim() ?? ""}
                   label={detailReelLabel}
                   initialWishlisted={collectionWishlistedIds}
                 />

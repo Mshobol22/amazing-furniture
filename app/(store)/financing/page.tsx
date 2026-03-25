@@ -9,7 +9,7 @@ import {
 export const metadata = {
   title: "Financing",
   description:
-    "Flexible financing options for your furniture purchase at Amazing Home Furniture. Buy now, pay later with Snap Finance.",
+    "Flexible financing options for your furniture purchase at Amazing Home Furniture with Synchrony and Koalafi.",
 };
 
 const PLANS = [
@@ -47,15 +47,15 @@ const FAQ_ITEMS = [
   },
   {
     q: "How do I make payments?",
-    a: "Snap Finance will set up automatic scheduled payments via your chosen payment method.",
+    a: "Your approved financing partner (Synchrony or Koalafi) will provide your payment schedule and repayment options.",
   },
   {
     q: "Can I pay off early?",
     a: "Yes, early payoff is allowed with no prepayment penalties.",
   },
   {
-    q: "Who is Snap Finance?",
-    a: "Snap Finance is a trusted US-based lender specializing in flexible payment solutions for retail purchases.",
+    q: "Which financing partners do you offer?",
+    a: "We partner with Synchrony and Koalafi for flexible furniture financing options.",
   },
 ];
 
@@ -74,15 +74,15 @@ export default function FinancingPage() {
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-white/70">
             Furnish your entire home today with flexible payment plans through
-            our financing partner, Snap Finance.
+            our financing partners, Synchrony and Koalafi.
           </p>
           <a
-            href="https://snapfinance.com"
+            href="https://www.synchrony.com/financing"
             target="_blank"
             rel="noopener noreferrer"
             className="mt-8 inline-flex items-center gap-2 rounded-lg bg-[#2D4A3E] px-8 py-3 font-semibold text-white transition-colors hover:bg-[#7a5c10]"
           >
-            Apply Now — Takes 2 Minutes
+            Apply with Synchrony
           </a>
         </div>
       </section>
@@ -116,7 +116,7 @@ export default function FinancingPage() {
                 </div>
                 <div className="text-sm text-gray-500">Orders {p.min}</div>
                 <a
-                  href="https://snapfinance.com"
+                  href="https://shop.koalafi.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`mt-6 block rounded-lg px-4 py-2.5 text-center font-medium transition-colors ${
@@ -131,7 +131,7 @@ export default function FinancingPage() {
             ))}
           </div>
           <p className="mt-6 text-center text-xs text-gray-400">
-            *Subject to approval. Terms and conditions apply via Snap Finance.
+            *Subject to approval. Terms and conditions apply via Synchrony or Koalafi.
           </p>
         </div>
       </section>

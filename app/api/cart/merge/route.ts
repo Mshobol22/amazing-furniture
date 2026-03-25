@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 
 interface CartItemPayload {
   product_id: string;
+  variant_id?: string;
   quantity: number;
 }
 
@@ -17,8 +18,13 @@ function validateItems(items: unknown): CartItemPayload[] | null {
   const valid: CartItemPayload[] = [];
   for (const item of items) {
     if (!item || typeof item !== "object") return null;
-    const { product_id, quantity } = item as Record<string, unknown>;
+    const { product_id, variant_id, quantity } = item as Record<string, unknown>;
     if (typeof product_id !== "string" || !UUID_RE.test(product_id))
+      return null;
+    if (
+      variant_id != null &&
+      (typeof variant_id !== "string" || !UUID_RE.test(variant_id))
+    )
       return null;
     if (
       typeof quantity !== "number" ||
@@ -27,7 +33,11 @@ function validateItems(items: unknown): CartItemPayload[] | null {
       quantity > 99
     )
       return null;
-    valid.push({ product_id, quantity });
+    valid.push({
+      product_id,
+      variant_id: typeof variant_id === "string" ? variant_id : undefined,
+      quantity,
+    });
   }
   return valid;
 }
@@ -69,24 +79,76 @@ export async function POST(request: Request) {
       if (validated) savedItems.push(...validated);
     }
 
-    // Merge: for same product_id, take the higher quantity
+    // Merge by product + variant. Sum quantities, then clamp server-side.
     const merged = new Map<string, number>();
     for (const item of savedItems) {
-      merged.set(
-        item.product_id,
-        Math.max(merged.get(item.product_id) ?? 0, item.quantity)
-      );
+      const key = `${item.product_id}:${item.variant_id ?? ""}`;
+      merged.set(key, (merged.get(key) ?? 0) + item.quantity);
     }
     for (const item of guestItems) {
-      merged.set(
-        item.product_id,
-        Math.max(merged.get(item.product_id) ?? 0, item.quantity)
-      );
+      const key = `${item.product_id}:${item.variant_id ?? ""}`;
+      merged.set(key, (merged.get(key) ?? 0) + item.quantity);
     }
 
-    const mergedItems = Array.from(merged.entries()).map(
-      ([product_id, quantity]) => ({ product_id, quantity })
+    const mergedItemsRaw = Array.from(merged.entries()).map(([key, quantity]) => {
+      const [product_id, variantKey] = key.split(":");
+      return {
+        product_id,
+        variant_id: variantKey || undefined,
+        quantity: Math.min(quantity, 99),
+      };
+    });
+
+    const productIds = Array.from(new Set(mergedItemsRaw.map((i) => i.product_id)));
+    const variantIds = Array.from(
+      new Set(
+        mergedItemsRaw
+          .map((i) => i.variant_id)
+          .filter((id): id is string => typeof id === "string")
+      )
     );
+
+    // Never trust client cart prices. Re-hydrate from DB and enforce stock.
+    const [{ data: products }, { data: variants }] = await Promise.all([
+      admin.from("products").select("*").in("id", productIds),
+      variantIds.length > 0
+        ? admin
+            .from("product_variants")
+            .select("id, product_id, sku, size, color, price, image_url, stock_qty, in_stock")
+            .in("id", variantIds)
+        : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+    ]);
+
+    const productMap = new Map((products ?? []).map((p) => [p.id as string, p]));
+    const variantMap = new Map((variants ?? []).map((v) => [v.id as string, v]));
+
+    const mergedItems = mergedItemsRaw
+      .map((item) => {
+        const product = productMap.get(item.product_id);
+        if (!product) return null;
+
+        if (item.variant_id) {
+          const variant = variantMap.get(item.variant_id);
+          if (!variant || variant.product_id !== item.product_id) return null;
+          if (!variant.in_stock) return null;
+          const clampedQty = Math.max(
+            1,
+            Math.min(item.quantity, Number(variant.stock_qty) || 99, 99)
+          );
+          return {
+            product_id: item.product_id,
+            variant_id: item.variant_id,
+            quantity: clampedQty,
+          };
+        }
+
+        if (!product.in_stock) return null;
+        return {
+          product_id: item.product_id,
+          quantity: Math.max(1, Math.min(item.quantity, 99)),
+        };
+      })
+      .filter((item): item is CartItemPayload => Boolean(item));
 
     // Upsert merged cart to Supabase
     if (existingCart) {
@@ -100,17 +162,26 @@ export async function POST(request: Request) {
         .insert({ user_id: user.id, items: mergedItems });
     }
 
-    // Fetch full product details for merged items so client can update store
-    const productIds = mergedItems.map((i) => i.product_id);
-    const { data: products } = await admin
-      .from("products")
-      .select("*")
-      .in("id", productIds);
-
     const fullItems = mergedItems
       .map((item) => {
-        const product = products?.find((p) => p.id === item.product_id);
+        const product = productMap.get(item.product_id);
         if (!product) return null;
+
+        if (item.variant_id) {
+          const variant = variantMap.get(item.variant_id);
+          if (!variant) return null;
+          return {
+            product,
+            quantity: item.quantity,
+            variant_id: variant.id,
+            variant_sku: variant.sku ?? undefined,
+            variant_size: variant.size ?? undefined,
+            variant_color: variant.color ?? undefined,
+            variant_price: typeof variant.price === "number" ? variant.price : undefined,
+            variant_image: variant.image_url ?? undefined,
+          };
+        }
+
         return { product, quantity: item.quantity };
       })
       .filter(Boolean);
