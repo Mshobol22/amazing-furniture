@@ -442,7 +442,16 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
             ) : (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {products.map((product) => (
-                  <BrandProductGridCard key={product.id} product={product} />
+                  <BrandProductGridCard
+                    key={product.id}
+                    product={product}
+                    brandName={manufacturer.name}
+                    categoryFilter={
+                      selectedCategory && !isMiscCategorySelected
+                        ? selectedCategory
+                        : undefined
+                    }
+                  />
                 ))}
               </div>
             )}

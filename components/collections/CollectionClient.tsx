@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import ProductGrid from "@/components/products/ProductGrid";
 import CollectionSidebar from "@/components/collections/CollectionSidebar";
@@ -50,6 +50,17 @@ export default function CollectionClient({
   const isInitialMount = useRef(true);
 
   const isAll = slug === "all";
+
+  const collectionManufacturerFilter = useMemo(() => {
+    if (isAll) {
+      const raw = searchParams.get("manufacturer");
+      return raw?.split(",").map((s) => s.trim()).filter(Boolean)[0];
+    }
+    const raw = searchParams.get("manufacturers");
+    return raw?.split(",").map((s) => s.trim()).filter(Boolean)[0];
+  }, [isAll, searchParams]);
+
+  const collectionCategorySlugForGrid = isAll ? undefined : slug;
   const sortOptions = isAll
     ? [...BASE_SORT_OPTIONS, { value: "created-desc", label: "Newest Arrivals" }]
     : BASE_SORT_OPTIONS;
@@ -216,7 +227,12 @@ export default function CollectionClient({
         <div
           className={`transition-opacity ${loading ? "opacity-50" : "opacity-100"}`}
         >
-          <ProductGrid products={products} />
+          <ProductGrid
+            products={products}
+            collectionCategorySlug={collectionCategorySlugForGrid}
+            collectionManufacturerFilter={collectionManufacturerFilter}
+            enableContextualReel
+          />
         </div>
 
         {/* Pagination */}

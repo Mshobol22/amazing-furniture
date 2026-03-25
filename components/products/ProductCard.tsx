@@ -9,18 +9,30 @@ import { useWishlistStore } from "@/store/wishlistStore";
 import type { Product } from "@/types";
 import { cn } from "@/lib/utils";
 import { ReelTrigger } from "@/components/reel/ProductReel";
+import { useContextualReelContext } from "@/components/reel/ContextualReelProvider";
 import { useReelContext } from "@/components/reel/ReelProvider";
+import { getCategoryDisplayName } from "@/lib/collection-utils";
 
 interface ProductCardProps {
   product: Product;
   className?: string;
+  collectionCategorySlug?: string;
+  collectionManufacturerFilter?: string;
+  enableContextualReel?: boolean;
 }
 
-export default function ProductCard({ product, className }: ProductCardProps) {
+export default function ProductCard({
+  product,
+  className,
+  collectionCategorySlug,
+  collectionManufacturerFilter,
+  enableContextualReel = false,
+}: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const toggleWishlist = useWishlistStore((state) => state.toggleItem);
   const isInWishlist = useWishlistStore((state) => state.isInWishlist(product.id));
   const { openReel } = useReelContext();
+  const { openContextualReel } = useContextualReelContext();
   const firstImage = product.images[0];
   const safeImage = firstImage?.startsWith("https://") ? firstImage : null;
 
@@ -107,6 +119,24 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         </div>
       </div>
       <div className="flex flex-col gap-1.5 p-3">
+        {enableContextualReel ? (
+          <div>
+            <ReelTrigger
+              variant="compact"
+              label="Explore category"
+              onClick={() => {
+                const slug = collectionCategorySlug ?? product.category;
+                void openContextualReel({
+                  context: "category",
+                  contextValue: slug,
+                  filterValue: collectionManufacturerFilter,
+                  firstProductId: product.id,
+                  wordmarkLabel: getCategoryDisplayName(slug),
+                });
+              }}
+            />
+          </div>
+        ) : null}
         {product.collection_group ? (
           <div>
             <ReelTrigger

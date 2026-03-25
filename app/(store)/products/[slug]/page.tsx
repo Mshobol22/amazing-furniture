@@ -12,6 +12,7 @@ import ProductDetailClient from "@/components/products/ProductDetailClient";
 import ProductImageGallery from "@/components/products/ProductImageGallery";
 import ProductVariantPageClient from "@/components/products/ProductVariantPageClient";
 import ProductCard from "@/components/products/ProductCard";
+import CategoryExploreReelTrigger from "@/components/reel/CategoryExploreReelTrigger";
 import ProductDetailReelTrigger from "@/components/reel/ProductDetailReelTrigger";
 import type { Metadata } from "next";
 import type { ProductVariant } from "@/types";
@@ -186,7 +187,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   initialWishlisted={collectionWishlistedIds}
                 />
               </div>
-            ) : null}
+            ) : (
+              <div className="mb-8">
+                <CategoryExploreReelTrigger
+                  categorySlug={product.category}
+                  categoryDisplayLabel={categoryLabel}
+                  productId={product.id}
+                />
+              </div>
+            )}
           </>
         ) : (
           /* Standard products — existing layout unchanged */
@@ -207,7 +216,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   label={detailReelLabel}
                   initialWishlisted={collectionWishlistedIds}
                 />
-              ) : null}
+              ) : (
+                <CategoryExploreReelTrigger
+                  categorySlug={product.category}
+                  categoryDisplayLabel={categoryLabel}
+                  productId={product.id}
+                />
+              )}
             </div>
 
             {/* Product info */}

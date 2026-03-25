@@ -6,11 +6,23 @@ import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
 import { productLeadImageSrc } from "@/lib/nfd-image-proxy";
 import { ReelTrigger } from "@/components/reel/ProductReel";
+import { useContextualReelContext } from "@/components/reel/ContextualReelProvider";
 import { useReelContext } from "@/components/reel/ReelProvider";
 
-export default function BrandProductGridCard({ product }: { product: Product }) {
+interface BrandProductGridCardProps {
+  product: Product;
+  brandName?: string;
+  categoryFilter?: string;
+}
+
+export default function BrandProductGridCard({
+  product,
+  brandName,
+  categoryFilter,
+}: BrandProductGridCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const { openReel } = useReelContext();
+  const { openContextualReel } = useContextualReelContext();
   const safeImage = productLeadImageSrc(product.manufacturer, product.images?.[0]);
 
   return (
@@ -44,6 +56,23 @@ export default function BrandProductGridCard({ product }: { product: Product }) 
           )}
         </div>
       </Link>
+      {brandName ? (
+        <div className="flex justify-center px-3 pt-2">
+          <ReelTrigger
+            variant="compact"
+            label="Explore brand"
+            onClick={() =>
+              void openContextualReel({
+                context: "brand",
+                contextValue: brandName,
+                filterValue: categoryFilter,
+                firstProductId: product.id,
+                wordmarkLabel: brandName,
+              })
+            }
+          />
+        </div>
+      ) : null}
       <div className="space-y-2 p-3">
         {product.collection_group ? (
           <div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/layout/Providers";
+import { ContextualReelProvider } from "@/components/reel/ContextualReelProvider";
 import { ReelProvider } from "@/components/reel/ReelProvider";
 
 const playfair = Playfair_Display({
@@ -111,7 +112,9 @@ export default function RootLayout({
         className={`${playfair.variable} ${cormorant.variable} ${dmSans.variable} bg-cream text-charcoal antialiased`}
       >
         <Providers>
-          <ReelProvider>{children}</ReelProvider>
+          <ReelProvider>
+            <ContextualReelProvider>{children}</ContextualReelProvider>
+          </ReelProvider>
         </Providers>
       </body>
     </html>
