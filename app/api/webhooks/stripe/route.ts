@@ -50,7 +50,6 @@ export async function POST(request: NextRequest) {
         .update({
           status: "paid",
           stripe_payment_intent_id: paymentIntent.id,
-          stripe_payment_id: paymentIntent.id,
         })
         .eq("id", orderId)
         .select();

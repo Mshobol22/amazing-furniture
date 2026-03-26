@@ -25,16 +25,31 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!rawUrl.startsWith("https://")) {
+  // Encode bare spaces so paths like "Beds Only/B901 BED.jpg" don't
+  // throw "URL is malformed". split/join avoids double-encoding %20.
+  const safeUrl = rawUrl.split(" ").join("%20");
+
+  // Validate well-formedness before any further checks
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(safeUrl);
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid image URL", url: safeUrl },
+      { status: 400 }
+    );
+  }
+
+  if (parsedUrl.protocol !== "https:") {
     return new Response("Invalid URL", { status: 400 });
   }
 
-  if (!isAllowedNationwideFdUrl(rawUrl)) {
+  if (!isAllowedNationwideFdUrl(safeUrl)) {
     return new Response("Forbidden", { status: 403 });
   }
 
   try {
-    const res = await fetch(rawUrl, {
+    const res = await fetch(safeUrl, {
       headers: {
         Referer: ALLOWED_REFERER_ORIGIN,
         "User-Agent": "Mozilla/5.0",

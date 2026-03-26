@@ -60,7 +60,7 @@ export interface Order {
   shipping: number;
   total: number;
   status: "pending" | "paid" | "shipped" | "delivered" | "cancelled";
-  stripe_payment_id?: string;
+  stripe_payment_intent_id?: string;
   shipping_address: ShippingAddress;
   created_at: string;
 }
