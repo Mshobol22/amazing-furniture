@@ -90,7 +90,7 @@ export default function SaleSection({ products }: SaleSectionProps) {
                     {formatPrice(product.price)}
                   </p>
                   <p className="text-lg font-bold text-[#2D4A3E]">
-                    {product.sale_price != null ? formatPrice(product.sale_price) : ""}
+                    {product.sale_price != null ? formatPrice(product.sale_price) : null}
                   </p>
                 </div>
               </Link>

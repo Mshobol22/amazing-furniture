@@ -9,6 +9,7 @@ import { ProductImage } from "@/components/ui/ProductImage";
 import type { Product } from "@/types";
 import FilterSidebar, { type ActiveFilters, type FilterSection } from "@/components/filters/FilterSidebar";
 import SmartSearchBar from "@/components/filters/SmartSearchBar";
+import { formatPrice } from "@/lib/format-price";
 
 interface ProductsTableProps {
   products: Product[];
@@ -451,7 +452,7 @@ function ProductsTableInner({ products }: ProductsTableProps) {
                       }}
                       className="text-charcoal hover:underline"
                     >
-                      ${product.price.toLocaleString()}
+                      {formatPrice(product.price)}
                     </button>
                   )}
                 </td>

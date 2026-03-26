@@ -1,9 +1,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Product } from '@/types'
-import { formatPrice } from '@/lib/format-price'
 import { productLeadImageSrc } from '@/lib/nfd-image-proxy'
 import type { SaleEventWithProducts } from '@/lib/types/sale'
+import { formatPrice } from '@/lib/format-price'
 
 interface Props {
   products: Product[]

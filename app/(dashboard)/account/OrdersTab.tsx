@@ -131,21 +131,21 @@ export default function OrdersTab({ orders }: { orders: OrderRow[] }) {
                           <div className="border-t border-light-sand pt-2 space-y-1">
                             <div className="flex justify-between text-warm-gray">
                               <span>Subtotal</span>
-                              <span>{formatPrice(Number(order.subtotal))}</span>
+                              <span>${Number(order.subtotal).toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-warm-gray">
                               <span>Shipping</span>
-                              <span>{order.shipping === 0 ? "FREE" : formatPrice(Number(order.shipping))}</span>
+                              <span>{order.shipping === 0 ? "FREE" : `$${Number(order.shipping).toFixed(2)}`}</span>
                             </div>
                             {order.tax_amount != null && order.tax_amount > 0 && (
                               <div className="flex justify-between text-warm-gray">
                                 <span>Tax (10.25%)</span>
-                                <span>{formatPrice(Number(order.tax_amount))}</span>
+                                <span>${Number(order.tax_amount).toFixed(2)}</span>
                               </div>
                             )}
                             <div className="flex justify-between font-semibold text-charcoal border-t border-light-sand pt-1">
                               <span>Total</span>
-                              <span>{formatPrice(Number(order.total))}</span>
+                              <span>${Number(order.total).toFixed(2)}</span>
                             </div>
                           </div>
                         </div>

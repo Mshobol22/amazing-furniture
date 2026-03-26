@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { formatPrice } from "@/lib/format-price";
 
 interface ProductResult {
   id: string;
@@ -72,7 +73,7 @@ export default function ProductSaleForm() {
     }
     if (price >= selected.price) {
       setError(
-        `Sale price must be less than original price ($${selected.price.toLocaleString()})`
+        `Sale price must be less than original price (${formatPrice(selected.price)})`
       );
       return;
     }
@@ -147,7 +148,7 @@ export default function ProductSaleForm() {
                   >
                     <span className="font-medium text-charcoal">{p.name}</span>
                     <span className="ml-4 shrink-0 text-warm-gray">
-                      ${p.price.toLocaleString()}
+                      {formatPrice(p.price)}
                       {p.on_sale && p.sale_price != null && (
                         <span className="ml-1 text-xs text-red-500">
                           (on sale: ${p.sale_price})
@@ -169,7 +170,7 @@ export default function ProductSaleForm() {
               <span className="font-medium text-charcoal">{selected.name}</span>
               {" "}— Original price:{" "}
               <span className="font-medium text-charcoal">
-                ${selected.price.toLocaleString()}
+                {formatPrice(selected.price)}
               </span>
             </p>
             <label className="block text-sm text-warm-gray">

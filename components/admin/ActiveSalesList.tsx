@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Product } from "@/types";
+import { formatPrice } from "@/lib/format-price";
 
 interface ActiveSalesListProps {
   products: Product[];
@@ -103,10 +104,10 @@ export default function ActiveSalesList({ products }: ActiveSalesListProps) {
                     {product.category}
                   </td>
                   <td className="px-4 py-2 text-warm-gray">
-                    ${product.price.toLocaleString()}
+                    {formatPrice(product.price)}
                   </td>
                   <td className="px-4 py-2 font-medium text-red-600">
-                    ${(product.sale_price ?? 0).toLocaleString()}
+                    {formatPrice(product.sale_price ?? 0)}
                   </td>
                   <td className="px-4 py-2 text-warm-gray">{discountPct}%</td>
                   <td className="px-4 py-2">

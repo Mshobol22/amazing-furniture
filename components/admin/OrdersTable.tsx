@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatPrice } from "@/lib/format-price";
 
 interface OrderRow {
   id: string;
@@ -162,7 +163,7 @@ function OrdersTableInner({ orders }: { orders: OrderRow[] }) {
                     {order.customer_email}
                   </td>
                   <td className="px-4 py-2 text-charcoal">
-                    ${Number(order.total).toLocaleString()}
+                    {formatPrice(Number(order.total))}
                   </td>
                   <td className="px-4 py-2">
                     <StatusBadge status={order.status} />
@@ -207,8 +208,7 @@ function OrdersTableInner({ orders }: { orders: OrderRow[] }) {
                                   )}
                                 </span>
                                 <span>
-                                  $
-                                  {(item.price * item.quantity).toLocaleString()}
+                                  {formatPrice(item.price * item.quantity)}
                                 </span>
                               </li>
                             ))}

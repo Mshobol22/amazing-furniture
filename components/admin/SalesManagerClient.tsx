@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Pencil, Trash2, Plus, Search, Package } from 'lucide-react'
 import type { SaleEventWithProducts, SaleEvent, SaleEventType } from '@/lib/types/sale'
 import type { Product } from '@/types'
+import { formatPrice } from '@/lib/format-price'
 import SaleEventModal from './SaleEventModal'
 import {
   deleteSaleEvent,
@@ -343,7 +344,7 @@ export default function SalesManagerClient({ initialEvents }: Props) {
                           <div className="flex-1 min-w-0">
                             <p className="truncate text-sm font-medium text-[#1C1C1C]">{p.name}</p>
                             <p className="text-xs text-gray-400">
-                              {p.sku ?? p.category} · ${p.price.toLocaleString()}
+                              {p.sku ?? p.category} · {formatPrice(p.price)}
                               {p.on_sale && <span className="ml-1.5 text-[#2D4A3E] font-medium">· On Sale</span>}
                             </p>
                           </div>
@@ -393,7 +394,7 @@ export default function SalesManagerClient({ initialEvents }: Props) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-medium text-[#1C1C1C]">{p.name}</p>
-                      <p className="text-xs text-gray-400">${p.price.toLocaleString()}</p>
+                      <p className="text-xs text-gray-400">{formatPrice(p.price)}</p>
                     </div>
                     <button
                       onClick={() => handleRemove(p.id)}

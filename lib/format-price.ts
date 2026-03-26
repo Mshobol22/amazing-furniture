@@ -1,4 +1,4 @@
-const USD = new Intl.NumberFormat("en-US", {
+const usd = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
   minimumFractionDigits: 2,
@@ -6,5 +6,5 @@ const USD = new Intl.NumberFormat("en-US", {
 });
 
 export function formatPrice(amount: number): string {
-  return USD.format(amount);
+  return usd.format(amount);
 }
