@@ -634,6 +634,7 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
         onClear={clearFilters}
         mobileOpen={mobileFiltersOpen}
         onMobileClose={() => setMobileFiltersOpen(false)}
+        hideInline
       />
     </div>
   );

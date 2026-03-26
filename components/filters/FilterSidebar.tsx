@@ -24,6 +24,7 @@ interface FilterSidebarProps {
   onClear: () => void;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
+  hideInline?: boolean;
 }
 
 function FilterSidebarContent({
@@ -211,15 +212,18 @@ export default function FilterSidebar({
   onClear,
   mobileOpen = false,
   onMobileClose,
+  hideInline = false,
 }: FilterSidebarProps) {
   return (
     <>
-      <FilterSidebarContent
-        sections={sections}
-        activeFilters={activeFilters}
-        onChange={onChange}
-        onClear={onClear}
-      />
+      {!hideInline ? (
+        <FilterSidebarContent
+          sections={sections}
+          activeFilters={activeFilters}
+          onChange={onChange}
+          onClear={onClear}
+        />
+      ) : null}
 
       {mobileOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">

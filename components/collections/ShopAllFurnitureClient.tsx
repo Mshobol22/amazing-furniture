@@ -565,6 +565,7 @@ export default function ShopAllFurnitureClient() {
         onClear={handleClear}
         mobileOpen={mobileFiltersOpen}
         onMobileClose={() => setMobileFiltersOpen(false)}
+        hideInline
       />
     </div>
   );
