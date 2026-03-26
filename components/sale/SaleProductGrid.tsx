@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Product } from '@/types'
+import { formatPrice } from '@/lib/format-price'
 import { productLeadImageSrc } from '@/lib/nfd-image-proxy'
 import type { SaleEventWithProducts } from '@/lib/types/sale'
 
@@ -99,20 +100,20 @@ export default function SaleProductGrid({
                   {salePrice ? (
                     <>
                       <span className="text-base font-bold text-[#2D4A3E]">
-                        ${salePrice.toLocaleString()}
+                        {formatPrice(salePrice)}
                       </span>
                       <span className="text-sm text-[#6B6560] line-through">
-                        ${comparePrice.toLocaleString()}
+                        {formatPrice(comparePrice)}
                       </span>
                     </>
                   ) : (
                     <span className="text-base font-bold text-[#2D4A3E]">
-                      ${product.price.toLocaleString()}
+                      {formatPrice(product.price)}
                     </span>
                   )}
                   {savings && savings > 0 && (
                     <span className="rounded bg-red-50 px-1.5 py-0.5 text-xs font-semibold text-red-600">
-                      Save ${savings.toLocaleString()}
+                      Save {formatPrice(savings)}
                     </span>
                   )}
                 </div>

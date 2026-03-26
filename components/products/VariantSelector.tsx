@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Minus, Plus, ShoppingCart } from "lucide-react";
 import type { ProductVariant } from "@/types";
+import { formatPrice } from "@/lib/format-price";
 
 /* ── size sort order ──────────────────────────────────────────── */
 
@@ -324,12 +325,12 @@ function ResolvedState({ variant }: { variant: ProductVariant | null }) {
         <>
           <div className="flex items-baseline gap-3">
             <span className="font-sans text-2xl font-bold tabular-nums text-[#1C1C1C]">
-              ${variant.price.toLocaleString()}
+              {formatPrice(variant.price)}
             </span>
             {variant.compare_at_price != null &&
               variant.compare_at_price > variant.price && (
                 <span className="font-sans text-sm font-normal tabular-nums text-[#1C1C1C]/45 line-through">
-                  ${variant.compare_at_price.toLocaleString()}
+                  {formatPrice(variant.compare_at_price)}
                 </span>
               )}
           </div>
@@ -346,7 +347,7 @@ function ResolvedState({ variant }: { variant: ProductVariant | null }) {
       ) : (
         <>
           <span className="font-sans text-2xl font-bold tabular-nums text-gray-400">
-            ${variant.price.toLocaleString()}
+            {formatPrice(variant.price)}
           </span>
           <p className="text-sm font-medium text-red-600">Out of Stock</p>
           <p className="text-xs text-gray-400">

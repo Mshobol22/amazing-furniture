@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useCartStore, useCartItemCount } from "@/store/cartStore";
 import { useWishlistStore, useWishlistCount } from "@/store/wishlistStore";
+import { formatPrice } from "@/lib/format-price";
 
 interface SearchResult {
   id: string;
@@ -401,11 +402,11 @@ export default function Navbar() {
                             </div>
                             <div className="text-right shrink-0">
                               <p className="text-sm font-semibold text-[#1C1C1C]">
-                                ${result.price.toLocaleString()}
+                                {formatPrice(result.price)}
                               </p>
                               {result.onSale && result.originalPrice != null && (
                                 <p className="text-xs text-red-500 line-through">
-                                  ${result.originalPrice.toLocaleString()}
+                                  {formatPrice(result.originalPrice)}
                                 </p>
                               )}
                             </div>

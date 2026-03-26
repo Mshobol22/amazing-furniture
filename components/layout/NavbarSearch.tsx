@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import type { Product } from "@/types";
+import { formatPrice } from "@/lib/format-price";
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -112,7 +113,7 @@ export default function NavbarSearch() {
                           {product.name}
                         </span>
                         <span className="text-sm text-warm-gray">
-                          ${product.price.toLocaleString()} ·{" "}
+                          {formatPrice(product.price)} ·{" "}
                           {categoryLabel(product.category)}
                         </span>
                       </Link>

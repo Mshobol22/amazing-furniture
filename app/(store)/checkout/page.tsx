@@ -23,6 +23,7 @@ import { ProductImage } from "@/components/ui/ProductImage";
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatPrice } from "@/lib/format-price";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
@@ -376,15 +377,14 @@ function CheckoutForm() {
                       <div className="min-w-0 flex-1">
                         <p className="font-medium">{item.product.name}</p>
                         <p className="text-warm-gray">
-                          {item.quantity} × $
-                          {getEffectivePrice(item.product).toLocaleString()}
+                          {item.quantity} ×{" "}
+                          {formatPrice(getEffectivePrice(item.product))}
                         </p>
                       </div>
                       <p className="font-medium">
-                        $
-                        {(
+                        {formatPrice(
                           getEffectivePrice(item.product) * item.quantity
-                        ).toLocaleString()}
+                        )}
                       </p>
                     </div>
                   ))}
@@ -392,23 +392,23 @@ function CheckoutForm() {
                 <div className="mt-4 space-y-1 border-t pt-4 text-sm">
                   <div className="flex justify-between">
                     <span className="text-warm-gray">Subtotal</span>
-                    <span>${subtotal.toLocaleString()}</span>
+                    <span>{formatPrice(subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-warm-gray">Shipping</span>
                     <span>
-                      {shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}
+                      {shipping === 0 ? "FREE" : formatPrice(shipping)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-warm-gray">
                       Illinois Sales Tax (10.25%)
                     </span>
-                    <span>${tax.toFixed(2)}</span>
+                    <span>{formatPrice(tax)}</span>
                   </div>
                   <div className="flex justify-between font-semibold">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>{formatPrice(total)}</span>
                   </div>
                   <p className="mt-2 text-xs text-warm-gray">
                     Tax is calculated based on Illinois state and local rates
@@ -468,7 +468,7 @@ function CheckoutForm() {
                     disabled={!stripe || isProcessing || !consented}
                     className="flex-1 bg-walnut text-cream hover:bg-walnut/90 disabled:opacity-50"
                   >
-                    {isProcessing ? "Processing..." : `Pay $${total.toFixed(2)}`}
+                    {isProcessing ? "Processing..." : `Pay ${formatPrice(total)}`}
                   </Button>
                 </div>
               </div>
@@ -507,21 +507,20 @@ function CheckoutForm() {
                       {item.product.name} × {item.quantity}
                     </span>
                     <span>
-                      $
-                      {(
+                      {formatPrice(
                         getEffectivePrice(item.product) * item.quantity
-                      ).toLocaleString()}
+                      )}
                     </span>
                   </div>
                 ))}
                 <div className="mt-2 space-y-1 border-t pt-2 text-sm">
                   <div className="flex justify-between text-warm-gray">
                     <span>Tax (10.25%)</span>
-                    <span>${tax.toFixed(2)}</span>
+                    <span>{formatPrice(tax)}</span>
                   </div>
                   <div className="flex justify-between font-semibold">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>{formatPrice(total)}</span>
                   </div>
                 </div>
               </div>

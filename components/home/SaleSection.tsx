@@ -3,6 +3,7 @@ import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { proxyImage, FALLBACK_IMAGE } from "@/lib/utils";
 import type { Product } from "@/types";
+import { formatPrice } from "@/lib/format-price";
 
 interface SaleSectionProps {
   products: Product[];
@@ -75,7 +76,7 @@ export default function SaleSection({ products }: SaleSectionProps) {
                   </span>
                   {savings > 0 && (
                     <span className="absolute right-2 top-2 z-10 rounded bg-red-600 px-2 py-1 text-xs font-bold text-white">
-                      Save ${savings.toLocaleString()}
+                      Save {formatPrice(savings)}
                     </span>
                   )}
                 </div>
@@ -86,10 +87,10 @@ export default function SaleSection({ products }: SaleSectionProps) {
                     {product.name}
                   </p>
                   <p className="text-xs text-gray-400 line-through">
-                    ${product.price.toLocaleString()}
+                    {formatPrice(product.price)}
                   </p>
                   <p className="text-lg font-bold text-[#2D4A3E]">
-                    ${product.sale_price?.toLocaleString()}
+                    {product.sale_price != null ? formatPrice(product.sale_price) : ""}
                   </p>
                 </div>
               </Link>

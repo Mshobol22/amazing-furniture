@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ShoppingBag, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatPrice } from "@/lib/format-price";
 
 interface OrderItem {
   product_id: string;
@@ -98,7 +99,7 @@ export default function OrdersTab({ orders }: { orders: OrderRow[] }) {
                       {formatItems(order.items)}
                     </td>
                     <td className="py-4 font-medium text-charcoal">
-                      ${Number(order.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      {formatPrice(Number(order.total))}
                     </td>
                     <td className="py-4">
                       <div className="flex items-center gap-2">
@@ -130,21 +131,21 @@ export default function OrdersTab({ orders }: { orders: OrderRow[] }) {
                           <div className="border-t border-light-sand pt-2 space-y-1">
                             <div className="flex justify-between text-warm-gray">
                               <span>Subtotal</span>
-                              <span>${Number(order.subtotal).toFixed(2)}</span>
+                              <span>{formatPrice(Number(order.subtotal))}</span>
                             </div>
                             <div className="flex justify-between text-warm-gray">
                               <span>Shipping</span>
-                              <span>{order.shipping === 0 ? "FREE" : `$${Number(order.shipping).toFixed(2)}`}</span>
+                              <span>{order.shipping === 0 ? "FREE" : formatPrice(Number(order.shipping))}</span>
                             </div>
                             {order.tax_amount != null && order.tax_amount > 0 && (
                               <div className="flex justify-between text-warm-gray">
                                 <span>Tax (10.25%)</span>
-                                <span>${Number(order.tax_amount).toFixed(2)}</span>
+                                <span>{formatPrice(Number(order.tax_amount))}</span>
                               </div>
                             )}
                             <div className="flex justify-between font-semibold text-charcoal border-t border-light-sand pt-1">
                               <span>Total</span>
-                              <span>${Number(order.total).toFixed(2)}</span>
+                              <span>{formatPrice(Number(order.total))}</span>
                             </div>
                           </div>
                         </div>

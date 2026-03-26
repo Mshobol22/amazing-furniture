@@ -7,6 +7,7 @@ import type { Product } from "@/types";
 import { productLeadImageSrc } from "@/lib/nfd-image-proxy";
 import { useContextualReelContext } from "@/components/reel/ContextualReelProvider";
 import { useReelContext } from "@/components/reel/ReelProvider";
+import { formatPrice } from "@/lib/format-price";
 
 interface BrandProductGridCardProps {
   product: Product;
@@ -66,14 +67,14 @@ export default function BrandProductGridCard({
           {product.on_sale && product.sale_price ? (
             <>
               <span className="text-base font-semibold text-red-600 tabular-nums">
-                ${product.sale_price.toLocaleString()}
+                {formatPrice(product.sale_price)}
               </span>
               <span className="ml-2 text-sm font-normal text-[#1C1C1C]/45 line-through tabular-nums">
-                ${product.price.toLocaleString()}
+                {formatPrice(product.price)}
               </span>
             </>
           ) : (
-            <>${product.price.toLocaleString()}</>
+            <>{formatPrice(product.price)}</>
           )}
         </p>
         {/* Explore buttons — always visible, side by side */}

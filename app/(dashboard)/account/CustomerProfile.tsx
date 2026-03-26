@@ -11,6 +11,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { NoiseOverlay } from "@/components/ui/NoiseOverlay";
 import type { User } from "@supabase/supabase-js";
+import { formatPrice } from "@/lib/format-price";
 
 interface OrderRow {
   id: string;
@@ -143,7 +144,7 @@ export default function CustomerProfile({ user, orders }: CustomerProfileProps) 
                     {order.status}
                   </span>
                   <p className="mt-2 font-medium text-[#1C1C1C]">
-                    ${Number(order.total).toLocaleString()}
+                    {formatPrice(Number(order.total))}
                   </p>
                 </Link>
               ))}

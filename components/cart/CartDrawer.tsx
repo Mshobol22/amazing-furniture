@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatPrice } from "@/lib/format-price";
 
 const SHIPPING_THRESHOLD = 299;
 const SHIPPING_COST = 29;
@@ -116,7 +117,7 @@ export default function CartDrawer() {
                           {categoryLabel(item.product.category)}
                         </p>
                         <p className="mt-1 text-sm text-warm-gray">
-                          ${unitPrice.toLocaleString()} each
+                          {formatPrice(unitPrice)} each
                         </p>
                         <div className="mt-2 flex items-center gap-2">
                           <Button
@@ -163,7 +164,7 @@ export default function CartDrawer() {
                         </div>
                       </div>
                       <p className="shrink-0 font-medium text-charcoal">
-                        ${(unitPrice * item.quantity).toLocaleString()}
+                        {formatPrice(unitPrice * item.quantity)}
                       </p>
                     </motion.div>
                     );
@@ -175,7 +176,7 @@ export default function CartDrawer() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-warm-gray">Subtotal</span>
-                    <span>${subtotal.toLocaleString()}</span>
+                    <span>{formatPrice(subtotal)}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-warm-gray">Shipping</span>
@@ -190,7 +191,7 @@ export default function CartDrawer() {
                 </div>
                 <div className="mt-4 flex justify-between text-lg font-semibold">
                   <span>Total</span>
-                  <span>${total.toLocaleString()}</span>
+                  <span>{formatPrice(total)}</span>
                 </div>
                 <div className="mt-4 flex gap-2">
                   <Button asChild variant="outline" className="flex-1">

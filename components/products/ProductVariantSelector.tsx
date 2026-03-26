@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { ProductVariant } from "@/types";
+import { formatPrice } from "@/lib/format-price";
 
 const SIZE_ORDER = [
   "2x3",
@@ -212,7 +213,7 @@ export default function ProductVariantSelector({
               const active = selectedSize === size;
               const priceTitle =
                 v != null
-                  ? `$${Number(v.price).toLocaleString()} — ${oos ? "Out of stock" : "In stock"}`
+                  ? `${formatPrice(Number(v.price))} — ${oos ? "Out of stock" : "In stock"}`
                   : undefined;
 
               let className =

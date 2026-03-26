@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { formatPrice } from "@/lib/format-price";
 
 // RESEND_API_KEY sourced from env only — never hardcoded
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -59,8 +60,8 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<void
         ${item.name}${variantDetail ? `<br><span style="color:#888;font-size:12px;font-family:Arial,sans-serif">${variantDetail}</span>` : ""}
       </td>
       <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;text-align:center;color:#555;font-size:14px">${item.quantity}</td>
-      <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;text-align:right;color:#1c1c1c;font-size:14px">$${item.price.toFixed(2)}</td>
-      <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;text-align:right;color:#1c1c1c;font-size:14px;font-weight:500">$${(item.price * item.quantity).toFixed(2)}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;text-align:right;color:#1c1c1c;font-size:14px">${formatPrice(item.price)}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #ede8e1;text-align:right;color:#1c1c1c;font-size:14px;font-weight:500">${formatPrice(item.price * item.quantity)}</td>
     </tr>`;
     })
     .join("");
@@ -106,19 +107,19 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<void
       <table style="width:100%;border-collapse:collapse;margin-bottom:32px">
         <tr>
           <td style="padding:8px 16px;color:#555;font-size:14px;font-family:Arial,sans-serif">Subtotal</td>
-          <td style="padding:8px 16px;text-align:right;color:#1c1c1c;font-size:14px;font-family:Arial,sans-serif">$${order.subtotal.toFixed(2)}</td>
+          <td style="padding:8px 16px;text-align:right;color:#1c1c1c;font-size:14px;font-family:Arial,sans-serif">${formatPrice(order.subtotal)}</td>
         </tr>
         <tr>
           <td style="padding:8px 16px;color:#555;font-size:14px;font-family:Arial,sans-serif">Shipping</td>
-          <td style="padding:8px 16px;text-align:right;color:#1c1c1c;font-size:14px;font-family:Arial,sans-serif">${shipping === 0 ? "FREE" : "$" + shipping.toFixed(2)}</td>
+          <td style="padding:8px 16px;text-align:right;color:#1c1c1c;font-size:14px;font-family:Arial,sans-serif">${shipping === 0 ? "FREE" : formatPrice(shipping)}</td>
         </tr>
         <tr>
           <td style="padding:8px 16px;color:#555;font-size:14px;font-family:Arial,sans-serif">Illinois Sales Tax (10.25%)</td>
-          <td style="padding:8px 16px;text-align:right;color:#1c1c1c;font-size:14px;font-family:Arial,sans-serif">$${taxAmount.toFixed(2)}</td>
+          <td style="padding:8px 16px;text-align:right;color:#1c1c1c;font-size:14px;font-family:Arial,sans-serif">${formatPrice(taxAmount)}</td>
         </tr>
         <tr style="border-top:2px solid #1c1c1c">
           <td style="padding:12px 16px;color:#1c1c1c;font-size:16px;font-weight:bold;font-family:Arial,sans-serif">Order Total</td>
-          <td style="padding:12px 16px;text-align:right;color:#1c1c1c;font-size:16px;font-weight:bold;font-family:Arial,sans-serif">$${order.total.toFixed(2)}</td>
+          <td style="padding:12px 16px;text-align:right;color:#1c1c1c;font-size:16px;font-weight:bold;font-family:Arial,sans-serif">${formatPrice(order.total)}</td>
         </tr>
       </table>
 

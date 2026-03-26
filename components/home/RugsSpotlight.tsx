@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { productLeadImageSrc } from "@/lib/nfd-image-proxy";
+import { formatPrice } from "@/lib/format-price";
 
 interface SpotlightProduct {
   id: string;
@@ -81,7 +82,7 @@ export default function RugsSpotlight({ products }: RugsSpotlightProps) {
                     {product.name}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-cream">
-                    ${product.price.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    {formatPrice(product.price)}
                   </p>
                 </div>
               </Link>

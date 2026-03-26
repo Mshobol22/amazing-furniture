@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { formatPrice } from "@/lib/format-price";
 
 const ARRAY_KEYS = ["manufacturer", "category", "color", "material", "collection"] as const;
 
@@ -55,9 +56,9 @@ export default function ActiveFilterChips() {
   const priceMin = searchParams.get("price_min");
   const priceMax = searchParams.get("price_max");
   if (priceMin)
-    chips.push({ key: "price_min", value: priceMin, label: `Min $${Number(priceMin).toLocaleString()}` });
+    chips.push({ key: "price_min", value: priceMin, label: `Min ${formatPrice(Number(priceMin))}` });
   if (priceMax)
-    chips.push({ key: "price_max", value: priceMax, label: `Max $${Number(priceMax).toLocaleString()}` });
+    chips.push({ key: "price_max", value: priceMax, label: `Max ${formatPrice(Number(priceMax))}` });
 
   if (chips.length === 0) return null;
 

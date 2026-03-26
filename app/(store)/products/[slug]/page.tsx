@@ -8,6 +8,7 @@ import {
 } from "@/lib/supabase/products";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { formatPrice } from "@/lib/format-price";
 import ProductDetailClient from "@/components/products/ProductDetailClient";
 import ProductImageGallery from "@/components/products/ProductImageGallery";
 import ProductVariantPageClient from "@/components/products/ProductVariantPageClient";
@@ -113,20 +114,33 @@ export default async function ProductPage({ params }: ProductPageProps) {
     piece_type: string | null;
   }> = [];
 
-  if (product.collection_group) {
+  const hasCollectionGroup = !!product.collection_group;
+  const hasCollection = !!product.collection;
+  const collectionValue = product.collection ?? null;
+
+  if (hasCollectionGroup || hasCollection) {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const { data: siblingRows } = await supabase
+    let siblingQuery = supabase
       .from("products")
       .select("id, name, slug, images, price, sale_price, on_sale, piece_type")
-      .eq("collection_group", product.collection_group)
       .neq("id", product.id)
-      .or("images_validated.eq.true,and(images_validated.is.null,images.not.is.null)")
-      .limit(8);
+      .limit(6);
 
+    if (hasCollectionGroup) {
+      siblingQuery = siblingQuery
+        .eq("collection_group", product.collection_group!)
+        .or("images_validated.eq.true,and(images_validated.is.null,images.not.is.null)");
+    } else {
+      siblingQuery = siblingQuery
+        .ilike("collection", collectionValue!)
+        .not("images", "is", null);
+    }
+
+    const { data: siblingRows } = await siblingQuery;
     siblingCollectionProducts = (siblingRows ?? []) as typeof siblingCollectionProducts;
 
     if (user) {
@@ -236,10 +250,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 {product.on_sale && product.sale_price != null ? (
                   <>
                     <span className="font-sans text-2xl font-bold tabular-nums text-red-600">
-                      ${product.sale_price.toLocaleString()}
+                      {formatPrice(product.sale_price)}
                     </span>
                     <span className="font-sans text-sm font-normal tabular-nums text-[#1C1C1C]/45 line-through">
-                      ${product.price.toLocaleString()}
+                      {formatPrice(product.price)}
                     </span>
                     <span
                       className="rounded px-2 py-0.5 text-sm font-semibold text-white"
@@ -254,12 +268,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 ) : (
                   <>
                     <span className="font-sans text-2xl font-bold tabular-nums text-[#1C1C1C]">
-                      ${product.price.toLocaleString()}
+                      {formatPrice(product.price)}
                     </span>
                     {product.compare_price != null &&
                       product.compare_price > product.price && (
                         <span className="font-sans text-sm font-normal tabular-nums text-[#1C1C1C]/45 line-through">
-                          ${product.compare_price.toLocaleString()}
+                          {formatPrice(product.compare_price)}
                         </span>
                       )}
                   </>
@@ -267,7 +281,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </div>
               {product.on_sale && product.sale_price != null && (
                 <p className="mt-1 text-sm font-medium text-green-700">
-                  You save ${(product.price - product.sale_price).toFixed(2)}
+                  You save {formatPrice(product.price - product.sale_price)}
                 </p>
               )}
 
@@ -290,7 +304,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
         )}
 
-        {product.collection_group &&
+        {(hasCollectionGroup || hasCollection) &&
         siblingCollectionProducts.length > 0 ? (
           <section className="mb-10">
             <h2 className="mb-4 font-cormorant text-xl font-semibold text-[#1C1C1C] md:text-2xl">
@@ -328,9 +342,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                         {sibling.name}
                       </p>
                       <p className="mt-1 text-sm font-semibold text-[#1C1C1C]">
-                        {sibling.on_sale && sibling.sale_price != null
-                          ? `$${sibling.sale_price.toLocaleString()}`
-                          : `$${sibling.price.toLocaleString()}`}
+                        {formatPrice(
+                          sibling.on_sale && sibling.sale_price != null
+                            ? sibling.sale_price
+                            : sibling.price
+                        )}
                       </p>
                     </Link>
                   );

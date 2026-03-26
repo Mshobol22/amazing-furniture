@@ -18,6 +18,7 @@ export interface Product {
   manufacturer?: string | null;
   has_variants?: boolean;
   variant_type?: string | null;
+  collection?: string | null;
   // Collection fields (added migration March 2026)
   collection_group?: string | null;
   piece_type?: string | null;

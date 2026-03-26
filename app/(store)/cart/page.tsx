@@ -10,6 +10,7 @@ import {
   getEffectivePrice,
 } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
+import { formatPrice } from "@/lib/format-price";
 
 const SHIPPING_THRESHOLD = 299;
 const SHIPPING_COST = 29;
@@ -91,7 +92,7 @@ export default function CartPage() {
                       {categoryLabel(item.product.category)}
                     </p>
                     <p className="mt-1 text-warm-gray">
-                      ${item.product.price.toLocaleString()}
+                      {formatPrice(item.product.price)}
                     </p>
                     <div className="mt-3 flex items-center gap-2">
                       <Button
@@ -133,8 +134,7 @@ export default function CartPage() {
                     </div>
                   </div>
                   <p className="shrink-0 text-lg font-semibold text-charcoal">
-                    $
-                    {(getEffectivePrice(item.product) * item.quantity).toLocaleString()}
+                    {formatPrice(getEffectivePrice(item.product) * item.quantity)}
                   </p>
                 </div>
               ))}
@@ -150,7 +150,7 @@ export default function CartPage() {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-warm-gray">Subtotal</span>
-                  <span>${subtotal.toLocaleString()}</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-warm-gray">Shipping</span>
@@ -166,7 +166,7 @@ export default function CartPage() {
               <div className="my-4 border-t border-light-sand" />
               <div className="mb-6 flex justify-between text-xl font-bold">
                 <span>Total</span>
-                <span>${total.toLocaleString()}</span>
+                <span>{formatPrice(total)}</span>
               </div>
               <div className="mb-4 flex items-center gap-2 rounded-md border border-light-sand p-2">
                 <input

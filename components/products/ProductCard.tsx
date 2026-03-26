@@ -6,6 +6,7 @@ import { ProductImage } from "@/components/ui/ProductImage";
 import { useWishlistStore } from "@/store/wishlistStore";
 import type { Product } from "@/types";
 import { cn } from "@/lib/utils";
+import { formatPrice } from "@/lib/format-price";
 import { useContextualReelContext } from "@/components/reel/ContextualReelProvider";
 import { useReelContext } from "@/components/reel/ReelProvider";
 import { getCategoryDisplayName } from "@/lib/collection-utils";
@@ -112,19 +113,19 @@ export default function ProductCard({
           {product.on_sale && product.sale_price != null ? (
             <>
               <span className="text-base font-semibold text-red-600 tabular-nums">
-                ${product.sale_price.toLocaleString()}
+                {formatPrice(product.sale_price)}
               </span>
               <span className="ml-2 text-sm font-normal text-[#1C1C1C]/45 line-through tabular-nums">
-                ${product.price.toLocaleString()}
+                {formatPrice(product.price)}
               </span>
             </>
           ) : (
             <>
-              ${product.price.toLocaleString()}
+              {formatPrice(product.price)}
               {product.compare_price != null &&
                 product.compare_price > product.price && (
                   <span className="ml-2 text-sm font-normal text-[#1C1C1C]/45 line-through tabular-nums">
-                    ${product.compare_price.toLocaleString()}
+                    {formatPrice(product.compare_price)}
                   </span>
                 )}
             </>
