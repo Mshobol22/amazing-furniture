@@ -126,9 +126,9 @@ export default function CollectionClient({
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex gap-6">
+    <div className="flex items-start gap-6">
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 md:block">
+      <aside className="sticky top-4 hidden w-64 shrink-0 self-start md:block">
         <CollectionSidebar
           slug={slug}
           availableSubcategories={availableSubcategories}

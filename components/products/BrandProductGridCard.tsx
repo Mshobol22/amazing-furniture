@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
 import { productLeadImageSrc } from "@/lib/nfd-image-proxy";
-import { ReelTrigger } from "@/components/reel/ProductReel";
 import { useContextualReelContext } from "@/components/reel/ContextualReelProvider";
 import { useReelContext } from "@/components/reel/ReelProvider";
 
@@ -28,7 +27,7 @@ export default function BrandProductGridCard({
   return (
     <article className="overflow-hidden rounded-xl border border-[#1C1C1C]/10 bg-white shadow-sm">
       <Link href={`/products/${product.slug}`} className="block">
-        <div className="relative aspect-[4/3] bg-[#FAF8F5]">
+        <div className="relative aspect-square bg-[#FAF8F5]">
           {product.is_collection_hero ? (
             <span className="absolute left-2 top-2 z-10 rounded bg-[#2D4A3E] px-2 py-1 text-xs font-semibold text-white">
               Collection
@@ -43,7 +42,7 @@ export default function BrandProductGridCard({
               src={safeImage}
               alt={product.name}
               fill
-              className="object-contain p-3"
+              className="object-contain p-2"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           ) : (
@@ -56,36 +55,7 @@ export default function BrandProductGridCard({
           )}
         </div>
       </Link>
-      {brandName ? (
-        <div className="flex justify-center px-3 pt-2">
-          <ReelTrigger
-            variant="compact"
-            label="Explore brand"
-            onClick={() =>
-              void openContextualReel({
-                context: "brand",
-                contextValue: brandName,
-                filterValue: categoryFilter,
-                firstProductId: product.id,
-                wordmarkLabel: brandName,
-              })
-            }
-          />
-        </div>
-      ) : null}
       <div className="space-y-2 p-3">
-        {product.collection_group ? (
-          <div>
-            <ReelTrigger
-              variant="compact"
-              label="Explore pieces"
-              onClick={() => {
-                if (!product.collection_group) return;
-                void openReel(product.collection_group, product.category);
-              }}
-            />
-          </div>
-        ) : null}
         <Link
           href={`/products/${product.slug}`}
           className="line-clamp-2 font-sans text-sm font-medium text-[#1C1C1C] hover:text-[#2D4A3E]"
@@ -106,6 +76,38 @@ export default function BrandProductGridCard({
             <>${product.price.toLocaleString()}</>
           )}
         </p>
+        {/* Explore buttons — always visible, side by side */}
+        <div className="flex w-full flex-row gap-2">
+          {brandName ? (
+            <button
+              type="button"
+              className="flex h-9 flex-1 items-center justify-center gap-1 rounded-full bg-[#2D4A3E] text-xs font-medium text-white"
+              onClick={() =>
+                void openContextualReel({
+                  context: "brand",
+                  contextValue: brandName,
+                  filterValue: categoryFilter,
+                  firstProductId: product.id,
+                  wordmarkLabel: brandName,
+                })
+              }
+            >
+              Explore brand
+            </button>
+          ) : null}
+          {product.collection_group ? (
+            <button
+              type="button"
+              className="flex h-9 flex-1 items-center justify-center gap-1 rounded-full bg-[#2D4A3E] text-xs font-medium text-white"
+              onClick={() => {
+                if (!product.collection_group) return;
+                void openReel(product.collection_group, product.category);
+              }}
+            >
+              Explore pieces
+            </button>
+          ) : null}
+        </div>
         <button
           type="button"
           onClick={() => addItem(product, 1)}

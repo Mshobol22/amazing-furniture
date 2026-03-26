@@ -1,14 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart, Heart } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Heart } from "lucide-react";
 import { ProductImage } from "@/components/ui/ProductImage";
-import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import type { Product } from "@/types";
 import { cn } from "@/lib/utils";
-import { ReelTrigger } from "@/components/reel/ProductReel";
 import { useContextualReelContext } from "@/components/reel/ContextualReelProvider";
 import { useReelContext } from "@/components/reel/ReelProvider";
 import { getCategoryDisplayName } from "@/lib/collection-utils";
@@ -28,18 +25,12 @@ export default function ProductCard({
   collectionManufacturerFilter,
   enableContextualReel = false,
 }: ProductCardProps) {
-  const addItem = useCartStore((state) => state.addItem);
   const toggleWishlist = useWishlistStore((state) => state.toggleItem);
   const isInWishlist = useWishlistStore((state) => state.isInWishlist(product.id));
   const { openReel } = useReelContext();
   const { openContextualReel } = useContextualReelContext();
   const firstImage = product.images[0];
   const safeImage = firstImage?.startsWith("https://") ? firstImage : null;
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    addItem(product, 1);
-  };
 
   const handleWishlistClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -94,14 +85,14 @@ export default function ProductCard({
           />
         </button>
         <Link href={`/products/${product.slug}`} className="block">
-          <div className="relative aspect-[4/3] p-2 md:p-3">
+          <div className="relative aspect-square">
             {safeImage ? (
               <ProductImage
                 src={safeImage}
                 alt={product.name}
                 manufacturer={product.manufacturer}
                 fill
-                className="object-contain transition-transform duration-300 group-hover:scale-105"
+                className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
               />
             ) : (
@@ -109,45 +100,8 @@ export default function ProductCard({
             )}
           </div>
         </Link>
-        {/* Hover overlay CTA */}
-        <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-200 group-hover:translate-y-0">
-          <Button
-            onClick={handleAddToCart}
-            className="w-full rounded-none bg-gray-900 text-white hover:bg-gray-800 py-2.5 text-sm"
-          >
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            Add to Cart
-          </Button>
-        </div>
       </div>
       <div className="flex flex-col gap-1.5 p-3">
-        {enableContextualReel ? (
-          <div>
-            <ReelTrigger
-              variant="compact"
-              label="Explore category"
-              onClick={() => {
-                const slug = collectionCategorySlug ?? product.category;
-                void openContextualReel({
-                  context: "category",
-                  contextValue: slug,
-                  filterValue: collectionManufacturerFilter,
-                  firstProductId: product.id,
-                  wordmarkLabel: getCategoryDisplayName(slug),
-                });
-              }}
-            />
-          </div>
-        ) : null}
-        {product.collection_group ? (
-          <div>
-            <ReelTrigger
-              variant="compact"
-              label="Explore pieces"
-              onClick={handleReelClick}
-            />
-          </div>
-        ) : null}
         <Link
           href={`/products/${product.slug}`}
           className="line-clamp-2 font-sans text-sm font-medium text-gray-900 hover:text-[#2D4A3E]"
@@ -176,6 +130,36 @@ export default function ProductCard({
             </>
           )}
         </p>
+        {/* Explore buttons — always visible, side by side */}
+        <div className="flex w-full flex-row gap-2">
+          {enableContextualReel ? (
+            <button
+              type="button"
+              className="flex h-9 flex-1 items-center justify-center gap-1 rounded-full bg-[#2D4A3E] text-xs font-medium text-white"
+              onClick={() => {
+                const slug = collectionCategorySlug ?? product.category;
+                void openContextualReel({
+                  context: "category",
+                  contextValue: slug,
+                  filterValue: collectionManufacturerFilter,
+                  firstProductId: product.id,
+                  wordmarkLabel: getCategoryDisplayName(slug),
+                });
+              }}
+            >
+              Explore category
+            </button>
+          ) : null}
+          {product.collection_group ? (
+            <button
+              type="button"
+              className="flex h-9 flex-1 items-center justify-center gap-1 rounded-full bg-[#2D4A3E] text-xs font-medium text-white"
+              onClick={handleReelClick}
+            >
+              Explore pieces
+            </button>
+          ) : null}
+        </div>
       </div>
     </article>
   );

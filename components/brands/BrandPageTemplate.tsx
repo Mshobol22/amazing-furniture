@@ -401,8 +401,8 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
-        <aside className="hidden lg:block">
+      <div className="mx-auto grid max-w-7xl items-start gap-6 px-4 py-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
+        <aside className="hidden self-start lg:block">
           <div className="sticky top-20 max-h-[calc(100vh-120px)] overflow-y-auto rounded-xl border border-[#1C1C1C]/10 bg-[#FAF8F5] p-4">
             <FilterSidebar
               sections={sections}
