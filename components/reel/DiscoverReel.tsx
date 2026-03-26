@@ -629,6 +629,14 @@ export default function DiscoverReel({
               ) : null}
 
               <div
+                className="pointer-events-none absolute inset-x-0 bottom-0 z-[14] h-52 bg-gradient-to-t from-black/75 via-black/35 to-transparent"
+                style={{
+                  opacity: overlayVisible ? 1 : 0,
+                  transition: "opacity 0.3s ease-out",
+                }}
+              />
+
+              <div
                 className="pointer-events-none absolute bottom-20 left-4 right-20 z-[15]"
                 style={{
                   opacity: overlayVisible ? 1 : 0,
@@ -642,12 +650,12 @@ export default function DiscoverReel({
                 >
                   <div className="flex flex-wrap gap-2">
                     {activeProduct.manufacturer ? (
-                      <span className="inline-flex rounded-full bg-white/80 px-2.5 py-1 text-xs text-[#1C1C1C]">
+                      <span className="inline-flex rounded-full border border-white/20 bg-black/55 px-2.5 py-1 text-xs text-white shadow-sm backdrop-blur-[2px]">
                         {activeProduct.manufacturer}
                       </span>
                     ) : null}
                     {activeProduct.category ? (
-                      <span className="inline-flex rounded-full bg-white/60 px-2.5 py-1 text-xs capitalize text-[#1C1C1C]">
+                      <span className="inline-flex rounded-full border border-white/20 bg-black/45 px-2.5 py-1 text-xs capitalize text-white shadow-sm backdrop-blur-[2px]">
                         {activeProduct.category.replace("-", " ")}
                       </span>
                     ) : null}
@@ -661,7 +669,7 @@ export default function DiscoverReel({
                   </h2>
 
                   {activeProduct.color ? (
-                    <span className="mt-1 inline-flex rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">
+                    <span className="mt-1 inline-flex rounded-full border border-white/20 bg-black/50 px-2 py-0.5 text-xs text-white shadow-sm backdrop-blur-[2px]">
                       {activeProduct.color}
                     </span>
                   ) : null}
@@ -705,18 +713,20 @@ export default function DiscoverReel({
                     e.stopPropagation();
                     void toggleWishlist(activeProduct.id);
                   }}
-                  className="flex flex-col items-center gap-0.5 bg-transparent p-0 text-white"
+                  className="flex flex-col items-center gap-1.5 bg-transparent p-0 text-white"
                   aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
                 >
-                  <Heart
-                    size={28}
-                    strokeWidth={isWishlisted ? 0 : 2}
-                    className={
-                      isWishlisted
-                        ? "fill-[#ef4444] text-[#ef4444]"
-                        : "fill-none text-white"
-                    }
-                  />
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 shadow-md backdrop-blur-[1px]">
+                    <Heart
+                      size={28}
+                      strokeWidth={isWishlisted ? 0 : 2}
+                      className={
+                        isWishlisted
+                          ? "fill-[#ef4444] text-[#ef4444] drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+                          : "fill-none text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+                      }
+                    />
+                  </span>
                   <span className="text-xs text-white/80">Save</span>
                 </button>
 
@@ -728,12 +738,17 @@ export default function DiscoverReel({
                       prev === product.id ? null : product.id
                     );
                   }}
-                  className="flex flex-col items-center gap-0.5 bg-transparent p-0 text-white"
+                  className="flex flex-col items-center gap-1.5 bg-transparent p-0 text-white"
                   aria-label={
                     isDescriptionOpen ? "Close description" : "Open description"
                   }
                 >
-                  <MessageCircle size={28} className="text-white" />
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 shadow-md backdrop-blur-[1px]">
+                    <MessageCircle
+                      size={28}
+                      className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+                    />
+                  </span>
                   <span className="text-xs text-white/80">Details</span>
                 </button>
 
@@ -743,10 +758,15 @@ export default function DiscoverReel({
                     e.stopPropagation();
                     router.push(`/products/${activeProduct.slug}`);
                   }}
-                  className="flex flex-col items-center gap-0.5 bg-transparent p-0 text-white"
+                  className="flex flex-col items-center gap-1.5 bg-transparent p-0 text-white"
                   aria-label="View product page"
                 >
-                  <ExternalLink size={28} className="text-white" />
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 shadow-md backdrop-blur-[1px]">
+                    <ExternalLink
+                      size={28}
+                      className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+                    />
+                  </span>
                   <span className="text-xs text-white/80">View</span>
                 </button>
               </div>
