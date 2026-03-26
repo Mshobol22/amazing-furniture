@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import BrandPageTemplate from '@/components/brands/BrandPageTemplate'
+import { getManufacturerBySlug, getProductsByManufacturer } from '@/lib/supabase/products'
 
 export const metadata = {
   title: 'Nationwide FD Furniture | Amazing Home Furniture Store',
@@ -8,18 +8,15 @@ export const metadata = {
 }
 
 export default async function NationwideFDPage() {
-  const supabase = await createClient()
-  const { data: manufacturer } = await supabase
-    .from('manufacturers')
-    .select('*')
-    .eq('slug', 'nationwide-fd')
-    .single()
-
+  const manufacturer = await getManufacturerBySlug('nationwide-fd')
   if (!manufacturer) notFound()
+
+  const { total: initialProductCount } = await getProductsByManufacturer(manufacturer.name, undefined, 1, 0)
 
   return (
     <BrandPageTemplate
       manufacturer={manufacturer}
+      initialProductCount={initialProductCount}
       config={{
         step2Label: 'Collection',
         step3Label: 'Color & Material',

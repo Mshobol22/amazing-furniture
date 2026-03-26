@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import BrandPageTemplate from '@/components/brands/BrandPageTemplate'
+import { getManufacturerBySlug, getProductsByManufacturer } from '@/lib/supabase/products'
 
 export const metadata = {
   title: 'ACME Furniture | Amazing Home Furniture Store',
@@ -8,14 +8,10 @@ export const metadata = {
 }
 
 export default async function ACMEPage() {
-  const supabase = await createClient()
-  const { data: manufacturer } = await supabase
-    .from('manufacturers')
-    .select('*')
-    .eq('slug', 'acme')
-    .single()
-
+  const manufacturer = await getManufacturerBySlug('acme')
   if (!manufacturer) notFound()
 
-  return <BrandPageTemplate manufacturer={manufacturer} />
+  const { total: initialProductCount } = await getProductsByManufacturer(manufacturer.name, undefined, 1, 0)
+
+  return <BrandPageTemplate manufacturer={manufacturer} initialProductCount={initialProductCount} />
 }

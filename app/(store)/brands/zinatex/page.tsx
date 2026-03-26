@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import BrandPageTemplate from '@/components/brands/BrandPageTemplate'
+import { getManufacturerBySlug, getProductsByManufacturer } from '@/lib/supabase/products'
 
 export const metadata = {
   title: 'Zinatex Rugs | Amazing Home Furniture Store',
@@ -8,18 +8,15 @@ export const metadata = {
 }
 
 export default async function ZinatexPage() {
-  const supabase = await createClient()
-  const { data: manufacturer } = await supabase
-    .from('manufacturers')
-    .select('*')
-    .eq('slug', 'zinatex')
-    .single()
-
+  const manufacturer = await getManufacturerBySlug('zinatex')
   if (!manufacturer) notFound()
+
+  const { total: initialProductCount } = await getProductsByManufacturer(manufacturer.name, undefined, 1, 0)
 
   return (
     <BrandPageTemplate
       manufacturer={manufacturer}
+      initialProductCount={initialProductCount}
       config={{
         defaultCategory: 'Rugs',
         step2Label: 'Style / Collection',

@@ -20,7 +20,7 @@ interface BrandPageTemplateProps {
   manufacturer: {
     name: string;
     slug: string;
-    description: string;
+    description: string | null;
     logo_url: string | null;
     heroTagline?: string;
   };
@@ -30,13 +30,14 @@ interface BrandPageTemplateProps {
     step3Label?: string;
     miscCategoryLabel?: string;
   };
+  initialProductCount?: number;
 }
 
 type ValueCount = { value: string; count: number };
 const PER_PAGE = 24;
 const MISC_CATEGORY_VALUE = "__misc__";
 
-export default function BrandPageTemplate({ manufacturer, config }: BrandPageTemplateProps) {
+export default function BrandPageTemplate({ manufacturer, config, initialProductCount }: BrandPageTemplateProps) {
   const [categories, setCategories] = useState<ValueCount[]>([]);
   const [collections, setCollections] = useState<ValueCount[]>([]);
   const [colors, setColors] = useState<string[]>([]);
@@ -50,7 +51,7 @@ export default function BrandPageTemplate({ manufacturer, config }: BrandPageTem
   const [sort, setSort] = useState<"default" | "price-asc" | "price-desc" | "name-asc">("default");
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
-  const [brandTotal, setBrandTotal] = useState(0);
+  const [brandTotal, setBrandTotal] = useState(initialProductCount ?? 0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
