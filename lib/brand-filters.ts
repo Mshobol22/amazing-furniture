@@ -173,7 +173,7 @@ export async function fetchMaterialsForFilters(params: {
 
 export async function fetchBrandColors(
   manufacturer: string,
-  category: string,
+  category?: string,
   collection?: string
 ): Promise<string[]> {
   return fetchColorsForFilters({ category, manufacturer, collection });
@@ -181,7 +181,7 @@ export async function fetchBrandColors(
 
 export async function fetchBrandMaterials(
   manufacturer: string,
-  category: string,
+  category?: string,
   collection?: string
 ): Promise<string[]> {
   return fetchMaterialsForFilters({ category, manufacturer, collection });

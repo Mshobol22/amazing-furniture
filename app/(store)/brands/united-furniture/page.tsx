@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import BrandPageTemplate from '@/components/brands/BrandPageTemplate'
 import { getManufacturerBySlug, getProductsByManufacturer } from '@/lib/supabase/products'
 
@@ -13,5 +14,9 @@ export default async function UnitedFurniturePage() {
 
   const { total: initialProductCount } = await getProductsByManufacturer(manufacturer.name, undefined, 1, 0)
 
-  return <BrandPageTemplate manufacturer={manufacturer} initialProductCount={initialProductCount} />
+  return (
+    <Suspense fallback={null}>
+      <BrandPageTemplate manufacturer={manufacturer} initialProductCount={initialProductCount} />
+    </Suspense>
+  )
 }

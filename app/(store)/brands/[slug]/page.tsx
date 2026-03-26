@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getManufacturerBySlug } from "@/lib/supabase/products";
 import BrandPageTemplate from "@/components/brands/BrandPageTemplate";
@@ -42,14 +43,16 @@ export default async function BrandPage({
   if (!manufacturer) notFound();
 
   return (
-    <BrandPageTemplate
-      manufacturer={{
-        name: manufacturer.name,
-        slug: manufacturer.slug,
-        description: manufacturer.description ?? "",
-        logo_url: manufacturer.logo_url,
-        heroTagline: undefined,
-      }}
-    />
+    <Suspense fallback={null}>
+      <BrandPageTemplate
+        manufacturer={{
+          name: manufacturer.name,
+          slug: manufacturer.slug,
+          description: manufacturer.description ?? "",
+          logo_url: manufacturer.logo_url,
+          heroTagline: undefined,
+        }}
+      />
+    </Suspense>
   );
 }
