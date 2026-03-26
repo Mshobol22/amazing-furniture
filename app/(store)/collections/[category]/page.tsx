@@ -90,7 +90,7 @@ const categoryMeta: Record<string, { title: string; description: string }> = {
   },
 };
 
-const LIMIT = 24;
+const LIMIT = 15;
 
 // Sanitizers matching the products route
 function sanitizeType(v: string) {

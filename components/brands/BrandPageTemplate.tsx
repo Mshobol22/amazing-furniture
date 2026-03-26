@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Product } from "@/types";
 import {
   fetchBrandCategories,
@@ -34,10 +35,13 @@ interface BrandPageTemplateProps {
 }
 
 type ValueCount = { value: string; count: number };
-const PER_PAGE = 24;
+const PER_PAGE = 15;
 const MISC_CATEGORY_VALUE = "__misc__";
 
 export default function BrandPageTemplate({ manufacturer, config, initialProductCount }: BrandPageTemplateProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [categories, setCategories] = useState<ValueCount[]>([]);
   const [collections, setCollections] = useState<ValueCount[]>([]);
   const [colors, setColors] = useState<string[]>([]);
@@ -57,24 +61,45 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const usesCollectionAsCategory =
+    manufacturer.slug === "zinatex" || manufacturer.name === "Zinatex";
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PER_PAGE)), [total]);
   const isMiscCategorySelected = selectedCategory === MISC_CATEGORY_VALUE;
-  const hasCollections = collections.length > 0;
+  const hasCollections = !usesCollectionAsCategory && collections.length > 0;
 
   useEffect(() => {
     let ignore = false;
     async function loadCategories() {
-      const data = await fetchBrandCategories(manufacturer.name);
+      const data = await fetchBrandCategories(
+        manufacturer.name,
+        usesCollectionAsCategory ? "collection" : "category"
+      );
       if (ignore) return;
-      setCategories(data);
+      const normalized = usesCollectionAsCategory
+        ? [...data].sort((a, b) => a.value.localeCompare(b.value))
+        : data;
+      setCategories(normalized);
+
+      const urlCollection = usesCollectionAsCategory
+        ? searchParams.get("collection")?.trim() ?? ""
+        : "";
+      const hasUrlCollection =
+        usesCollectionAsCategory &&
+        urlCollection.length > 0 &&
+        normalized.some((c) => c.value.toLowerCase() === urlCollection.toLowerCase());
 
       const hasDefault = config?.defaultCategory
-        ? data.some((c) => c.value === config.defaultCategory)
+        ? normalized.some((c) => c.value === config.defaultCategory)
         : false;
-      if (hasDefault) {
+      if (hasUrlCollection) {
+        const found = normalized.find(
+          (c) => c.value.toLowerCase() === urlCollection.toLowerCase()
+        );
+        setSelectedCategory(found?.value ?? null);
+      } else if (hasDefault) {
         setSelectedCategory(config?.defaultCategory ?? null);
-      } else if (data.length > 0) {
-        setSelectedCategory(data[0].value);
+      } else if (normalized.length > 0) {
+        setSelectedCategory(normalized[0].value);
       }
     }
 
@@ -85,33 +110,47 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
     return () => {
       ignore = true;
     };
-  }, [manufacturer.name, config?.defaultCategory]);
+  }, [manufacturer.name, config?.defaultCategory, usesCollectionAsCategory, searchParams]);
 
   useEffect(() => {
     let ignore = false;
     async function loadStep2And3() {
-      if (!selectedCategory || isMiscCategorySelected) {
+      if (!selectedCategory || (isMiscCategorySelected && !usesCollectionAsCategory)) {
         setCollections([]);
         setColors([]);
         setMaterials([]);
         return;
       }
 
-      const collectionsData = await fetchBrandCollections(manufacturer.name, selectedCategory);
-      if (ignore) return;
-      setCollections(collectionsData);
+      let normalizedCollection: string | null = null;
+      if (!usesCollectionAsCategory) {
+        const collectionsData = await fetchBrandCollections(manufacturer.name, selectedCategory);
+        if (ignore) return;
+        setCollections(collectionsData);
 
-      const normalizedCollection =
-        collectionsData.length > 0 && selectedCollection
-          ? collectionsData.some((entry) => entry.value === selectedCollection)
-            ? selectedCollection
-            : null
-          : null;
-      setSelectedCollection(normalizedCollection);
+        normalizedCollection =
+          collectionsData.length > 0 && selectedCollection
+            ? collectionsData.some((entry) => entry.value === selectedCollection)
+              ? selectedCollection
+              : null
+            : null;
+        setSelectedCollection(normalizedCollection);
+      } else {
+        setCollections([]);
+        setSelectedCollection(null);
+      }
 
       const [colorsData, materialsData] = await Promise.all([
-        fetchBrandColors(manufacturer.name, selectedCategory, normalizedCollection ?? undefined),
-        fetchBrandMaterials(manufacturer.name, selectedCategory, normalizedCollection ?? undefined),
+        fetchBrandColors(
+          manufacturer.name,
+          usesCollectionAsCategory ? undefined : selectedCategory,
+          usesCollectionAsCategory ? selectedCategory : normalizedCollection ?? undefined
+        ),
+        fetchBrandMaterials(
+          manufacturer.name,
+          usesCollectionAsCategory ? undefined : selectedCategory,
+          usesCollectionAsCategory ? selectedCategory : normalizedCollection ?? undefined
+        ),
       ]);
 
       if (ignore) return;
@@ -126,7 +165,13 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
     return () => {
       ignore = true;
     };
-  }, [manufacturer.name, selectedCategory, selectedCollection, isMiscCategorySelected]);
+  }, [
+    manufacturer.name,
+    selectedCategory,
+    selectedCollection,
+    isMiscCategorySelected,
+    usesCollectionAsCategory,
+  ]);
 
   useEffect(() => {
     const timer = window.setTimeout(async () => {
@@ -134,12 +179,22 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
       const result = await fetchBrandProducts({
         manufacturer: manufacturer.name,
         category:
-          selectedCategory && !isMiscCategorySelected ? selectedCategory : undefined,
+          usesCollectionAsCategory
+            ? undefined
+            : selectedCategory && !isMiscCategorySelected
+              ? selectedCategory
+              : undefined,
         excludeCategory:
-          isMiscCategorySelected && config?.defaultCategory
+          !usesCollectionAsCategory &&
+          isMiscCategorySelected &&
+          config?.defaultCategory
             ? config.defaultCategory
             : undefined,
-        collection: hasCollections ? selectedCollection ?? undefined : undefined,
+        collection: usesCollectionAsCategory
+          ? selectedCategory ?? undefined
+          : hasCollections
+            ? selectedCollection ?? undefined
+            : undefined,
         colors: selectedColors.length > 0 ? selectedColors : undefined,
         material: selectedMaterial ?? undefined,
         priceMin: priceMin ?? undefined,
@@ -169,6 +224,7 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
     hasCollections,
     isMiscCategorySelected,
     config?.defaultCategory,
+    usesCollectionAsCategory,
   ]);
 
   useEffect(() => {
@@ -182,6 +238,7 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
   }, [page, totalPages]);
 
   const showMiscCategory =
+    !usesCollectionAsCategory &&
     Boolean(config?.miscCategoryLabel && config.defaultCategory) &&
     categories.some((c) => c.value !== config?.defaultCategory);
   const miscCount = categories
@@ -203,6 +260,14 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
     setPriceMin(null);
     setPriceMax(null);
     setSort("default");
+    if (usesCollectionAsCategory) {
+      const p = new URLSearchParams(searchParams.toString());
+      if (fallbackCategory) p.set("collection", fallbackCategory);
+      else p.delete("collection");
+      p.delete("page");
+      const qs = p.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    }
   }
 
   function goToPage(nextPage: number) {
@@ -216,7 +281,7 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
     const list: FilterSection[] = [
       {
         id: "category",
-        label: "Category",
+        label: usesCollectionAsCategory ? "Category" : "Category",
         type: "checkbox",
         defaultOpen: true,
         options: [
@@ -281,6 +346,7 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
     collections,
     colors,
     materials,
+    usesCollectionAsCategory,
   ]);
 
   const activeFilters: ActiveFilters = {
@@ -352,6 +418,14 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
                   setSelectedCollection(null);
                   setSelectedColors([]);
                   setSelectedMaterial(null);
+                  if (usesCollectionAsCategory) {
+                    const p = new URLSearchParams(searchParams.toString());
+                    if (next) p.set("collection", next);
+                    else p.delete("collection");
+                    p.delete("page");
+                    const qs = p.toString();
+                    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+                  }
                   return;
                 }
                 if (sectionId === "collection") {
@@ -421,7 +495,7 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
           <div id="brand-products-grid">
             {loading ? (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {Array.from({ length: 12 }).map((_, idx) => (
+                {Array.from({ length: PER_PAGE }).map((_, idx) => (
                   <div key={idx} className="animate-pulse rounded-xl border border-[#1C1C1C]/10 bg-white p-3">
                     <div className="mb-3 aspect-[4/3] rounded bg-[#1C1C1C]/10" />
                     <div className="mb-2 h-4 w-3/4 rounded bg-[#1C1C1C]/10" />
@@ -512,6 +586,14 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
             setSelectedCollection(null);
             setSelectedColors([]);
             setSelectedMaterial(null);
+            if (usesCollectionAsCategory) {
+              const p = new URLSearchParams(searchParams.toString());
+              if (next) p.set("collection", next);
+              else p.delete("collection");
+              p.delete("page");
+              const qs = p.toString();
+              router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+            }
             return;
           }
           if (sectionId === "collection") {

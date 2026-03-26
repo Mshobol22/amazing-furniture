@@ -14,7 +14,7 @@ import {
 import type { Product } from "@/types";
 import SmartSearchBar from "@/components/filters/SmartSearchBar";
 
-const PER_PAGE = 24;
+const PER_PAGE = 15;
 
 const CATEGORY_DISPLAY: Record<string, string> = {
   sofa: "Sofas & Sectionals",
@@ -425,7 +425,7 @@ export default function ShopAllFurnitureClient() {
           <div id="all-products-grid">
             {loading ? (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {Array.from({ length: 12 }).map((_, idx) => (
+                {Array.from({ length: PER_PAGE }).map((_, idx) => (
                   <div
                     key={idx}
                     className="animate-pulse rounded-xl border border-[#1C1C1C]/10 bg-white p-3"

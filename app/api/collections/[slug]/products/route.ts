@@ -50,7 +50,7 @@ function parsePageNumber(param: string | null): number {
   return Math.min(Math.floor(n), 500);
 }
 
-const LIMIT = 24;
+const LIMIT = 15;
 
 export async function GET(
   request: NextRequest,

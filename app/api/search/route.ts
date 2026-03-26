@@ -78,7 +78,7 @@ function buildTsQuery(query: string): string {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q")?.trim() ?? "";
-  const limit = Math.min(parseInt(searchParams.get("limit") ?? "10"), 50);
+  const limit = Math.min(parseInt(searchParams.get("limit") ?? "15"), 50);
 
   if (!query || query.length < 2) {
     return NextResponse.json([]);

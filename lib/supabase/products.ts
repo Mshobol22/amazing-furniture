@@ -292,7 +292,7 @@ export async function searchProducts(query: string): Promise<Product[]> {
     .select("*")
     .ilike("name", `%${query.trim()}%`)
     .order("created_at", { ascending: false })
-    .limit(12);
+    .limit(15);
 
   queryBuilder = applyAcmePlaceholderImageFilter(queryBuilder);
 
@@ -492,7 +492,7 @@ export async function getManufacturerBySlug(slug: string): Promise<Manufacturer 
 export async function getProductsByManufacturer(
   manufacturerName: string,
   category?: string,
-  limit = 24,
+  limit = 15,
   offset = 0
 ): Promise<{ products: Product[]; total: number }> {
   const supabase = createAdminClient();
@@ -557,7 +557,7 @@ export async function getInitialCollectionProducts(
     .from("products")
     .select("*", { count: "exact" })
     .order("name", { ascending: true })
-    .range(0, 23);
+    .range(0, 14);
 
   if (category !== "all") {
     query = query.eq("category", category);
@@ -865,7 +865,7 @@ export async function getFilteredProducts(
   params: FilteredProductsParams
 ): Promise<{ products: Product[]; total: number }> {
   const supabase = createAdminClient();
-  const limit = params.limit ?? 24;
+  const limit = params.limit ?? 15;
   const offset = params.offset ?? 0;
 
   let query = supabase

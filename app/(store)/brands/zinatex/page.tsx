@@ -18,7 +18,6 @@ export default async function ZinatexPage() {
       manufacturer={manufacturer}
       initialProductCount={initialProductCount}
       config={{
-        defaultCategory: 'Rugs',
         step2Label: 'Style / Collection',
         step3Label: 'Color & Pattern',
         miscCategoryLabel: 'Other Items',

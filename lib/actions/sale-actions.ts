@@ -108,7 +108,7 @@ export async function getSaleProducts(params: {
   page?: number
 }): Promise<{ products: Product[]; total: number }> {
   const supabase = createAdminClient()
-  const PAGE_SIZE = 24
+  const PAGE_SIZE = 15
   const page = Math.max(1, params.page ?? 1)
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1

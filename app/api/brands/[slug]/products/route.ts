@@ -53,7 +53,7 @@ export async function GET(
   const priceMin = parseNumber(url.get("priceMin"));
   const priceMax = parseNumber(url.get("priceMax"));
   const page = Math.max(1, Number(url.get("page") || "1"));
-  const limit = Math.min(48, Math.max(1, Number(url.get("limit") || "24")));
+  const limit = Math.min(48, Math.max(1, Number(url.get("limit") || "15")));
   const sort = sanitize(url.get("sort") || "name-asc");
 
   const offset = (page - 1) * limit;

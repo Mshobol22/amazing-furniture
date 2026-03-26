@@ -30,7 +30,7 @@ export default function SaleProductGrid({
   selectedEventSlug,
   selectedCategory,
 }: Props) {
-  const PAGE_SIZE = 24
+  const PAGE_SIZE = 15
   const totalPages = Math.ceil(total / PAGE_SIZE)
   const badgeText = selectedEvent?.badge_text || 'ON SALE'
   const badgeColor = selectedEvent?.badge_color || '#2D4A3E'

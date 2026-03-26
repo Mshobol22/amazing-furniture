@@ -26,16 +26,19 @@ function aggregateCounts(rows: Array<Record<string, unknown>>, key: string): Val
     .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
 }
 
-export async function fetchBrandCategories(manufacturer: string): Promise<ValueCount[]> {
+export async function fetchBrandCategories(
+  manufacturer: string,
+  field: "category" | "collection" = "category"
+): Promise<ValueCount[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("products")
-    .select("category")
+    .select(field)
     .eq("manufacturer", manufacturer)
     .eq("in_stock", true);
 
   if (error || !data) return [];
-  return aggregateCounts(data as Array<Record<string, unknown>>, "category");
+  return aggregateCounts(data as Array<Record<string, unknown>>, field);
 }
 
 export async function fetchBrandCollections(
@@ -102,17 +105,17 @@ function splitDistinctValues(raw: string): string[] {
 }
 
 export async function fetchColorsForFilters(params: {
-  category: string;
+  category?: string;
   manufacturer?: string;
   collection?: string;
 }): Promise<string[]> {
   const supabase = createClient();
-  let query = supabase
-    .from("products")
-    .select("color")
-    .eq("category", params.category)
-    .eq("in_stock", true);
+  let query = supabase.from("products").select("color").eq("in_stock", true);
   query = applyAcmePlaceholderImageFilter(query);
+
+  if (params.category) {
+    query = query.eq("category", params.category);
+  }
 
   if (params.manufacturer) {
     query = query.eq("manufacturer", params.manufacturer);
@@ -137,17 +140,17 @@ export async function fetchColorsForFilters(params: {
 }
 
 export async function fetchMaterialsForFilters(params: {
-  category: string;
+  category?: string;
   manufacturer?: string;
   collection?: string;
 }): Promise<string[]> {
   const supabase = createClient();
-  let query = supabase
-    .from("products")
-    .select("material")
-    .eq("category", params.category)
-    .eq("in_stock", true);
+  let query = supabase.from("products").select("material").eq("in_stock", true);
   query = applyAcmePlaceholderImageFilter(query);
+
+  if (params.category) {
+    query = query.eq("category", params.category);
+  }
 
   if (params.manufacturer) {
     query = query.eq("manufacturer", params.manufacturer);

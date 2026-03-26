@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SaleCollectionPage() {
-  const products = await getSaleProducts(24);
+  const products = await getSaleProducts(15);
 
   return (
     <div className="min-h-screen bg-[#FAF8F5]">
@@ -48,7 +48,7 @@ export default async function SaleCollectionPage() {
             <p className="mb-6 text-sm text-gray-500">
               {products.length} item{products.length !== 1 ? "s" : ""} on sale
             </p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3">
               {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}

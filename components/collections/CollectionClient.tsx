@@ -23,7 +23,7 @@ const BASE_SORT_OPTIONS = [
   { value: "name-asc", label: "Name: A to Z" },
 ];
 
-const LIMIT = 24;
+const LIMIT = 15;
 
 function parseArr(v: string | null): string[] {
   if (!v) return [];
