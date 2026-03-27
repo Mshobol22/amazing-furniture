@@ -1,5 +1,5 @@
 # Amazing Home Furniture Store — CLAUDE.md
-> Last updated: March 2026 | Read this fully before touching any code.
+> Last updated: March 26, 2026 | Read this fully before touching any code.
 
 ## Project
 - **Site:** https://www.amazinghomefurniturestore.com
@@ -20,7 +20,7 @@
 
 ## Brand Colors
 - Cream: `#FAF8F5` | Charcoal: `#1C1C1C`
-- Forest Green: `#2D4A3E` (primary accent — replaces all brown/walnut)
+- Forest Green: `#2D4A3E` (primary accent)
 - Forest Light: `#3B5E4F` | Forest Dark: `#1E3329`
 
 ## Database — Key Tables
@@ -38,26 +38,51 @@
 - `newsletter_subscribers` — id, email, subscribed_at, source, is_active
 - `newsletter_attempts` — rate limiting table
 - `banners` — announcement bar content
-- `promotions` — category-level promotions
+NOTE: `promotions` table does NOT exist — remove any reference to it.
 
-## Categories (in products.category column) — 9 total
-| Slug | Display Name | Subcategories |
-|------|-------------|---------------|
-| `bed` | Beds | Beds, Bunk Beds, Daybeds, Storage Beds |
-| `bedroom-furniture` | Bedroom Furniture | Bedroom Sets, Dressers, Nightstands, Chests, Mirrors, Vanities |
-| `sofa` | Sofas & Sectionals | Sofas, Sectionals, Loveseats, Reclining Sofas |
-| `chair` | Chairs & Recliners | Accent Chairs, Dining Chairs, Recliners, Bar Stools |
-| `table` | Dining & Tables | Dining Sets, Dining Tables, Coffee Tables, End Tables |
-| `cabinet` | Cabinets & Storage | Cabinets & Storage, Buffets & Servers, Bookcases |
-| `tv-stand` | TV Stands & Entertainment | TV Stands, Entertainment Centers, Floating Shelves |
-| `rug` | Rugs & Floor Coverings | Area Rugs, Runner Rugs, Round Rugs (Zinatex brand) |
-| `other` | More Furniture | Benches, Desks, Ottomans |
-- Route: `/collections/[slug]` — all slugs above plus `all`
-- Subcategory filtering uses `?type=` URL param (e.g. `?type=Sectionals`)
+## Product Name Convention (CRITICAL)
+Product `name` column now stores the manufacturer item code, NOT a
+descriptive name. The original descriptive name is preserved in `description`.
+
+- **ACME:** `name` = ACME item number (e.g. `AC03801`, `70325`, `BD01410`)
+- **Nationwide FD:** `name` = NFD item code (e.g. `B107KB`, `D99T`, `U18C`)
+- **United Furniture:** `name` = SKU code (e.g. `U244-C`, `B271-KDMCN`)
+- **Zinatex:** `name` = design name as-is (e.g. `BURSA Rug Design 55331`)
+
+When displaying products, show `name` as the product title. The `description`
+field contains the human-readable item name prepended to the full description.
+NEVER rename products back to descriptive names — this convention is intentional.
+
+## Collection Field — Meaning Per Manufacturer
+The `collection` field means different things per manufacturer:
+- **ACME:** Product series/line name (e.g. "Vendome II", "Adara", "Aberdeen")
+  Used for "Also in this collection" grouping on product pages.
+  KIT products and their components share the same collection value.
+- **United Furniture:** Product series name (e.g. "Closeout", "Tax Sale 2026")
+  Used for "Also in this collection" grouping.
+- **Nationwide FD:** Null for most products — no collection grouping.
+- **Zinatex:** Rug category/style (e.g. "Premium", "5D Shaggy", "Casablanca",
+  "Sultan", "Marble", "Bursa"). Used for the Category filter on the Zinatex
+  brand page ONLY. Filter sidebar on /brands/zinatex filters by `collection`,
+  not `category` (all Zinatex products have category = "rug").
+
+## Zinatex Brand Page — Special Filter Behavior
+- Category filter reads from `products.collection` (not `products.category`)
+- Options loaded dynamically: SELECT DISTINCT collection FROM products
+  WHERE manufacturer = 'Zinatex' ORDER BY collection
+- Filter persists in URL as ?collection=Shaggy
+- All other brand pages filter by `category` as normal
 
 ## Manufacturers (in products.manufacturer column)
 - `Nationwide FD` | `United Furniture` | `ACME` | `Zinatex`
-- `Artisan` | `Interpraise` (coming soon — no products yet)
+- `Artisan` | `Interpraise` — set is_active=false, no products yet
+
+## Catalog Display Settings
+- Products per page: **15** on all catalog pages (brand, collection, browse-all)
+- Grid: 3 columns on desktop
+- Product card: large aspect-square image, name (SKU code), price, 
+  "Explore brand" + "Explore pieces" buttons side by side below image
+- Price formatting: ALWAYS use minimumFractionDigits: 2 — never show $1,977.8
 
 ## Pricing Rules
 - ACME: west_price × 2.5 + $300 (covers free shipping cost)
@@ -65,6 +90,28 @@
 - Nationwide FD: price as listed
 - Zinatex: MSRP as listed
 - Illinois sales tax: 10.25% applied server-side at checkout
+
+## Image Rules & State (March 2026)
+- **ACME:** Each product has its own SKU-based image URL from acmecorp.com CDN.
+  Format: `https://www.acmecorp.com/media/catalog/product/[x]/[y]/[sku].jpg`
+  ~1,383 products still have placeholder images — ACME CSV re-import needed.
+  Comma-separated image URLs in CSV must be split into individual array elements.
+- **United Furniture:** Piece-specific images promoted to images[1] via DB migration
+  (March 26, 2026). 1,064 products now show individual piece photos. Bundles/sets
+  retain the full collection room scene as primary image.
+  Solo images available in "Images - Solo" column of united datasheet.csv —
+  a full re-import using that column is still pending.
+- **Nationwide FD:** One room scene per collection — no piece-specific URLs available
+  from NFD CDN. Images served through /api/image-proxy (URL-encode spaces in path).
+- **Zinatex:** Images hosted on zinatexrugs.com CDN.
+
+## Image Domains (next.config.mjs remotePatterns)
+- `lh3.googleusercontent.com` (Google avatars)
+- `img.clerk.com` (legacy — keep for safety)
+- `zinatexrugs.com` (Zinatex rug images)
+- `d28fw8vtnbt3jx.cloudfront.net` (United Furniture CDN)
+- `www.acmecorp.com` (ACME product images)
+- Nationwide FD images go through `/api/image-proxy` route
 
 ## Auth Rules
 - Supabase Auth only — Google OAuth via PKCE flow
@@ -77,7 +124,6 @@
 - Webhook endpoint: `https://www.amazinghomefurniturestore.com/api/webhooks/stripe`
 - Webhook event: `payment_intent.succeeded`
 - CRITICAL: Webhook must use www domain — non-www causes 307 redirect
-  and Stripe does not follow redirects
 - Raw body required: use `request.arrayBuffer()` not `request.json()`
 - Order flow: checkout creates pending order → Stripe fires webhook →
   webhook updates order to paid + sends Resend confirmation email
@@ -91,14 +137,8 @@
 - Use next/image for ALL images — never raw <img> tags
 - Parameterized queries only — no string concatenation into SQL
 - RLS enabled on all tables
-
-## Image Domains (next.config.mjs remotePatterns)
-- `lh3.googleusercontent.com` (Google avatars)
-- `img.clerk.com` (legacy — keep for safety)
-- `zinatexrugs.com` (Zinatex rug images)
-- `d28fw8vtnbt3jx.cloudfront.net` (United Furniture CDN)
-- `www.acmecorp.com` (ACME product images)
-- Nationwide FD images go through `/api/image-proxy` route
+- banners table: needs RLS enabled (currently missing — known issue)
+- orders table: "service role" policy is overly broad — known security issue
 
 ## Homepage Section Order (zero gaps between sections)
 1. HeroSlideshow (85vh, real product images, DB-controlled)
@@ -117,10 +157,6 @@
 - No 2-year warranty — remove any reference found
 - Financing partners: Synchrony and Koalafi ONLY (not Snap Finance)
 - Free shipping on all orders over $299
-- Returns page (`/returns`) was corrected in March 2026 to this exact policy:
-  Sales & Return Policy title, all sales final after delivery/installation,
-  48-hour damage reporting window with photo evidence, free shipping over $299,
-  financing copy limited to Synchrony + Koalafi.
 
 ## CSV Source Files (for re-imports)
 - Nationwide FD: `C:\Users\mshob\OneDrive\csv for AHF\NFD datasheet.xlsx`
@@ -129,13 +165,44 @@
 - Zinatex main: `C:\Users\mshob\OneDrive\csv for AHF\zinat datasheet.csv`
 - Zinatex inventory: `C:\Users\mshob\OneDrive\csv for AHF\zinat sku and inventory number.csv`
 
-## Known Bugs Still Pending (run in this order)
-1. Cart merge — guest cart disappears on sign-in
-2. Homepage combined fixes — Unsplash images, manufacturer counts,
-   Zinatex title, duplicate products
-3. Brand logos + sale section — logo cards, On Sale Now section
-4. Rug image fix + immersive gallery — missing images, zoom/spin
-5. Prompt 8 — brand landing pages /brands/[slug]
+## Known Bugs — Pending (in priority order)
+1. **ACME placeholder images** — 1,383 products show /images/placeholder-product.jpg
+   Fix: re-import from acme datasheet.xlsx, split comma-separated image URLs
+   into proper arrays, map each component to its own image
+2. **ACME KIT grouping** — KIT parent and components not linked in `collection`
+   Fix: read KIT/component mapping from acme datasheet.xlsx, update collection
+   field so components appear in "Also in this collection" on product pages
+3. **United Furniture Solo images** — primary images updated via SKU matching
+   but "Images - Solo" column from CSV not yet fully applied
+   Fix: run Cursor script to re-map images[1] from "Images - Solo" CSV column
+4. **Category filter accuracy** — selecting "bed" shows nightstands/chests
+   Fix: verify filter uses `category` column; recategorize misclassified products
+5. **Filter state lost on back navigation** — selecting filters then navigating
+   to a product and pressing back resets all filters
+   Fix: move all filter state from useState to URL search params
+6. **Duplicate filter sidebar** — second sidebar renders at bottom of page
+   Fix: find and remove duplicate render in collection/brand page layout
+7. **Cart merge** — guest cart disappears on sign-in
+8. **Sale nav link** — "Sale" is first item in nav but sale page is empty
+   Fix: hide Sale link until on_sale products exist
+9. **Brand pages showing 0 products** — name mismatch between manufacturers
+   table and products.manufacturer column (if still not resolved)
+10. **Banners table missing RLS** — security issue, add SELECT + service_role policy
+11. **Orders RLS overly broad** — fix to restrict to service_role only
+12. **Discover page SSR** — shows "Loading discover..." with no content
+
+## Completed Changes (March 26, 2026)
+- ✅ Product names → SKU codes for ACME, Nationwide FD, United Furniture
+- ✅ Zinatex descriptions trimmed to first sentence (887 products)
+- ✅ Zinatex collection field populated from CSV (872/887 products matched)
+- ✅ Zinatex brand page filter uses collection field (real rug categories)
+- ✅ United Furniture piece-specific images promoted to position 1 (1,064 products)
+- ✅ Products per page changed to 15 across all catalog pages
+- ✅ Duplicate filter sidebar bug fixed
+- ✅ Product card buttons (Explore brand / Explore pieces) side by side
+- ✅ Sticky sidebar — no more blank whitespace below filter panel
+- ✅ Price formatting fixed (minimumFractionDigits: 2) site-wide
+- ✅ ACME "Also in this collection" section now renders
 
 ## Conventions
 - Slugs: lowercase, hyphens, append -[manufacturer_code]-[sku]
@@ -143,6 +210,6 @@
 - Migrations: `supabase/migrations/[timestamp]_description.sql`
 - Admin routes: `app/(admin)/admin/[feature]/page.tsx`
 - Store routes: `app/(store)/[feature]/page.tsx`
-- Category pages route: `app/(store)/collections/[category]/page.tsx`
-- Browse all page: `app/(store)/shop/page.tsx` (`products/page.tsx` is a wrapper)
 - API routes: `app/api/[feature]/route.ts`
+- Do NOT run apply_migration for data updates — use execute_sql or scripts
+- Filter state must use URL search params (not useState) for back-nav persistence

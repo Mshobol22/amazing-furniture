@@ -457,13 +457,35 @@ export default function ContextualReel({
           const isDescriptionOpen = expandedDescriptionProductId === product.id;
 
           const variants = variantsMap.get(product.id) ?? [];
-          const baseSlides: ReelSlide[] = product.images.map((src, originalIndex) => ({
-            product,
-            imageUrl: src,
-            errorProductId: product.id,
-            errorImageIndex: originalIndex,
-            showCollectionViewBadge: Boolean(usesSharedCollectionImage && originalIndex === 0),
-          }));
+          const orderedImages = (() => {
+            if (!product.images?.length) return [];
+            if (!isCollectionHero && product.images.length > 1) {
+              // For United Furniture / ACME, index 1 is the first "real" piece image
+              // (index 0 may be a room scene or otherwise non-isolated lead).
+              return [
+                { src: product.images[1], originalIndex: 1 },
+                ...product.images
+                  .map((src, index) => ({ src, originalIndex: index }))
+                  .filter((entry) => entry.originalIndex !== 1),
+              ];
+            }
+            return product.images.map((src, originalIndex) => ({
+              src,
+              originalIndex,
+            }));
+          })();
+
+          const baseSlides: ReelSlide[] = orderedImages.map(
+            ({ src, originalIndex }) => ({
+              product,
+              imageUrl: src,
+              errorProductId: product.id,
+              errorImageIndex: originalIndex,
+              showCollectionViewBadge: Boolean(
+                usesSharedCollectionImage && originalIndex === 0
+              ),
+            })
+          );
           const slides: ReelSlide[] =
             product.manufacturer === "Zinatex"
               ? [
@@ -489,6 +511,10 @@ export default function ContextualReel({
           const activeSlide = slides[clampedSlideIndex];
           const activeProduct = activeSlide?.product ?? product;
           const activePrice = getPriceLabel(activeProduct);
+          const categoryPill =
+            activeProduct.manufacturer === "Zinatex"
+              ? activeProduct.collection
+              : activeProduct.category;
           const isWishlisted = wishlistedIds.has(activeProduct.id);
           const isAdded = Boolean(isAddingToCart.get(activeProduct.id));
           const useColorDots =
@@ -634,6 +660,7 @@ export default function ContextualReel({
                       ?.has(slide.errorImageIndex);
                     const src = failedForCard ? PLACEHOLDER_IMAGE : slide.imageUrl;
                     const priority = cardIndex === 0 && imageIndex === 0;
+                    const collectionName = slide.product.collection?.trim();
 
                     return (
                       <div
@@ -652,6 +679,11 @@ export default function ContextualReel({
                             handleImageError(slide.errorProductId, slide.errorImageIndex)
                           }
                         />
+                        {collectionName ? (
+                          <span className="absolute left-2 top-2 rounded-full bg-[#2D4A3E] px-2 py-1 text-xs text-white">
+                            Part of {collectionName}
+                          </span>
+                        ) : null}
                         {slide.showCollectionViewBadge ? (
                           <span className="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-1 text-xs text-white">
                             Collection View
@@ -728,9 +760,9 @@ export default function ContextualReel({
                         {activeProduct.manufacturer}
                       </span>
                     ) : null}
-                    {activeProduct.category ? (
+                    {categoryPill ? (
                       <span className="inline-flex rounded-full border border-white/20 bg-black/45 px-2.5 py-1 text-xs capitalize text-white shadow-sm backdrop-blur-[2px]">
-                        {activeProduct.category.replace("-", " ")}
+                        {String(categoryPill).replace("-", " ")}
                       </span>
                     ) : null}
                   </div>
@@ -879,9 +911,9 @@ export default function ContextualReel({
                           {activeProduct.manufacturer}
                         </span>
                       ) : null}
-                      {activeProduct.category ? (
+                    {categoryPill ? (
                         <span className="inline-flex rounded-full bg-white/60 px-2.5 py-1 text-xs capitalize text-[#1C1C1C]">
-                          {activeProduct.category.replace("-", " ")}
+                        {String(categoryPill).replace("-", " ")}
                         </span>
                       ) : null}
                     </div>

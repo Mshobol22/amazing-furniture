@@ -48,6 +48,8 @@ export default function CollectionClient({
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const isInitialMount = useRef(true);
+  const productGridRef = useRef<HTMLDivElement | null>(null);
+  const hasScrolledOnMount = useRef(false);
 
   const isAll = slug === "all";
 
@@ -102,6 +104,15 @@ export default function CollectionClient({
       .finally(() => setLoading(false));
   }, [searchParams, slug]);
 
+  // Keep browser back / filter changes anchored to the product grid.
+  useEffect(() => {
+    if (!hasScrolledOnMount.current) {
+      hasScrolledOnMount.current = true;
+      return;
+    }
+    productGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [searchParams, slug]);
+
   // ── Sort ─────────────────────────────────────────────────────────────────
 
   const handleSortChange = (newSort: string) => {
@@ -120,7 +131,7 @@ export default function CollectionClient({
     else p.set("page", String(newPage));
     const qs = p.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    productGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -226,6 +237,7 @@ export default function CollectionClient({
         {/* Product grid */}
         <div
           className={`transition-opacity ${loading ? "opacity-50" : "opacity-100"}`}
+          ref={productGridRef}
         >
           <ProductGrid
             products={products}

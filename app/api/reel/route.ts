@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { mapRowToProduct } from "@/lib/supabase/products";
 
+export const dynamic = "force-dynamic";
+
 function getAnonClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -48,6 +50,7 @@ export async function GET(request: NextRequest) {
       .from("products")
       .select("*")
       .eq("collection_group", collectionGroup)
+      .eq("in_stock", true)
       .or(imageFilter)
       .order("is_collection_hero", { ascending: false })
       .order("piece_type", { ascending: true });

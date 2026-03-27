@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Product } from "@/types";
 import {
@@ -38,6 +38,26 @@ type ValueCount = { value: string; count: number };
 const PER_PAGE = 15;
 const MISC_CATEGORY_VALUE = "__misc__";
 
+function parseCommaParam(v: string | null): string[] {
+  if (!v) return [];
+  return v
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function parseNumberParam(v: string | null): number | null {
+  if (!v) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function normalizeSortParam(v: string | null): "default" | "price-asc" | "price-desc" | "name-asc" {
+  const allowed = new Set(["default", "price-asc", "price-desc", "name-asc"]);
+  const val = v?.trim() ?? "";
+  return allowed.has(val) ? (val as any) : "default";
+}
+
 export default function BrandPageTemplate({ manufacturer, config, initialProductCount }: BrandPageTemplateProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -46,26 +66,80 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
   const [collections, setCollections] = useState<ValueCount[]>([]);
   const [colors, setColors] = useState<string[]>([]);
   const [materials, setMaterials] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
-  const [priceMin, setPriceMin] = useState<number | null>(null);
-  const [priceMax, setPriceMax] = useState<number | null>(null);
-  const [sort, setSort] = useState<"default" | "price-asc" | "price-desc" | "name-asc">("default");
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [brandTotal, setBrandTotal] = useState(initialProductCount ?? 0);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const productGridRef = useRef<HTMLDivElement | null>(null);
+  const hasScrolledOnMount = useRef(false);
+  const pendingPriceRef = useRef<{ min: number | null; max: number | null; timer: number | null }>({
+    min: null,
+    max: null,
+    timer: null,
+  });
 
   const usesCollectionAsCategory =
     manufacturer.slug === "zinatex" || manufacturer.name === "Zinatex";
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PER_PAGE)), [total]);
+  const urlPageRaw = searchParams.get("page");
+  const page = Math.max(1, Math.min(parseNumberParam(urlPageRaw) ?? 1, 500));
+
+  const urlMinPrice = searchParams.get("minPrice") ?? searchParams.get("priceMin");
+  const urlMaxPrice = searchParams.get("maxPrice") ?? searchParams.get("priceMax");
+  const priceMin = parseNumberParam(urlMinPrice);
+  const priceMax = parseNumberParam(urlMaxPrice);
+
+  const sort = normalizeSortParam(searchParams.get("sort"));
+
+  const urlCategoryParam = usesCollectionAsCategory
+    ? null
+    : searchParams.get("category")?.trim() ?? null;
+  // Zinatex (usesCollectionAsCategory): the "category" filter is persisted in `collection`.
+  // Non-Zinatex: `collection` is the step-2 filter (series/collection name).
+  const urlCollectionParam = searchParams.get("collection")?.trim() ?? null;
+
+  const showMiscCategory =
+    !usesCollectionAsCategory &&
+    Boolean(config?.miscCategoryLabel && config.defaultCategory) &&
+    categories.some((c) => c.value !== config?.defaultCategory);
+
+  const allowedCategoryValues = useMemo(() => {
+    const vals = categories.map((c) => c.value);
+    if (showMiscCategory) vals.push(MISC_CATEGORY_VALUE);
+    return new Set(vals);
+  }, [categories, showMiscCategory]);
+
+  const fallbackCategory =
+    (config?.defaultCategory && allowedCategoryValues.has(config.defaultCategory)
+      ? config.defaultCategory
+      : categories[0]?.value ?? null) ?? null;
+
+  const selectedCategoryParamCandidate = usesCollectionAsCategory ? urlCollectionParam : urlCategoryParam;
+  const selectedCategory = (selectedCategoryParamCandidate &&
+    allowedCategoryValues.has(selectedCategoryParamCandidate)
+    ? selectedCategoryParamCandidate
+    : fallbackCategory) as string | null;
+
   const isMiscCategorySelected = selectedCategory === MISC_CATEGORY_VALUE;
   const hasCollections = !usesCollectionAsCategory && collections.length > 0;
+
+  const selectedCollection =
+    !usesCollectionAsCategory &&
+    urlCollectionParam &&
+    (collections.some((c) => c.value === urlCollectionParam) ? urlCollectionParam : null);
+
+  const selectedColors = parseCommaParam(searchParams.get("colors")).filter((c) =>
+    colors.includes(c)
+  );
+
+  const selectedMaterial =
+    (() => {
+      const mat = searchParams.get("material")?.trim() ?? null;
+      if (!mat) return null;
+      return materials.includes(mat) ? mat : null;
+    })();
 
   useEffect(() => {
     let ignore = false;
@@ -79,28 +153,6 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
         ? [...data].sort((a, b) => a.value.localeCompare(b.value))
         : data;
       setCategories(normalized);
-
-      const urlCollection = usesCollectionAsCategory
-        ? searchParams.get("collection")?.trim() ?? ""
-        : "";
-      const hasUrlCollection =
-        usesCollectionAsCategory &&
-        urlCollection.length > 0 &&
-        normalized.some((c) => c.value.toLowerCase() === urlCollection.toLowerCase());
-
-      const hasDefault = config?.defaultCategory
-        ? normalized.some((c) => c.value === config.defaultCategory)
-        : false;
-      if (hasUrlCollection) {
-        const found = normalized.find(
-          (c) => c.value.toLowerCase() === urlCollection.toLowerCase()
-        );
-        setSelectedCategory(found?.value ?? null);
-      } else if (hasDefault) {
-        setSelectedCategory(config?.defaultCategory ?? null);
-      } else if (normalized.length > 0) {
-        setSelectedCategory(normalized[0].value);
-      }
     }
 
     loadCategories();
@@ -110,7 +162,7 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
     return () => {
       ignore = true;
     };
-  }, [manufacturer.name, config?.defaultCategory, usesCollectionAsCategory, searchParams]);
+  }, [manufacturer.name, usesCollectionAsCategory]);
 
   useEffect(() => {
     let ignore = false;
@@ -122,44 +174,38 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
         return;
       }
 
-      let normalizedCollection: string | null = null;
       if (!usesCollectionAsCategory) {
         const collectionsData = await fetchBrandCollections(manufacturer.name, selectedCategory);
         if (ignore) return;
         setCollections(collectionsData);
 
-        normalizedCollection =
-          collectionsData.length > 0 && selectedCollection
-            ? collectionsData.some((entry) => entry.value === selectedCollection)
-              ? selectedCollection
-              : null
+        const normalizedCollection =
+          urlCollectionParam && collectionsData.some((entry) => entry.value === urlCollectionParam)
+            ? urlCollectionParam
             : null;
-        setSelectedCollection(normalizedCollection);
-      } else {
-        setCollections([]);
-        setSelectedCollection(null);
+
+        const [colorsData, materialsData] = await Promise.all([
+          fetchBrandColors(manufacturer.name, selectedCategory, normalizedCollection ?? undefined),
+          fetchBrandMaterials(manufacturer.name, selectedCategory, normalizedCollection ?? undefined),
+        ]);
+
+        if (ignore) return;
+        setColors(colorsData);
+        setMaterials(materialsData);
+        return;
       }
 
+      // Zinatex mode: the category selection is stored in `collection` and maps to the
+      // filter's `collection` column when fetching products.
+      setCollections([]);
       const [colorsData, materialsData] = await Promise.all([
-        fetchBrandColors(
-          manufacturer.name,
-          usesCollectionAsCategory ? undefined : selectedCategory,
-          usesCollectionAsCategory ? selectedCategory : normalizedCollection ?? undefined
-        ),
-        fetchBrandMaterials(
-          manufacturer.name,
-          usesCollectionAsCategory ? undefined : selectedCategory,
-          usesCollectionAsCategory ? selectedCategory : normalizedCollection ?? undefined
-        ),
+        fetchBrandColors(manufacturer.name, undefined, selectedCategory ?? undefined),
+        fetchBrandMaterials(manufacturer.name, undefined, selectedCategory ?? undefined),
       ]);
 
       if (ignore) return;
       setColors(colorsData);
       setMaterials(materialsData);
-      setSelectedColors((current) => current.filter((c) => colorsData.includes(c)));
-      setSelectedMaterial((current) =>
-        current && materialsData.includes(current) ? current : null
-      );
     }
     loadStep2And3();
     return () => {
@@ -168,13 +214,32 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
   }, [
     manufacturer.name,
     selectedCategory,
-    selectedCollection,
     isMiscCategorySelected,
     usesCollectionAsCategory,
+    urlCollectionParam,
   ]);
 
   useEffect(() => {
     const timer = window.setTimeout(async () => {
+      // Avoid fetching with incomplete filter option lists (prevents flicker on back navigation).
+      if (!selectedCategory) return;
+      if (
+        !usesCollectionAsCategory &&
+        urlCollectionParam &&
+        collections.length === 0 &&
+        !isMiscCategorySelected
+      ) {
+        return;
+      }
+      const urlColorsRaw = parseCommaParam(searchParams.get("colors"));
+      if (!usesCollectionAsCategory && urlColorsRaw.length > 0 && colors.length === 0) {
+        return;
+      }
+      const urlMaterialRaw = searchParams.get("material")?.trim() ?? "";
+      if (!usesCollectionAsCategory && urlMaterialRaw && materials.length === 0) {
+        return;
+      }
+
       setLoading(true);
       const result = await fetchBrandProducts({
         manufacturer: manufacturer.name,
@@ -227,20 +292,6 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
     usesCollectionAsCategory,
   ]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [selectedCategory, selectedCollection, selectedColors, selectedMaterial, priceMin, priceMax, sort, searchQuery]);
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
-
-  const showMiscCategory =
-    !usesCollectionAsCategory &&
-    Boolean(config?.miscCategoryLabel && config.defaultCategory) &&
-    categories.some((c) => c.value !== config?.defaultCategory);
   const miscCount = categories
     .filter((entry) => entry.value !== config?.defaultCategory)
     .reduce((sum, entry) => sum + entry.count, 0);
@@ -248,33 +299,95 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
   const from = total === 0 ? 0 : (page - 1) * PER_PAGE + 1;
   const to = Math.min(page * PER_PAGE, total);
 
-  function clearFilters() {
-    const fallbackCategory =
-      config?.defaultCategory && categories.some((c) => c.value === config.defaultCategory)
-        ? config.defaultCategory
-        : categories[0]?.value ?? null;
-    setSelectedCategory(fallbackCategory);
-    setSelectedCollection(null);
-    setSelectedColors([]);
-    setSelectedMaterial(null);
-    setPriceMin(null);
-    setPriceMax(null);
-    setSort("default");
-    if (usesCollectionAsCategory) {
-      const p = new URLSearchParams(searchParams.toString());
-      if (fallbackCategory) p.set("collection", fallbackCategory);
-      else p.delete("collection");
-      p.delete("page");
+  useEffect(() => {
+    // Ensure we land on the product grid when filters/pagination change (including back).
+    if (!hasScrolledOnMount.current) {
+      hasScrolledOnMount.current = true;
+      return;
+    }
+    productGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [
+    selectedCategory,
+    selectedCollection,
+    selectedColors.join(","),
+    selectedMaterial,
+    priceMin,
+    priceMax,
+    sort,
+    page,
+  ]);
+
+  const replaceUrlParams = useCallback(
+    (updates: Record<string, string | null>, opts?: { resetPage?: boolean }) => {
+      const p = new URLSearchParams(window.location.search);
+      for (const [key, value] of Object.entries(updates)) {
+        if (value == null || value === "") p.delete(key);
+        else p.set(key, value);
+      }
+      if (opts?.resetPage) p.set("page", "1");
       const qs = p.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [router, pathname]
+  );
+
+  const commitPendingPriceToUrl = useCallback(() => {
+    if (pendingPriceRef.current.timer != null) {
+      window.clearTimeout(pendingPriceRef.current.timer);
     }
+    pendingPriceRef.current.timer = window.setTimeout(() => {
+      const { min, max } = pendingPriceRef.current;
+      replaceUrlParams(
+        {
+          minPrice: min != null ? String(min) : null,
+          maxPrice: max != null ? String(max) : null,
+        },
+        { resetPage: true }
+      );
+    }, 0);
+  }, [replaceUrlParams]);
+
+  function clearFilters() {
+    if (!fallbackCategory) return;
+
+    if (usesCollectionAsCategory) {
+      replaceUrlParams(
+        {
+          // The category selection for Zinatex is stored in `collection`.
+          collection: fallbackCategory,
+          page: "1",
+          category: null,
+          // Clear dependent filters.
+          colors: null,
+          material: null,
+          minPrice: null,
+          maxPrice: null,
+          sort: null,
+        },
+        { resetPage: false }
+      );
+      return;
+    }
+
+    replaceUrlParams(
+      {
+        category: fallbackCategory,
+        // Clear step-2/3 filters.
+        collection: null,
+        colors: null,
+        material: null,
+        minPrice: null,
+        maxPrice: null,
+        sort: null,
+        page: "1",
+      },
+      { resetPage: false }
+    );
   }
 
   function goToPage(nextPage: number) {
     const clamped = Math.min(totalPages, Math.max(1, nextPage));
-    setPage(clamped);
-    const anchor = document.getElementById("brand-products-grid");
-    if (anchor) anchor.scrollIntoView({ behavior: "smooth", block: "start" });
+    replaceUrlParams({ page: String(clamped) }, { resetPage: false });
   }
 
   const sections: FilterSection[] = useMemo(() => {
@@ -414,53 +527,85 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
                     ...(showMiscCategory ? [MISC_CATEGORY_VALUE] : []),
                   ]);
                   const next = typeof value === "string" && allowed.has(value) ? value : null;
-                  setSelectedCategory(next);
-                  setSelectedCollection(null);
-                  setSelectedColors([]);
-                  setSelectedMaterial(null);
+
                   if (usesCollectionAsCategory) {
-                    const p = new URLSearchParams(searchParams.toString());
-                    if (next) p.set("collection", next);
-                    else p.delete("collection");
-                    p.delete("page");
-                    const qs = p.toString();
-                    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+                    replaceUrlParams(
+                      {
+                        collection: next,
+                        category: null,
+                        colors: null,
+                        material: null,
+                      },
+                      { resetPage: true }
+                    );
+                  } else {
+                    replaceUrlParams(
+                      {
+                        category: next,
+                        // Changing category clears the step-2 collection + step-3 filters.
+                        collection: null,
+                        colors: null,
+                        material: null,
+                      },
+                      { resetPage: true }
+                    );
                   }
                   return;
                 }
+
                 if (sectionId === "collection") {
+                  if (usesCollectionAsCategory) return;
                   const allowed = new Set(collections.map((c) => c.value));
                   const next = typeof value === "string" && allowed.has(value) ? value : null;
-                  setSelectedCollection(next);
-                  setSelectedColors([]);
-                  setSelectedMaterial(null);
+                  replaceUrlParams(
+                    {
+                      collection: next,
+                      colors: null,
+                      material: null,
+                    },
+                    { resetPage: true }
+                  );
                   return;
                 }
+
                 if (sectionId === "color") {
                   const allowed = new Set(colors);
                   const raw = Array.isArray(value) ? value : value ? [value] : [];
-                  setSelectedColors(raw.filter((v) => allowed.has(v)));
+                  const nextColors = raw.filter((v) => allowed.has(v));
+                  replaceUrlParams(
+                    {
+                      colors: nextColors.length > 0 ? nextColors.join(",") : null,
+                    },
+                    { resetPage: true }
+                  );
                   return;
                 }
+
                 if (sectionId === "material") {
                   const allowed = new Set(materials);
                   const next = typeof value === "string" && allowed.has(value) ? value : null;
-                  setSelectedMaterial(next);
+                  replaceUrlParams({ material: next }, { resetPage: true });
                   return;
                 }
+
                 if (sectionId === "priceMin") {
-                  setPriceMin(typeof value === "string" && value ? Number(value) : null);
+                  pendingPriceRef.current.min =
+                    typeof value === "string" && value ? parseNumberParam(value) : null;
+                  commitPendingPriceToUrl();
                   return;
                 }
+
                 if (sectionId === "priceMax") {
-                  setPriceMax(typeof value === "string" && value ? Number(value) : null);
+                  pendingPriceRef.current.max =
+                    typeof value === "string" && value ? parseNumberParam(value) : null;
+                  commitPendingPriceToUrl();
                   return;
                 }
+
                 if (sectionId === "sort") {
                   const allowed = new Set(["default", "price-asc", "price-desc", "name-asc"]);
-                  if (typeof value === "string" && allowed.has(value)) {
-                    setSort(value as "default" | "price-asc" | "price-desc" | "name-asc");
-                  }
+                  const next = typeof value === "string" && allowed.has(value) ? value : null;
+                  replaceUrlParams({ sort: next }, { resetPage: true });
                 }
               }}
               onClear={clearFilters}
@@ -492,7 +637,7 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
             </p>
           ) : null}
 
-          <div id="brand-products-grid">
+          <div id="brand-products-grid" ref={productGridRef}>
             {loading ? (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {Array.from({ length: PER_PAGE }).map((_, idx) => (
@@ -582,53 +727,84 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
               ...(showMiscCategory ? [MISC_CATEGORY_VALUE] : []),
             ]);
             const next = typeof value === "string" && allowed.has(value) ? value : null;
-            setSelectedCategory(next);
-            setSelectedCollection(null);
-            setSelectedColors([]);
-            setSelectedMaterial(null);
+
             if (usesCollectionAsCategory) {
-              const p = new URLSearchParams(searchParams.toString());
-              if (next) p.set("collection", next);
-              else p.delete("collection");
-              p.delete("page");
-              const qs = p.toString();
-              router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+              replaceUrlParams(
+                {
+                  collection: next,
+                  category: null,
+                  colors: null,
+                  material: null,
+                },
+                { resetPage: true }
+              );
+            } else {
+              replaceUrlParams(
+                {
+                  category: next,
+                  collection: null,
+                  colors: null,
+                  material: null,
+                },
+                { resetPage: true }
+              );
             }
             return;
           }
+
           if (sectionId === "collection") {
+            if (usesCollectionAsCategory) return;
             const allowed = new Set(collections.map((c) => c.value));
             const next = typeof value === "string" && allowed.has(value) ? value : null;
-            setSelectedCollection(next);
-            setSelectedColors([]);
-            setSelectedMaterial(null);
+            replaceUrlParams(
+              {
+                collection: next,
+                colors: null,
+                material: null,
+              },
+              { resetPage: true }
+            );
             return;
           }
+
           if (sectionId === "color") {
             const allowed = new Set(colors);
             const raw = Array.isArray(value) ? value : value ? [value] : [];
-            setSelectedColors(raw.filter((v) => allowed.has(v)));
+            const nextColors = raw.filter((v) => allowed.has(v));
+            replaceUrlParams(
+              {
+                colors: nextColors.length > 0 ? nextColors.join(",") : null,
+              },
+              { resetPage: true }
+            );
             return;
           }
+
           if (sectionId === "material") {
             const allowed = new Set(materials);
             const next = typeof value === "string" && allowed.has(value) ? value : null;
-            setSelectedMaterial(next);
+            replaceUrlParams({ material: next }, { resetPage: true });
             return;
           }
+
           if (sectionId === "priceMin") {
-            setPriceMin(typeof value === "string" && value ? Number(value) : null);
+            pendingPriceRef.current.min =
+              typeof value === "string" && value ? parseNumberParam(value) : null;
+            commitPendingPriceToUrl();
             return;
           }
+
           if (sectionId === "priceMax") {
-            setPriceMax(typeof value === "string" && value ? Number(value) : null);
+            pendingPriceRef.current.max =
+              typeof value === "string" && value ? parseNumberParam(value) : null;
+            commitPendingPriceToUrl();
             return;
           }
+
           if (sectionId === "sort") {
             const allowed = new Set(["default", "price-asc", "price-desc", "name-asc"]);
-            if (typeof value === "string" && allowed.has(value)) {
-              setSort(value as "default" | "price-asc" | "price-desc" | "name-asc");
-            }
+            const next = typeof value === "string" && allowed.has(value) ? value : null;
+            replaceUrlParams({ sort: next }, { resetPage: true });
           }
         }}
         onClear={clearFilters}

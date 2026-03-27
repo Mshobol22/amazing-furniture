@@ -31,9 +31,17 @@ const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 const CSV_PATH = "C:\\Users\\mshob\\OneDrive\\csv for AHF\\united datasheet.csv";
 
-interface CsvRow {
-  SKU: string;
-  "Images - Solo": string;
+const SKU_COLUMN = "SKU";
+const SOLO_COLUMN = "Images - Solo";
+
+type CsvRow = Record<string, string | null | undefined>;
+
+function arraysEqual(a: string[], b: string[]) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 }
 
 async function main() {
@@ -46,62 +54,79 @@ async function main() {
 
   const mapping = new Map<string, string>();
   for (const row of rows) {
-    const sku = row["SKU"]?.trim();
-    const solo = row["Images - Solo"]?.trim();
-    if (sku && solo && solo.startsWith("https://")) {
+    const sku = row[SKU_COLUMN]?.trim();
+    const solo = row[SOLO_COLUMN]?.trim();
+    if (sku && solo) {
+      // Store/serve URLs must be https (project rule).
+      if (!solo.startsWith("https://")) continue;
       mapping.set(sku, solo);
     }
   }
 
   console.log(`CSV mapping built: ${mapping.size} SKUs with solo images`);
 
-  const { data: products, error } = await supabase
-    .from("products")
-    .select("id, sku, images")
-    .eq("manufacturer", "United Furniture")
-    .not("images", "is", null);
-
-  if (error) {
-    console.error("Failed to fetch products:", error.message);
-    process.exit(1);
-  }
-
-  console.log(`Found ${products.length} United Furniture products in DB`);
+  const pageSize = 500;
+  let from = 0;
+  let totalProducts = 0;
 
   let updated = 0;
   let skipped = 0;
   let noMatch = 0;
   let alreadyCorrect = 0;
 
-  for (const product of products) {
-    const sku = product.sku?.trim();
-    if (!sku) { skipped++; continue; }
-
-    const soloUrl = mapping.get(sku);
-    if (!soloUrl) { noMatch++; continue; }
-
-    const images: string[] = product.images ?? [];
-    if (images.length === 0) { skipped++; continue; }
-
-    if (images[0] === soloUrl) {
-      alreadyCorrect++;
-      continue;
-    }
-
-    // Remove the solo URL if it already exists elsewhere in the array
-    const filtered = images.filter((img: string) => img !== soloUrl);
-    const newImages = [soloUrl, ...filtered];
-
-    const { error: updateError } = await supabase
+  while (true) {
+    const { data: productsPage, error } = await supabase
       .from("products")
-      .update({ images: newImages })
-      .eq("id", product.id);
+      .select("id, sku, images")
+      .eq("manufacturer", "United Furniture")
+      .not("images", "is", null)
+      .order("id")
+      .range(from, from + pageSize - 1);
 
-    if (updateError) {
-      console.error(`  Error updating ${sku}: ${updateError.message}`);
-    } else {
-      updated++;
+    if (error) {
+      console.error("Failed to fetch products page:", error.message);
+      process.exit(1);
     }
+
+    if (!productsPage || productsPage.length === 0) break;
+
+    totalProducts += productsPage.length;
+
+    for (const product of productsPage) {
+      const sku = product.sku?.trim();
+      if (!sku) { skipped++; continue; }
+
+      const soloUrl = mapping.get(sku);
+      if (!soloUrl) { noMatch++; continue; }
+
+      const images: string[] = product.images ?? [];
+      if (images.length === 0) { skipped++; continue; }
+
+      // Match requested SQL semantics:
+      //   images = ARRAY[solo_url] || images[2:]
+      // plus: ensure solo_url is not duplicated later in the array.
+      const remainder = images.slice(1); // images[2:]
+      const nextImages = [soloUrl, ...remainder.filter((img) => img !== soloUrl)];
+
+      if (arraysEqual(images, nextImages)) {
+        alreadyCorrect++;
+        continue;
+      }
+
+      const { error: updateError } = await supabase
+        .from("products")
+        .update({ images: nextImages })
+        .eq("id", product.id);
+
+      if (updateError) {
+        console.error(`  Error updating ${sku}: ${updateError.message}`);
+      } else {
+        updated++;
+      }
+    }
+
+    from += productsPage.length;
+    console.log(`Processed ${totalProducts} United products so far...`);
   }
 
   console.log(`\nResults:`);
@@ -109,23 +134,39 @@ async function main() {
   console.log(`  Already correct:  ${alreadyCorrect}`);
   console.log(`  No CSV match:     ${noMatch}`);
   console.log(`  Skipped (no SKU): ${skipped}`);
-  console.log(`  Total products:   ${products.length}`);
+  console.log(`  Total products:   ${totalProducts}`);
 
   // Verify sample
   console.log(`\n--- Sample verification ---`);
-  const { data: sample } = await supabase
-    .from("products")
-    .select("sku, images")
-    .eq("manufacturer", "United Furniture")
-    .not("images", "is", null)
-    .limit(10);
+  let sample: any[] | null = null;
+  try {
+    const { data } = await supabase
+      .from("products")
+      .select("sku, images")
+      .eq("manufacturer", "United Furniture")
+      .not("images", "is", null)
+      // Supabase/PostgREST supports order expressions in many setups.
+      .order("random()")
+      .limit(15);
+    sample = data;
+  } catch (e) {
+    console.warn("Random ordering failed; falling back to non-random sample.", e);
+  }
 
-  if (sample) {
-    for (const p of sample) {
-      const img = p.images?.[0] ?? "(none)";
-      const shortImg = img.length > 80 ? img.substring(0, 80) + "..." : img;
-      console.log(`  ${p.sku}  →  ${shortImg}`);
-    }
+  if (!sample) {
+    const { data } = await supabase
+      .from("products")
+      .select("sku, images")
+      .eq("manufacturer", "United Furniture")
+      .not("images", "is", null)
+      .limit(15);
+    sample = data;
+  }
+
+  for (const p of sample || []) {
+    const img = p.images?.[0] ?? "(none)";
+    const shortImg = img.length > 80 ? img.substring(0, 80) + "..." : img;
+    console.log(`  ${p.sku}  →  ${shortImg}`);
   }
 }
 
