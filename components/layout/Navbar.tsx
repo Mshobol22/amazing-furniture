@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Heart,
@@ -408,11 +409,14 @@ export default function Navbar() {
                             className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-[#FAF8F5] transition-colors text-left group"
                           >
                             {result.image ? (
-                              <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-                                <img
+                              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                                <Image
                                   src={result.image}
                                   alt={result.name}
-                                  className="w-full h-full object-cover"
+                                  fill
+                                  sizes="40px"
+                                  loading="lazy"
+                                  className="object-cover"
                                 />
                               </div>
                             ) : (
