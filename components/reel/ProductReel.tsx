@@ -15,6 +15,7 @@ import { useCartStore } from "@/store/cartStore";
 import { toast } from "@/hooks/use-toast";
 import type { Product } from "@/types";
 import { zinatexColorNameToCss } from "@/components/reel/zinatex-reel-colors";
+import { proxyImage } from "@/lib/utils";
 
 type ReelCard = Product | { type: "divider"; id: "divider-card" };
 
@@ -622,7 +623,9 @@ export default function ProductReel({
                     const failedForCard = imageErrorMap
                       .get(slide.errorProductId)
                       ?.has(slide.errorImageIndex);
-                    const src = failedForCard ? PLACEHOLDER_IMAGE : slide.imageUrl;
+                    const src = failedForCard
+                      ? PLACEHOLDER_IMAGE
+                      : proxyImage(slide.imageUrl, { manufacturer: slide.product.manufacturer });
                     const priority = cardIndex === 0 && imageIndex === 0;
                     const collectionName = slide.product.collection?.trim();
 

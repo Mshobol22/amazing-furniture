@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
 import { zinatexColorNameToCss } from "@/components/reel/zinatex-reel-colors";
+import { proxyImage } from "@/lib/utils";
 
 type ReelSlide = {
   product: Product;
@@ -584,7 +585,9 @@ export default function DiscoverReel({
                     const failedForCard = imageErrorMap
                       .get(slide.errorProductId)
                       ?.has(slide.errorImageIndex);
-                    const src = failedForCard ? PLACEHOLDER_IMAGE : slide.imageUrl;
+                    const src = failedForCard
+                      ? PLACEHOLDER_IMAGE
+                      : proxyImage(slide.imageUrl, { manufacturer: slide.product.manufacturer });
                     const priority = cardIndex === 0 && imageIndex === 0;
                     const collectionName = slide.product.collection?.trim();
 
