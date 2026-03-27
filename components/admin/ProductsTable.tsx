@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Pencil, Check, X } from "lucide-react";
@@ -10,9 +10,15 @@ import type { Product } from "@/types";
 import FilterSidebar, { type ActiveFilters, type FilterSection } from "@/components/filters/FilterSidebar";
 import SmartSearchBar from "@/components/filters/SmartSearchBar";
 import { formatPrice } from "@/lib/format-price";
+import type { AdminFilterStats } from "@/lib/admin/admin-products-data";
 
 interface ProductsTableProps {
   products: Product[];
+  filterStats: AdminFilterStats;
+}
+
+function categoryKey(p: Product): string {
+  return p.category?.trim() ? p.category : "Uncategorized";
 }
 
 const PIECE_TYPE_OPTIONS = [
@@ -35,8 +41,10 @@ const PIECE_TYPE_OPTIONS = [
   "Other",
 ];
 
-function ProductsTableInner({ products }: ProductsTableProps) {
+function ProductsTableInner({ products, filterStats }: ProductsTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Product[] | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [manufacturer, setManufacturer] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
@@ -59,53 +67,69 @@ function ProductsTableInner({ products }: ProductsTableProps) {
 
   const getDisplayName = (p: Product) => nameOverrides[p.id] ?? p.name;
 
-  const manufacturerCounts = React.useMemo(() => {
-    const map = new Map<string, number>();
-    for (const p of products) {
-      const name = p.manufacturer ?? "Unknown";
-      map.set(name, (map.get(name) ?? 0) + 1);
-    }
-    return Array.from(map.entries()).map(([value, count]) => ({ value, count }));
-  }, [products]);
+  const manufacturerCounts = filterStats.manufacturerCounts;
+  const stockCounts = filterStats.stockCounts;
 
-  const categoryCounts = React.useMemo(() => {
-    const source = manufacturer
-      ? products.filter((p) => (p.manufacturer ?? "Unknown") === manufacturer)
-      : [];
-    const map = new Map<string, number>();
-    for (const p of source) {
-      map.set(p.category, (map.get(p.category) ?? 0) + 1);
+  const categoryOptions = useMemo(() => {
+    if (manufacturer) {
+      return filterStats.categoriesByManufacturer[manufacturer] ?? [];
     }
-    return Array.from(map.entries()).map(([value, count]) => ({ value, count }));
-  }, [manufacturer, products]);
+    return filterStats.categoryCounts;
+  }, [manufacturer, filterStats]);
 
-  const stockCounts = React.useMemo(() => {
-    let inStock = 0;
-    let outOfStock = 0;
-    for (const p of products) {
-      if (p.in_stock) inStock += 1;
-      else outOfStock += 1;
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setSearchResults(null);
+      setSearchLoading(false);
+      return;
     }
-    return { inStock, outOfStock };
-  }, [products]);
+    let cancelled = false;
+    const ac = new AbortController();
+    setSearchLoading(true);
+    setSearchResults(null);
+    fetch(`/api/admin/products/search?q=${encodeURIComponent(q)}`, {
+      signal: ac.signal,
+    })
+      .then((r) => r.json())
+      .then((data: { products?: Product[] }) => {
+        if (!cancelled) {
+          setSearchResults(data.products ?? []);
+          setSearchLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSearchResults([]);
+          setSearchLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+      ac.abort();
+    };
+  }, [searchQuery]);
 
-  const filteredBase = products.filter((p) => {
-    const sku = extractSku(p.slug) ?? "";
-    const displayName = getDisplayName(p);
-    const query = searchQuery.toLowerCase();
-    const matchSearch =
-      !searchQuery ||
-      displayName.toLowerCase().includes(query) ||
-      sku.toLowerCase().includes(query) ||
-      p.slug.toLowerCase().includes(query) ||
-      (p.manufacturer ?? "").toLowerCase().includes(query);
-    const matchCategory = !category || p.category === category;
+  useEffect(() => {
+    if (!category) return;
+    const allowed = new Set(categoryOptions.map((c) => c.value));
+    if (!allowed.has(category)) setCategory(null);
+  }, [categoryOptions, category]);
+
+  const listForTable = useMemo(() => {
+    if (!searchQuery.trim()) return products;
+    if (searchLoading) return [];
+    return searchResults ?? [];
+  }, [products, searchQuery, searchLoading, searchResults]);
+
+  const filteredBase = listForTable.filter((p) => {
+    const matchCategory = !category || categoryKey(p) === category;
     const matchManufacturer = !manufacturer || (p.manufacturer ?? "Unknown") === manufacturer;
     const matchStatus =
       !stock ||
       (stock === "in_stock" && p.in_stock) ||
       (stock === "out_of_stock" && !p.in_stock);
-    return matchSearch && matchCategory && matchManufacturer && matchStatus;
+    return matchCategory && matchManufacturer && matchStatus;
   });
 
   const filtered = React.useMemo(() => {
@@ -225,15 +249,13 @@ function ProductsTableInner({ products }: ProductsTableProps) {
       defaultOpen: true,
       options: manufacturerCounts,
     },
-    ...(manufacturer
-      ? [{
-          id: "category",
-          label: "Category",
-          type: "checkbox" as const,
-          defaultOpen: true,
-          options: categoryCounts,
-        }]
-      : []),
+    {
+      id: "category",
+      label: "Category",
+      type: "checkbox",
+      defaultOpen: true,
+      options: categoryOptions,
+    },
     {
       id: "stock",
       label: "Stock",
@@ -303,7 +325,7 @@ function ProductsTableInner({ products }: ProductsTableProps) {
                   return;
                 }
                 if (id === "category") {
-                  const allowed = new Set(categoryCounts.map((x) => x.value));
+                  const allowed = new Set(categoryOptions.map((x) => x.value));
                   setCategory(typeof value === "string" && allowed.has(value) ? value : null);
                   return;
                 }
@@ -327,10 +349,20 @@ function ProductsTableInner({ products }: ProductsTableProps) {
 
         <div className="space-y-4">
           <SmartSearchBar
-            placeholder="Search by name, SKU, slug, or manufacturer..."
+            placeholder="Search by name or SKU (partial match)…"
             onSearch={setSearchQuery}
             className="mb-0"
           />
+          {searchQuery.trim() && searchLoading ? (
+            <p className="text-sm text-warm-gray">Searching…</p>
+          ) : null}
+          {searchQuery.trim() && !searchLoading ? (
+            <p className="text-sm text-warm-gray">
+              {filtered.length.toLocaleString()} result{filtered.length === 1 ? "" : "s"}
+              {` for "${searchQuery.trim()}"`}
+              {manufacturer || category || stock ? " (after filters)" : ""}
+            </p>
+          ) : null}
           <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
         <table className="w-full min-w-[700px] font-sans text-sm">
           <thead>
@@ -674,7 +706,7 @@ function ProductsTableInner({ products }: ProductsTableProps) {
             return;
           }
           if (id === "category") {
-            const allowed = new Set(categoryCounts.map((x) => x.value));
+            const allowed = new Set(categoryOptions.map((x) => x.value));
             setCategory(typeof value === "string" && allowed.has(value) ? value : null);
             return;
           }
@@ -694,6 +726,7 @@ function ProductsTableInner({ products }: ProductsTableProps) {
         }}
         mobileOpen={mobileFiltersOpen}
         onMobileClose={() => setMobileFiltersOpen(false)}
+        hideInline
       />
     </div>
   );
