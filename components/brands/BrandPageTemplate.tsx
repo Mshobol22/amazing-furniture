@@ -62,6 +62,7 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const searchParamsKey = searchParams.toString();
   const [categories, setCategories] = useState<ValueCount[]>([]);
   const [collections, setCollections] = useState<ValueCount[]>([]);
   const [colors, setColors] = useState<string[]>([]);
@@ -132,16 +133,24 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
         : null
       : null;
 
-  const selectedColors = parseCommaParam(searchParams.get("colors")).filter((c) =>
-    colors.includes(c)
-  );
+  const rawColorParam = useMemo(() => {
+    return new URLSearchParams(searchParamsKey).get("colors");
+  }, [searchParamsKey]);
 
-  const selectedMaterial =
-    (() => {
-      const mat = searchParams.get("material")?.trim() ?? null;
-      if (!mat) return null;
-      return materials.includes(mat) ? mat : null;
-    })();
+  const rawMaterialParam = useMemo(() => {
+    return new URLSearchParams(searchParamsKey).get("material");
+  }, [searchParamsKey]);
+
+  const selectedColors = useMemo(() => {
+    return parseCommaParam(rawColorParam).filter((c) => colors.includes(c));
+  }, [rawColorParam, colors]);
+
+  const selectedMaterial = useMemo(() => {
+    const mat = rawMaterialParam?.trim() ?? null;
+    if (!mat) return null;
+    return materials.includes(mat) ? mat : null;
+  }, [rawMaterialParam, materials]);
+  const selectedColorsKey = useMemo(() => selectedColors.join(","), [selectedColors]);
 
   useEffect(() => {
     let ignore = false;
@@ -233,11 +242,11 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
       ) {
         return;
       }
-      const urlColorsRaw = parseCommaParam(searchParams.get("colors"));
+      const urlColorsRaw = parseCommaParam(rawColorParam);
       if (!usesCollectionAsCategory && urlColorsRaw.length > 0 && colors.length === 0) {
         return;
       }
-      const urlMaterialRaw = searchParams.get("material")?.trim() ?? "";
+      const urlMaterialRaw = rawMaterialParam?.trim() ?? "";
       if (!usesCollectionAsCategory && urlMaterialRaw && materials.length === 0) {
         return;
       }
@@ -294,6 +303,12 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
     isMiscCategorySelected,
     config?.defaultCategory,
     usesCollectionAsCategory,
+    rawColorParam,
+    rawMaterialParam,
+    colors.length,
+    materials.length,
+    collections.length,
+    urlCollectionParam,
   ]);
 
   const miscCount = categories
@@ -313,7 +328,7 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
   }, [
     selectedCategory,
     selectedCollection,
-    selectedColors.join(","),
+    selectedColorsKey,
     selectedMaterial,
     priceMin,
     priceMax,
