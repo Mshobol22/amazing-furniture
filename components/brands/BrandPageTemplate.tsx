@@ -125,10 +125,12 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
   const isMiscCategorySelected = selectedCategory === MISC_CATEGORY_VALUE;
   const hasCollections = !usesCollectionAsCategory && collections.length > 0;
 
-  const selectedCollection =
-    !usesCollectionAsCategory &&
-    urlCollectionParam &&
-    (collections.some((c) => c.value === urlCollectionParam) ? urlCollectionParam : null);
+  const selectedCollection: string | null =
+    !usesCollectionAsCategory && urlCollectionParam
+      ? collections.some((c) => c.value === urlCollectionParam)
+        ? urlCollectionParam
+        : null
+      : null;
 
   const selectedColors = parseCommaParam(searchParams.get("colors")).filter((c) =>
     colors.includes(c)
@@ -255,11 +257,13 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
           config?.defaultCategory
             ? config.defaultCategory
             : undefined,
-        collection: usesCollectionAsCategory
-          ? selectedCategory ?? undefined
-          : hasCollections
-            ? selectedCollection ?? undefined
-            : undefined,
+        collection: (() => {
+          if (usesCollectionAsCategory) {
+            return selectedCategory ? selectedCategory : undefined;
+          }
+          if (!hasCollections) return undefined;
+          return selectedCollection ? selectedCollection : undefined;
+        })(),
         colors: selectedColors.length > 0 ? selectedColors : undefined,
         material: selectedMaterial ?? undefined,
         priceMin: priceMin ?? undefined,

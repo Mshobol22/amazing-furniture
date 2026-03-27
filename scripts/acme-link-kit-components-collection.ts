@@ -66,8 +66,8 @@ async function main() {
     if (/components/i.test(type)) componentSkus.add(sku);
   }
 
-  const kitSkuList = [...kitSkus];
-  const componentSkuList = [...componentSkus];
+  const kitSkuList = Array.from(kitSkus);
+  const componentSkuList = Array.from(componentSkus);
 
   console.log(`KIT SKUs: ${kitSkuList.length}`);
   console.log(`Component SKUs: ${componentSkuList.length}`);
