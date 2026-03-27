@@ -31,10 +31,16 @@ export function computeAdminFilterStats(
   let outStock = 0;
 
   for (const r of rows) {
-    const m = r.manufacturer?.trim() ? (r.manufacturer as string) : "Unknown";
+    const m =
+      typeof r.manufacturer === "string" && r.manufacturer.trim()
+        ? r.manufacturer.trim()
+        : "Unknown";
     mfrMap.set(m, (mfrMap.get(m) ?? 0) + 1);
 
-    const cat = r.category?.trim() ? (r.category as string) : "Uncategorized";
+    const cat =
+      typeof r.category === "string" && r.category.trim()
+        ? r.category.trim()
+        : "Uncategorized";
     catMap.set(cat, (catMap.get(cat) ?? 0) + 1);
 
     if (!mfrCatMap.has(m)) mfrCatMap.set(m, new Map());
@@ -58,36 +64,48 @@ export function computeAdminFilterStats(
   };
 }
 
-/**
- * Loads every product row for the admin catalog (includes out-of-stock).
- * Uses ranged requests to bypass the default 1k row cap.
- */
-export async function fetchAllAdminProductRows(): Promise<Record<string, unknown>[]> {
+/** Filter sidebar stats only — three light columns, chunked (safe for SSR). */
+export async function fetchAdminFilterStatsSlim(): Promise<AdminFilterStats> {
   const admin = createAdminClient();
-  const all: Record<string, unknown>[] = [];
+  const slim: Array<{
+    manufacturer: string | null;
+    category: string | null;
+    in_stock: boolean | null;
+  }> = [];
 
   for (let from = 0; ; from += PAGE) {
     const to = from + PAGE - 1;
     const { data, error } = await admin
       .from("products")
-      .select("*")
-      .order("name", { ascending: true })
+      .select("manufacturer, category, in_stock")
       .range(from, to);
 
     if (error) throw error;
     const chunk = data ?? [];
-    all.push(...chunk);
+    for (const row of chunk) {
+      slim.push({
+        manufacturer: (row.manufacturer as string | null) ?? null,
+        category: (row.category as string | null) ?? null,
+        in_stock: row.in_stock === false ? false : row.in_stock === true ? true : null,
+      });
+    }
     if (chunk.length < PAGE) break;
   }
 
-  return all;
+  return computeAdminFilterStats(slim);
 }
 
-export function rowsToFilterStats(rows: Record<string, unknown>[]): AdminFilterStats {
-  const slim = rows.map((row) => ({
-    manufacturer: (row.manufacturer as string | null) ?? null,
-    category: (row.category as string | null) ?? null,
-    in_stock: row.in_stock === false ? false : true,
-  }));
-  return computeAdminFilterStats(slim);
+export async function fetchAdminProductsRange(
+  from: number,
+  to: number
+): Promise<Record<string, unknown>[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("products")
+    .select("*")
+    .order("name", { ascending: true })
+    .range(from, to);
+
+  if (error) throw error;
+  return data ?? [];
 }

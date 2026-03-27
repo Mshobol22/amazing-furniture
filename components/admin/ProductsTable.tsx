@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Pencil, Check, X } from "lucide-react";
@@ -13,7 +13,6 @@ import { formatPrice } from "@/lib/format-price";
 import type { AdminFilterStats } from "@/lib/admin/admin-products-data";
 
 interface ProductsTableProps {
-  products: Product[];
   filterStats: AdminFilterStats;
 }
 
@@ -41,7 +40,36 @@ const PIECE_TYPE_OPTIONS = [
   "Other",
 ];
 
-function ProductsTableInner({ products, filterStats }: ProductsTableProps) {
+function ProductsTableInner({ filterStats }: ProductsTableProps) {
+  const [catalog, setCatalog] = useState<Product[]>([]);
+  const [catalogStatus, setCatalogStatus] = useState<"loading" | "ready" | "error">("loading");
+
+  const loadCatalog = useCallback(async () => {
+    setCatalogStatus("loading");
+    const all: Product[] = [];
+    const pageSize = 400;
+    try {
+      for (let offset = 0; ; offset += pageSize) {
+        const r = await fetch(
+          `/api/admin/products/catalog?offset=${offset}&limit=${pageSize}`
+        );
+        if (!r.ok) throw new Error(String(r.status));
+        const data = (await r.json()) as { products?: Product[] };
+        const batch = data.products ?? [];
+        all.push(...batch);
+        if (batch.length < pageSize) break;
+      }
+      setCatalog(all);
+      setCatalogStatus("ready");
+    } catch {
+      setCatalogStatus("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCatalog();
+  }, [loadCatalog]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -117,10 +145,10 @@ function ProductsTableInner({ products, filterStats }: ProductsTableProps) {
   }, [categoryOptions, category]);
 
   const listForTable = useMemo(() => {
-    if (!searchQuery.trim()) return products;
+    if (!searchQuery.trim()) return catalog;
     if (searchLoading) return [];
     return searchResults ?? [];
-  }, [products, searchQuery, searchLoading, searchResults]);
+  }, [catalog, searchQuery, searchLoading, searchResults]);
 
   const filteredBase = listForTable.filter((p) => {
     const matchCategory = !category || categoryKey(p) === category;
@@ -391,7 +419,41 @@ function ProductsTableInner({ products, filterStats }: ProductsTableProps) {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((product, index) => (
+            {!searchQuery.trim() && catalogStatus === "error" ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-10 text-center text-sm text-warm-gray">
+                  Could not load the product catalog.{" "}
+                  <button
+                    type="button"
+                    className="font-medium text-[#2D4A3E] underline hover:no-underline"
+                    onClick={() => void loadCatalog()}
+                  >
+                    Retry
+                  </button>
+                </td>
+              </tr>
+            ) : !searchQuery.trim() && catalogStatus === "loading" ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-10 text-center text-sm text-warm-gray">
+                  Loading product catalog…
+                </td>
+              </tr>
+            ) : searchQuery.trim() && searchLoading ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-10 text-center text-sm text-warm-gray">
+                  Searching…
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-10 text-center text-sm text-warm-gray">
+                  {searchQuery.trim()
+                    ? "No products match this search with the current filters."
+                    : "No products match the current filters."}
+                </td>
+              </tr>
+            ) : (
+              filtered.map((product, index) => (
               <React.Fragment key={product.id}>
               <tr
                 className={`border-b border-gray-100 hover:bg-gray-50 ${index % 2 === 1 ? "bg-gray-50/50" : "bg-white"}`}
@@ -687,7 +749,8 @@ function ProductsTableInner({ products, filterStats }: ProductsTableProps) {
                 </tr>
               )}
               </React.Fragment>
-            ))}
+            ))
+            )}
           </tbody>
         </table>
           </div>
