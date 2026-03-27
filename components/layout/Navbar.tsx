@@ -163,6 +163,7 @@ export default function Navbar() {
   const router = useRouter();
   const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [hasActiveSaleProducts, setHasActiveSaleProducts] = useState(false);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -176,6 +177,29 @@ export default function Navbar() {
       setUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+
+    async function checkSaleAvailability() {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id")
+        .eq("on_sale", true)
+        .limit(1);
+
+      if (!cancelled) {
+        setHasActiveSaleProducts(!error && (data?.length ?? 0) > 0);
+      }
+    }
+
+    void checkSaleAvailability();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -291,13 +315,15 @@ export default function Navbar() {
             </Link>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/sale"
-              className="hidden sm:flex items-center gap-1.5 text-sm font-semibold tracking-wide text-red-500 hover:text-red-400 transition-colors whitespace-nowrap"
-            >
-              <Tag className="h-4 w-4" />
-              Sale
-            </Link>
+            {hasActiveSaleProducts && (
+              <Link
+                href="/sale"
+                className="hidden sm:flex items-center gap-1.5 text-sm font-semibold tracking-wide text-red-500 hover:text-red-400 transition-colors whitespace-nowrap"
+              >
+                <Tag className="h-4 w-4" />
+                Sale
+              </Link>
+            )}
             <button
               onClick={() => setSearchOpen(!searchOpen)}
               className={`flex p-1.5 items-center justify-center rounded sm:p-2 ${iconColor} ${iconHover}`}
@@ -546,14 +572,16 @@ export default function Navbar() {
               >
                 Explore Now
               </Link>
-              <Link
-                href="/sale"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 px-4 py-3 font-semibold text-red-500 hover:bg-gray-50"
-              >
-                <Tag className="h-4 w-4" />
-                Sale
-              </Link>
+              {hasActiveSaleProducts && (
+                <Link
+                  href="/sale"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-4 py-3 font-semibold text-red-500 hover:bg-gray-50"
+                >
+                  <Tag className="h-4 w-4" />
+                  Sale
+                </Link>
+              )}
               {Object.entries(CATEGORIES).map(([key, cat]) => (
                 <div key={key} className="border-b border-[#ede8e3]/50">
                   <button

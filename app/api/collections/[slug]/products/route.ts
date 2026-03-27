@@ -145,6 +145,9 @@ export async function GET(
     query = query.lte("price", priceMax);
   }
 
+  // Keep out-of-stock products at the end of collection results.
+  query = query.order("in_stock", { ascending: false });
+
   // Sort
   switch (sort) {
     case "price-asc":

@@ -34,6 +34,22 @@ function enrichProductTitle(name: string, category: string): string {
   return name;
 }
 
+function getCategoryBadgeLabel(category: string): string {
+  const labels: Record<string, string> = {
+    bed: "BED",
+    "bedroom-furniture": "BEDROOM FURNITURE",
+    sofa: "SOFA",
+    chair: "CHAIR",
+    table: "TABLE",
+    cabinet: "CABINET",
+    "tv-stand": "TV STAND",
+    rug: "RUG",
+    other: "OTHER",
+  };
+
+  return labels[category] ?? category.replace(/-/g, " ").toUpperCase();
+}
+
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
@@ -241,6 +257,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             {/* Product info */}
             <div>
+              <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
+                {getCategoryBadgeLabel(product.category)}
+              </p>
               <h1 className="font-playfair text-2xl font-semibold leading-tight text-[#1C1C1C] md:text-3xl">
                 {product.name}
               </h1>

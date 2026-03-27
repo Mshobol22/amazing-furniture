@@ -209,6 +209,9 @@ export default async function CollectionPage({
   if (priceMin != null) productQuery = productQuery.gte("price", priceMin);
   if (priceMax != null) productQuery = productQuery.lte("price", priceMax);
 
+  // Show in-stock products first by default on collection pages.
+  productQuery = productQuery.order("in_stock", { ascending: false });
+
   switch (sort) {
     case "price-asc":
       productQuery = productQuery.order("price", { ascending: true });

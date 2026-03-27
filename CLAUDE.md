@@ -12,6 +12,7 @@
 - Supabase (auth + DB) — Auth is Supabase Auth with Google OAuth. NOT Clerk.
 - Stripe (payments + webhooks), Resend (email), shadcn/ui
 - Deployed on Vercel
+- Product counts: 6,584 total | 5,682 in stock | 902 out of stock
 
 ## Key IDs
 - Supabase project: `exppyvqjqnnowtjgumfc`
@@ -32,12 +33,17 @@
   customer_name, customer_email, shipping_address (JSONB)
 - `manufacturers` — id, name, slug, description, logo_url,
   is_active, sort_order
-- `hero_slides` — id, title, subtitle, image_url, product_id,
-  product_slug, cta_text, is_active, sort_order
+- `hero_slides` — id, headline, subheading, image_url, product_name,
+  product_slug, cta_label, cta_href, is_active, sort_order
 - `carts` — id, user_id, session_id, items (JSONB)
 - `newsletter_subscribers` — id, email, subscribed_at, source, is_active
 - `newsletter_attempts` — rate limiting table
 - `banners` — announcement bar content
+- `sale_events` — id, name, start_date, end_date, is_active
+- `sale_event_products` — sale_event_id, product_id
+- `wishlists` — id, user_id, created_at
+- `wishlist_items` — id, wishlist_id, product_id
+- `product_variants` — id, product_id, variant data (653 variants exist)
 NOTE: `promotions` table does NOT exist — remove any reference to it.
 
 ## Product Name Convention (CRITICAL)
@@ -166,30 +172,11 @@ The `collection` field means different things per manufacturer:
 - Zinatex inventory: `C:\Users\mshob\OneDrive\csv for AHF\zinat sku and inventory number.csv`
 
 ## Known Bugs — Pending (in priority order)
-1. **ACME placeholder images** — 1,383 products show /images/placeholder-product.jpg
-   Fix: re-import from acme datasheet.xlsx, split comma-separated image URLs
-   into proper arrays, map each component to its own image
-2. **ACME KIT grouping** — KIT parent and components not linked in `collection`
-   Fix: read KIT/component mapping from acme datasheet.xlsx, update collection
-   field so components appear in "Also in this collection" on product pages
-3. **United Furniture Solo images** — primary images updated via SKU matching
-   but "Images - Solo" column from CSV not yet fully applied
-   Fix: run Cursor script to re-map images[1] from "Images - Solo" CSV column
-4. **Category filter accuracy** — selecting "bed" shows nightstands/chests
-   Fix: verify filter uses `category` column; recategorize misclassified products
-5. **Filter state lost on back navigation** — selecting filters then navigating
-   to a product and pressing back resets all filters
-   Fix: move all filter state from useState to URL search params
-6. **Duplicate filter sidebar** — second sidebar renders at bottom of page
-   Fix: find and remove duplicate render in collection/brand page layout
-7. **Cart merge** — guest cart disappears on sign-in
-8. **Sale nav link** — "Sale" is first item in nav but sale page is empty
-   Fix: hide Sale link until on_sale products exist
-9. **Brand pages showing 0 products** — name mismatch between manufacturers
-   table and products.manufacturer column (if still not resolved)
-10. **Banners table missing RLS** — security issue, add SELECT + service_role policy
-11. **Orders RLS overly broad** — fix to restrict to service_role only
-12. **Discover page SSR** — shows "Loading discover..." with no content
+1. **Cart merge** — guest cart disappears on sign-in
+2. **ACME placeholder images** — 1,383 products showing placeholder (pending client decision)
+3. **Image proxy** — NFD URL encoding errors still occurring (Prompt 1 addresses this)
+4. **Collection field gaps** — NFD 0/729, UF 1,631/2,192 missing (Prompt 5 addresses this)
+5. **Discover page SSR** — shows "Loading discover..." for search engines
 
 ## Completed Changes (March 26, 2026)
 - ✅ Product names → SKU codes for ACME, Nationwide FD, United Furniture

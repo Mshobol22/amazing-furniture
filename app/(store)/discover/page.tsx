@@ -1,47 +1,67 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
 import DiscoverReel from "@/components/reel/DiscoverReel";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { mapRowToProduct } from "@/lib/supabase/products";
 import type { Product } from "@/types";
 
 type DiscoverResponse = {
   products: Product[];
   nextCursor: number | null;
-  hasMore: boolean;
-  total: number;
 };
 
-export default function DiscoverPage() {
-  const seedRef = useRef<number>(Math.floor(Math.random() * 99999));
-  const [products, setProducts] = useState<Product[]>([]);
-  const [nextCursor, setNextCursor] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+function seededSortValue(id: string, seed: number): number {
+  let hash = 0;
+  const source = `${id}${seed}`;
+  for (let i = 0; i < source.length; i += 1) {
+    hash = (hash * 31 + source.charCodeAt(i)) >>> 0;
+  }
+  return hash % 9999;
+}
 
-  useEffect(() => {
-    async function loadInitial() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(
-          `/api/discover?limit=20&seed=${seedRef.current}`
-        );
-        if (!response.ok) {
-          throw new Error("Failed to load discover products");
-        }
-        const payload = (await response.json()) as DiscoverResponse;
-        setProducts(payload.products ?? []);
-        setNextCursor(payload.nextCursor ?? null);
-      } catch {
-        setError("Unable to load discover feed right now.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
+async function getInitialDiscoverPayload(seed: number): Promise<DiscoverResponse> {
+  const LIMIT = 20;
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("in_stock", true)
+    .not("images", "is", null)
+    .not("images", "eq", "{}")
+    .or("images_validated.eq.true,images_validated.is.null");
 
-    void loadInitial();
-  }, []);
+  if (error) throw error;
+
+  const matchingRows = (data ?? []).filter(
+    (row) => Array.isArray(row.images) && row.images.length > 0
+  );
+
+  const orderedRows = [...matchingRows].sort((a, b) => {
+    const diff =
+      seededSortValue(String(a.id), seed) - seededSortValue(String(b.id), seed);
+    if (diff !== 0) return diff;
+    return String(a.id).localeCompare(String(b.id));
+  });
+
+  const pagedRows = orderedRows.slice(0, LIMIT);
+  const nextCursor = pagedRows.length < orderedRows.length ? pagedRows.length : null;
+
+  return {
+    products: pagedRows.map((row) => mapRowToProduct(row as Record<string, unknown>)),
+    nextCursor,
+  };
+}
+
+export default async function DiscoverPage() {
+  const seed = Math.floor(Math.random() * 99999);
+  let payload: DiscoverResponse | null = null;
+  let error: string | null = null;
+
+  try {
+    payload = await getInitialDiscoverPayload(seed);
+  } catch (e) {
+    console.error("Discover SSR load error:", e);
+    error = "Unable to load discover feed right now.";
+  }
 
   return (
     <div className="fixed inset-0 z-30 bg-black md:bg-[#111]">
@@ -53,13 +73,9 @@ export default function DiscoverPage() {
           ← Back
         </Link>
 
-        {isLoading ? (
-          <div className="flex h-screen w-full items-center justify-center text-white/80">
-            Loading discover...
-          </div>
-        ) : error ? (
+        {error || !payload ? (
           <div className="flex h-screen w-full flex-col items-center justify-center gap-3 px-4 text-center text-white/90">
-            <p>{error}</p>
+            <p>{error ?? "Unable to load discover feed right now."}</p>
             <Link
               href="/"
               className="rounded-md bg-[#2D4A3E] px-4 py-2 text-sm font-medium text-white"
@@ -69,9 +85,9 @@ export default function DiscoverPage() {
           </div>
         ) : (
           <DiscoverReel
-            initialProducts={products}
-            initialNextCursor={nextCursor}
-            seed={seedRef.current}
+            initialProducts={payload.products}
+            initialNextCursor={payload.nextCursor}
+            seed={seed}
           />
         )}
       </div>

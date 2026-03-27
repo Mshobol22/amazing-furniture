@@ -15,6 +15,22 @@ interface BrandProductGridCardProps {
   categoryFilter?: string;
 }
 
+function getCategoryBadgeLabel(category: string): string {
+  const labels: Record<string, string> = {
+    bed: "BED",
+    "bedroom-furniture": "BEDROOM FURNITURE",
+    sofa: "SOFA",
+    chair: "CHAIR",
+    table: "TABLE",
+    cabinet: "CABINET",
+    "tv-stand": "TV STAND",
+    rug: "RUG",
+    other: "OTHER",
+  };
+
+  return labels[category] ?? category.replace(/-/g, " ").toUpperCase();
+}
+
 export default function BrandProductGridCard({
   product,
   brandName,
@@ -49,6 +65,13 @@ export default function BrandProductGridCard({
           ) : (
             <div className="h-full w-full" />
           )}
+          {product.in_stock === false && (
+            <div className="absolute inset-0 z-[5] flex items-center justify-center bg-black/50">
+              <span className="rounded bg-black/60 px-3 py-1 text-xs font-semibold tracking-wide text-white">
+                OUT OF STOCK
+              </span>
+            </div>
+          )}
           {product.on_sale && (
             <span className="absolute left-2 top-2 rounded bg-red-600 px-2 py-1 text-xs font-semibold text-white">
               SALE
@@ -57,6 +80,9 @@ export default function BrandProductGridCard({
         </div>
       </Link>
       <div className="space-y-2 p-3">
+        <p className="font-sans text-xs font-semibold uppercase tracking-wide text-gray-500">
+          {getCategoryBadgeLabel(product.category)}
+        </p>
         <Link
           href={`/products/${product.slug}`}
           className="line-clamp-2 font-sans text-sm font-medium text-[#1C1C1C] hover:text-[#2D4A3E]"
@@ -109,13 +135,23 @@ export default function BrandProductGridCard({
             </button>
           ) : null}
         </div>
-        <button
-          type="button"
-          onClick={() => addItem(product, 1)}
-          className="w-full rounded-lg bg-[#2D4A3E] px-3 py-2 text-sm font-medium text-[#FAF8F5] hover:bg-[#1E3329]"
-        >
-          Add to Cart
-        </button>
+        {product.in_stock === false ? (
+          <button
+            type="button"
+            disabled
+            className="w-full cursor-not-allowed rounded-lg bg-gray-300 px-3 py-2 text-sm font-medium text-gray-600"
+          >
+            Out of Stock
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => addItem(product, 1)}
+            className="w-full rounded-lg bg-[#2D4A3E] px-3 py-2 text-sm font-medium text-[#FAF8F5] hover:bg-[#1E3329]"
+          >
+            Add to Cart
+          </button>
+        )}
       </div>
     </article>
   );

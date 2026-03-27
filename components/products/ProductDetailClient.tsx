@@ -54,14 +54,23 @@ export default function ProductDetailClient({
             ))}
           </select>
         </div>
-        <Button
-          onClick={handleAddToCart}
-          disabled={!product.in_stock}
-          className="w-fit bg-[#1C1C1C] font-sans font-semibold tracking-wide text-white hover:bg-[#2a2a2a] disabled:opacity-50"
-        >
-          <ShoppingCart className="mr-2 h-4 w-4 text-[#2D4A3E]" />
-          Add to Cart
-        </Button>
+        {product.in_stock ? (
+          <Button
+            onClick={handleAddToCart}
+            className="w-fit bg-[#1C1C1C] font-sans font-semibold tracking-wide text-white hover:bg-[#2a2a2a]"
+          >
+            <ShoppingCart className="mr-2 h-4 w-4 text-[#2D4A3E]" />
+            Add to Cart
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            disabled
+            className="w-fit cursor-not-allowed bg-gray-300 font-sans font-semibold tracking-wide text-gray-600 hover:bg-gray-300"
+          >
+            Out of Stock
+          </Button>
+        )}
       </div>
 
       {/* Sticky CTA — mobile only */}
@@ -78,14 +87,23 @@ export default function ProductDetailClient({
             </option>
           ))}
         </select>
-        <Button
-          onClick={handleAddToCart}
-          disabled={!product.in_stock}
-          className="flex-1 bg-[#1C1C1C] font-sans font-semibold tracking-wide text-white hover:bg-[#2a2a2a] disabled:opacity-50"
-        >
-          <ShoppingCart className="mr-2 h-4 w-4 text-[#2D4A3E]" />
-          {product.in_stock ? "Add to Cart" : "Out of Stock"}
-        </Button>
+        {product.in_stock ? (
+          <Button
+            onClick={handleAddToCart}
+            className="flex-1 bg-[#1C1C1C] font-sans font-semibold tracking-wide text-white hover:bg-[#2a2a2a]"
+          >
+            <ShoppingCart className="mr-2 h-4 w-4 text-[#2D4A3E]" />
+            Add to Cart
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            disabled
+            className="flex-1 cursor-not-allowed bg-gray-300 font-sans font-semibold tracking-wide text-gray-600 hover:bg-gray-300"
+          >
+            Out of Stock
+          </Button>
+        )}
       </div>
     </>
   );

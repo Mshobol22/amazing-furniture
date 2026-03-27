@@ -77,6 +77,11 @@ export const metadata: Metadata = {
       "Shop premium sofas, beds, bedroom furniture, chairs, tables, cabinets, TV stands, rugs, and more. Free shipping on orders over $299. Flexible financing available.",
     images: ["https://amazinghomefurniturestore.com/og-image.png?v=2"],
   },
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
   alternates: { canonical: "https://amazinghomefurniturestore.com" },
 };
 

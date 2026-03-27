@@ -4,28 +4,28 @@ import { FALLBACK_IMAGE } from "@/lib/utils";
 const ALLOWED_REFERER_ORIGIN = "https://nationwidefd.com";
 
 function normalizeProxyUrlParam(rawUrl: string): string {
-  // Accept both encoded and unencoded query values.
-  let decoded = rawUrl;
+  // Decode once to handle values that may be double-encoded by upstream callers.
+  let decodedUrl = rawUrl;
   try {
-    decoded = decodeURIComponent(rawUrl);
+    decodedUrl = decodeURIComponent(rawUrl);
   } catch {
-    // Keep raw value when partially encoded/badly escaped.
+    // Keep raw value when malformed encoding is present.
   }
 
-  // Ensure URL constructor can parse URLs containing bare spaces.
-  const withEscapedSpaces = decoded.split(" ").join("%20");
+  const parsed = new URL(decodedUrl);
+  // Re-encode only path segments; preserve protocol, host, and query string.
+  parsed.pathname = parsed.pathname
+    .split("/")
+    .map((segment) => {
+      try {
+        return encodeURIComponent(decodeURIComponent(segment));
+      } catch {
+        return encodeURIComponent(segment);
+      }
+    })
+    .join("/");
 
-  try {
-    const parsed = new URL(withEscapedSpaces);
-    // Re-encode pathname safely so upstream fetch never receives bare spaces.
-    parsed.pathname = parsed.pathname
-      .split("/")
-      .map((segment) => encodeURIComponent(decodeURIComponent(segment)))
-      .join("/");
-    return parsed.toString();
-  } catch {
-    return withEscapedSpaces;
-  }
+  return parsed.toString();
 }
 
 function isAllowedNationwideFdUrl(url: string): boolean {
@@ -50,16 +50,15 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Decode + re-encode to normalize mixed encoded/unencoded URLs.
-  const safeUrl = normalizeProxyUrlParam(rawUrl);
-
-  // Validate well-formedness before any further checks
+  // Decode + re-encode pathname segments before any fetch.
+  let safeUrl: string;
   let parsedUrl: URL;
   try {
+    safeUrl = normalizeProxyUrlParam(rawUrl);
     parsedUrl = new URL(safeUrl);
   } catch {
     return NextResponse.json(
-      { error: "Invalid image URL", url: safeUrl },
+      { error: "Malformed image URL query parameter" },
       { status: 400 }
     );
   }

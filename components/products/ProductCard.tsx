@@ -19,6 +19,22 @@ interface ProductCardProps {
   enableContextualReel?: boolean;
 }
 
+function getCategoryBadgeLabel(category: string): string {
+  const labels: Record<string, string> = {
+    bed: "BED",
+    "bedroom-furniture": "BEDROOM FURNITURE",
+    sofa: "SOFA",
+    chair: "CHAIR",
+    table: "TABLE",
+    cabinet: "CABINET",
+    "tv-stand": "TV STAND",
+    rug: "RUG",
+    other: "OTHER",
+  };
+
+  return labels[category] ?? category.replace(/-/g, " ").toUpperCase();
+}
+
 export default function ProductCard({
   product,
   className,
@@ -99,10 +115,20 @@ export default function ProductCard({
             ) : (
               <div className="h-full w-full rounded bg-gray-100" aria-hidden="true" />
             )}
+            {product.in_stock === false && (
+              <div className="absolute inset-0 z-[5] flex items-center justify-center bg-black/50">
+                <span className="rounded bg-black/60 px-3 py-1 text-xs font-semibold tracking-wide text-white">
+                  OUT OF STOCK
+                </span>
+              </div>
+            )}
           </div>
         </Link>
       </div>
       <div className="flex flex-col gap-1.5 p-3">
+        <p className="font-sans text-xs font-semibold uppercase tracking-wide text-gray-500">
+          {getCategoryBadgeLabel(product.category)}
+        </p>
         <Link
           href={`/products/${product.slug}`}
           className="line-clamp-2 font-sans text-sm font-medium text-gray-900 hover:text-[#2D4A3E]"

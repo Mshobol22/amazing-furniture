@@ -34,6 +34,15 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/favicon.png",
+        destination: "/placeholder-furniture.svg",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
