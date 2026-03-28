@@ -1,7 +1,7 @@
 import type { Product } from "@/types";
 
-/** Matches descriptions like `Item Name — rest of text...` */
-const ITEM_NAME_SEPARATOR = " \u2014 ";
+/** Space + em dash + space, e.g. `B114M — Mirror` */
+const TITLE_SEP = " \u2014 ";
 
 export function isNationwideFDProduct(
   product: Pick<Product, "manufacturer">
@@ -10,22 +10,27 @@ export function isNationwideFDProduct(
 }
 
 /**
- * Text before the first ` — ` in the description, or null if absent/empty.
+ * Text before the first em dash (U+2014) in the description, or null if absent/empty.
  */
 export function extractNfdItemNameFromDescription(
   description: string | null | undefined
 ): string | null {
   if (!description) return null;
-  const idx = description.indexOf(ITEM_NAME_SEPARATOR);
+  const idx = description.indexOf("\u2014");
   if (idx <= 0) return null;
   const name = description.slice(0, idx).trim();
   return name.length > 0 ? name : null;
 }
 
-/** H1: `CODE — Name` or `CODE` when no extractable name. */
+/**
+ * NFD H1: `{sku} — {piece_type}` when piece_type is set; else `{sku} — {from description}`
+ * before first —; else `{sku}` (product.name is the SKU code).
+ */
 export function getNationwideFDProductHeading(product: Product): string {
-  const code = product.name;
-  const itemName = extractNfdItemNameFromDescription(product.description);
-  if (itemName) return `${code}${ITEM_NAME_SEPARATOR}${itemName}`;
-  return code;
+  const sku = product.name;
+  const piece = product.piece_type?.trim();
+  if (piece) return `${sku}${TITLE_SEP}${piece}`;
+  const fromDesc = extractNfdItemNameFromDescription(product.description);
+  if (fromDesc) return `${sku}${TITLE_SEP}${fromDesc}`;
+  return sku;
 }

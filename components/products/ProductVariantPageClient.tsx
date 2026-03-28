@@ -10,21 +10,6 @@ import {
   isNationwideFDProduct,
 } from "@/lib/nfd-product-display";
 
-function getCategoryBadgeLabel(category: string): string {
-  const labels: Record<string, string> = {
-    bed: "BED",
-    "bedroom-furniture": "BEDROOM FURNITURE",
-    sofa: "SOFA",
-    chair: "CHAIR",
-    table: "TABLE",
-    cabinet: "CABINET",
-    "tv-stand": "TV STAND",
-    rug: "RUG",
-    other: "OTHER",
-  };
-  return labels[category] ?? category.replace(/-/g, " ").toUpperCase();
-}
-
 interface ProductVariantPageClientProps {
   product: Product;
   variants: ProductVariant[];
@@ -59,11 +44,11 @@ export default function ProductVariantPageClient({
       <div>
         {isNationwideFDProduct(product) ? (
           <div className="mb-1 space-y-1">
-            <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
-              {product.collection?.trim()
-                ? product.collection.trim()
-                : getCategoryBadgeLabel(product.category)}
-            </p>
+            {product.collection_group?.trim() ? (
+              <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
+                {product.collection_group.trim()}
+              </p>
+            ) : null}
             <p className="font-sans text-xs font-semibold uppercase tracking-wide text-[#2D4A3E]">
               Nationwide FD
             </p>
