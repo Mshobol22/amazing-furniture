@@ -32,6 +32,18 @@ export function mapRowToProduct(row: Record<string, unknown>): Product {
     piece_type: row.piece_type != null ? (row.piece_type as string) : null,
     is_collection_hero: Boolean(row.is_collection_hero),
     bundle_skus: (row.bundle_skus as string[]) ?? [],
+    page_id:
+      row.page_id == null || String(row.page_id).trim() === ""
+        ? null
+        : String(row.page_id).trim(),
+    page_features: (() => {
+      const pf = row.page_features;
+      if (!Array.isArray(pf) || pf.length === 0) return null;
+      const cleaned = (pf as unknown[])
+        .map((s) => String(s).trim())
+        .filter(Boolean);
+      return cleaned.length > 0 ? cleaned : null;
+    })(),
     images_validated:
       row.images_validated == null ? null : Boolean(row.images_validated),
     color: row.color != null ? (row.color as string) : null,

@@ -24,6 +24,10 @@ export interface Product {
   piece_type?: string | null;
   is_collection_hero?: boolean;
   bundle_skus?: string[];
+  /** United Furniture datasheet Page ID (e.g. B020) */
+  page_id?: string | null;
+  /** United Furniture feature bullets from datasheet */
+  page_features?: string[] | null;
   images_validated?: boolean | null;
   color?: string | null;
 }

@@ -22,6 +22,12 @@ import {
   getNationwideFDProductListingLabel,
   isNationwideFDProduct,
 } from "@/lib/nfd-product-display";
+import {
+  getUnitedFurnitureProductHeading,
+  getUnitedFurnitureSkuLineKind,
+  getUnitedFurnitureSkuLineValue,
+  isUnitedFurnitureProduct,
+} from "@/lib/united-product-display";
 
 function enrichProductTitle(name: string, category: string): string {
   const categoryKeywords: Record<string, string> = {
@@ -74,7 +80,9 @@ export async function generateMetadata({
 
   const enrichedTitle = isNationwideFDProduct(product)
     ? getNationwideFDProductHeading(product)
-    : enrichProductTitle(product.name, product.category);
+    : isUnitedFurnitureProduct(product)
+      ? getUnitedFurnitureProductHeading(product)
+      : enrichProductTitle(product.name, product.category);
 
   return {
     title: `${enrichedTitle} | Amazing Home Furniture`,
@@ -191,6 +199,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
       ? `Swipe to see the full ${product.piece_type} collection`
       : "Swipe to explore this collection";
 
+  const isUF = isUnitedFurnitureProduct(product);
+  const ufSkuLineValue = isUF ? getUnitedFurnitureSkuLineValue(product) : null;
+  const ufSkuLineKind = isUF ? getUnitedFurnitureSkuLineKind(product) : "sku";
+
   return (
     <div className="min-h-screen bg-[#FAF8F5] px-4 pt-4 pb-20 sm:px-6 sm:py-8 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -273,11 +285,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   {getCategoryBadgeLabel(product.category)}
                 </p>
               )}
+              {isUF && product.page_id?.trim() ? (
+                <p className="mt-1 font-sans text-xs font-medium tabular-nums tracking-wide text-[#1C1C1C]/45">
+                  {product.page_id.trim()}
+                </p>
+              ) : null}
               <h1 className="font-playfair text-2xl font-semibold leading-tight text-[#1C1C1C] md:text-3xl">
                 {isNationwideFDProduct(product)
                   ? getNationwideFDProductHeading(product)
-                  : product.name}
+                  : isUF
+                    ? getUnitedFurnitureProductHeading(product)
+                    : product.name}
               </h1>
+              {isUF && ufSkuLineValue ? (
+                <p className="mt-2 font-sans text-sm text-[#1C1C1C]/65">
+                  <span className="font-semibold text-[#1C1C1C]/75">
+                    {ufSkuLineKind === "includes" ? "Includes:" : "SKU:"}
+                  </span>{" "}
+                  <span className="tabular-nums">{ufSkuLineValue}</span>
+                </p>
+              ) : null}
 
               {/* Price */}
               <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -414,7 +441,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
               "@type": "Product",
               name: isNationwideFDProduct(product)
                 ? getNationwideFDProductHeading(product)
-                : product.name,
+                : isUnitedFurnitureProduct(product)
+                  ? getUnitedFurnitureProductHeading(product)
+                  : product.name,
               description: product.description,
               sku: product.sku,
               image: product.images,
