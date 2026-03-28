@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type AdminFilterStats = {
@@ -15,6 +16,71 @@ function toSortedOptions(map: Map<string, number>): { value: string; count: numb
     .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
 }
 
+function normManufacturer(raw: string | null | undefined): string {
+  const t = (raw ?? "").trim();
+  return t === "" ? "Unknown" : t;
+}
+
+function normCategory(raw: string | null | undefined): string {
+  const t = (raw ?? "").trim();
+  return t === "" ? "Uncategorized" : t;
+}
+
+/**
+ * Same aggregates as the admin_products_* RPCs, computed in Node.
+ * Used when RPCs are missing (migration not applied) — ~6.5k narrow rows is acceptable.
+ */
+async function fetchAdminFilterStatsFallback(
+  admin: SupabaseClient
+): Promise<AdminFilterStats> {
+  const { data, error } = await admin
+    .from("products")
+    .select("manufacturer, category, in_stock");
+
+  if (error) throw error;
+
+  const manufacturerMap = new Map<string, number>();
+  const categoryMap = new Map<string, number>();
+  const byMfr = new Map<string, Map<string, number>>();
+  let inStock = 0;
+  let outOfStock = 0;
+
+  for (const row of data ?? []) {
+    const r = row as {
+      manufacturer: string | null;
+      category: string | null;
+      in_stock: boolean | null;
+    };
+    const m = normManufacturer(r.manufacturer);
+    manufacturerMap.set(m, (manufacturerMap.get(m) ?? 0) + 1);
+
+    const c = normCategory(r.category);
+    categoryMap.set(c, (categoryMap.get(c) ?? 0) + 1);
+
+    let inner = byMfr.get(m);
+    if (!inner) {
+      inner = new Map();
+      byMfr.set(m, inner);
+    }
+    inner.set(c, (inner.get(c) ?? 0) + 1);
+
+    if (r.in_stock === true) inStock++;
+    else if (r.in_stock === false) outOfStock++;
+  }
+
+  const categoriesByManufacturer: Record<string, { value: string; count: number }[]> = {};
+  for (const [mfr, catMap] of Array.from(byMfr.entries())) {
+    categoriesByManufacturer[mfr] = toSortedOptions(catMap);
+  }
+
+  return {
+    manufacturerCounts: toSortedOptions(manufacturerMap),
+    categoryCounts: toSortedOptions(categoryMap),
+    categoriesByManufacturer,
+    stockCounts: { inStock, outOfStock },
+  };
+}
+
 /** Filter sidebar stats via SQL GROUP BY RPCs (no full-table row scans). */
 export async function fetchAdminFilterStatsSlim(): Promise<AdminFilterStats> {
   const admin = createAdminClient();
@@ -26,10 +92,21 @@ export async function fetchAdminFilterStatsSlim(): Promise<AdminFilterStats> {
     admin.rpc("admin_products_stock_counts"),
   ]);
 
-  if (mfrRes.error) throw mfrRes.error;
-  if (catRes.error) throw catRes.error;
-  if (mfrCatRes.error) throw mfrCatRes.error;
-  if (stockRes.error) throw stockRes.error;
+  const rpcErr =
+    mfrRes.error ?? catRes.error ?? mfrCatRes.error ?? stockRes.error;
+  if (rpcErr) {
+    const missingFn =
+      rpcErr.code === "PGRST202" ||
+      /Could not find the function/i.test(rpcErr.message ?? "");
+    if (missingFn || process.env.ADMIN_FILTER_STATS_FORCE_FALLBACK === "1") {
+      console.error(
+        "[admin-products] filter stats RPC unavailable, using in-memory aggregate:",
+        rpcErr.message ?? rpcErr
+      );
+      return fetchAdminFilterStatsFallback(admin);
+    }
+    throw rpcErr;
+  }
 
   const manufacturerCounts = (mfrRes.data ?? []).map((r: { value: string; count: number | string }) => ({
     value: r.value,
