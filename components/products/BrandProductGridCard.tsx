@@ -9,6 +9,11 @@ import { useContextualReelContext } from "@/components/reel/ContextualReelProvid
 import { useReelContext } from "@/components/reel/ReelProvider";
 import { formatPrice } from "@/lib/format-price";
 import {
+  getAcmeProductCardDisplayName,
+  getAcmeProductCardSkuLabel,
+  isAcmeProduct,
+} from "@/lib/acme-product-display";
+import {
   getNationwideFDProductHeading,
   getNationwideFDProductListingLabel,
   isNationwideFDProduct,
@@ -88,7 +93,9 @@ export default function BrandProductGridCard({
         <p className="font-sans text-xs font-semibold uppercase tracking-wide text-gray-500">
           {isNationwideFDProduct(product)
             ? getNationwideFDProductListingLabel(product)
-            : getCategoryBadgeLabel(product.category)}
+            : isAcmeProduct(product)
+              ? getAcmeProductCardSkuLabel(product)
+              : getCategoryBadgeLabel(product.category)}
         </p>
         <Link
           href={`/products/${product.slug}`}
@@ -96,7 +103,9 @@ export default function BrandProductGridCard({
         >
           {isNationwideFDProduct(product)
             ? getNationwideFDProductHeading(product)
-            : product.name}
+            : isAcmeProduct(product)
+              ? getAcmeProductCardDisplayName(product)
+              : product.name}
         </Link>
         <p className="font-sans text-base font-semibold tabular-nums text-[#1C1C1C]">
           {product.on_sale && product.sale_price ? (

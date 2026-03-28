@@ -16,6 +16,8 @@ export interface Product {
   tags: string[];
   created_at: string;
   manufacturer?: string | null;
+  /** ACME: short display name for cards and headings (e.g. Dresser, Queen Bed) */
+  display_name?: string | null;
   has_variants?: boolean;
   variant_type?: string | null;
   collection?: string | null;
