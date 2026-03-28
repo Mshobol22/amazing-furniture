@@ -8,6 +8,7 @@ import { productLeadImageSrc } from "@/lib/nfd-image-proxy";
 import { useContextualReelContext } from "@/components/reel/ContextualReelProvider";
 import { useReelContext } from "@/components/reel/ReelProvider";
 import { formatPrice } from "@/lib/format-price";
+import { cn } from "@/lib/utils";
 import {
   getAcmeProductCardDisplayName,
   getAcmeProductCardSkuLabel,
@@ -23,6 +24,11 @@ import {
   getUnitedFurnitureProductHeading,
   isUnitedFurnitureProduct,
 } from "@/lib/united-product-display";
+import {
+  getZinatexCardListingLine,
+  getZinatexProductDisplayName,
+  isZinatexProduct,
+} from "@/lib/zinatex-product-display";
 
 interface BrandProductGridCardProps {
   product: Product;
@@ -95,14 +101,21 @@ export default function BrandProductGridCard({
         </div>
       </Link>
       <div className="space-y-2 p-3">
-        <p className="font-sans text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <p
+          className={cn(
+            "font-sans text-xs font-semibold tracking-wide text-gray-500",
+            isZinatexProduct(product) ? "normal-case" : "uppercase"
+          )}
+        >
           {isNationwideFDProduct(product)
             ? getNationwideFDProductListingLabel(product)
             : isAcmeProduct(product)
               ? getAcmeProductCardSkuLabel(product)
               : isUnitedFurnitureProduct(product)
                 ? getUnitedFurnitureListingLabel(product)
-                : getCategoryBadgeLabel(product.category)}
+                : isZinatexProduct(product)
+                  ? getZinatexCardListingLine(product)
+                  : getCategoryBadgeLabel(product.category)}
         </p>
         <Link
           href={`/products/${product.slug}`}
@@ -114,7 +127,9 @@ export default function BrandProductGridCard({
               ? getAcmeProductCardDisplayName(product)
               : isUnitedFurnitureProduct(product)
                 ? getUnitedFurnitureProductHeading(product)
-                : product.name}
+                : isZinatexProduct(product)
+                  ? getZinatexProductDisplayName(product)
+                  : product.name}
         </Link>
         <p className="font-sans text-base font-semibold tabular-nums text-[#1C1C1C]">
           {product.on_sale && product.sale_price ? (

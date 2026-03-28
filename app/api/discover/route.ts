@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     const seed = seedParam == null ? null : seedParsed.value;
     const supabase = getAnonClient();
 
-    // Full row for mapRowToProduct — includes UF page_id, bundle_skus, page_features, description
+    // Full row for mapRowToProduct — UF page_id/bundle_skus/page_features/description; Zinatex collection/subcategory/name
     const baseQuery = supabase
       .from("products")
       .select("*")

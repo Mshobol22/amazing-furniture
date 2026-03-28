@@ -34,6 +34,11 @@ import {
   getAcmeProductDetailHeadingFromDescription,
   isAcmeProduct,
 } from "@/lib/acme-product-display";
+import {
+  getZinatexCardListingLine,
+  getZinatexProductDisplayName,
+  isZinatexProduct,
+} from "@/lib/zinatex-product-display";
 
 function enrichProductTitle(name: string, category: string): string {
   const categoryKeywords: Record<string, string> = {
@@ -187,7 +192,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
     let siblingQuery = supabase
       .from("products")
-      .select("id, name, slug, images, price, sale_price, on_sale, piece_type")
+      .select(
+        "id, name, slug, images, price, sale_price, on_sale, piece_type, manufacturer, description, page_id, bundle_skus, collection, subcategory"
+      )
       .neq("id", product.id)
       .limit(6);
 
@@ -318,6 +325,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
                   {getUnitedFurnitureListingLabel(product)}
                 </p>
+              ) : isZinatexProduct(product) ? (
+                <p className="font-sans text-sm font-semibold tracking-wide text-gray-500 normal-case">
+                  {getZinatexCardListingLine(product)}
+                </p>
               ) : (
                 <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
                   {getCategoryBadgeLabel(product.category)}
@@ -328,11 +339,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   ? getNationwideFDProductHeading(product)
                   : isUF
                     ? getUnitedFurnitureProductHeading(product)
-                    : isAcmeProduct(product)
-                      ? getAcmeProductDetailHeadingFromDescription(
-                          product.description
-                        )
-                      : product.name}
+                    : isZinatexProduct(product)
+                      ? getZinatexProductDisplayName(product)
+                      : isAcmeProduct(product)
+                        ? getAcmeProductDetailHeadingFromDescription(
+                            product.description
+                          )
+                        : product.name}
               </h1>
               {isUF && ufSkuLineValue ? (
                 <p className="mt-2 font-sans text-sm text-[#1C1C1C]/65">
@@ -484,7 +497,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     ? getAcmeProductDetailHeadingFromDescription(
                         product.description
                       )
-                    : product.name,
+                    : isZinatexProduct(product)
+                      ? getZinatexProductDisplayName(product)
+                      : product.name,
               description: product.description,
               sku: product.sku,
               image: product.images,

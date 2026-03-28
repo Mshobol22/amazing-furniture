@@ -10,6 +10,12 @@ import {
   getNationwideFDProductListingLabel,
   isNationwideFDProduct,
 } from "@/lib/nfd-product-display";
+import {
+  getZinatexCardListingLine,
+  getZinatexProductDisplayName,
+  isZinatexProduct,
+} from "@/lib/zinatex-product-display";
+import { cn } from "@/lib/utils";
 
 interface ProductVariantPageClientProps {
   product: Product;
@@ -47,11 +53,22 @@ export default function ProductVariantPageClient({
           <p className="mb-1 font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
             {getNationwideFDProductListingLabel(product)}
           </p>
+        ) : isZinatexProduct(product) ? (
+          <p
+            className={cn(
+              "mb-1 font-sans text-sm font-semibold tracking-wide text-gray-500",
+              "normal-case"
+            )}
+          >
+            {getZinatexCardListingLine(product)}
+          </p>
         ) : null}
         <h1 className="font-playfair text-2xl font-semibold leading-tight text-[#1C1C1C] md:text-3xl">
           {isNationwideFDProduct(product)
             ? getNationwideFDProductHeading(product)
-            : product.name}
+            : isZinatexProduct(product)
+              ? getZinatexProductDisplayName(product)
+              : product.name}
         </h1>
 
         {product.description && (

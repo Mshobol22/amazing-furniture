@@ -25,6 +25,8 @@ export interface Product {
   has_variants?: boolean;
   variant_type?: string | null;
   collection?: string | null;
+  /** Zinatex / NFD-style type bucket (e.g. Large Rugs); Zinatex label fallback */
+  subcategory?: string | null;
   // Collection fields (added migration March 2026)
   collection_group?: string | null;
   piece_type?: string | null;

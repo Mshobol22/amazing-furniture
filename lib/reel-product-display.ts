@@ -14,12 +14,16 @@ import {
   getUnitedFurnitureProductHeading,
   isUnitedFurnitureProduct,
 } from "@/lib/united-product-display";
+import {
+  getZinatexListingLabel,
+  isZinatexProduct,
+} from "@/lib/zinatex-product-display";
 
-/** Second pill on reel overlay (after manufacturer): Zinatex collection, ACME SKU, NFD code/category, else category slug. */
+/** Second pill on reel overlay (after manufacturer): Zinatex collection/subcategory, ACME SKU, NFD code/category, else category slug. */
 export function getReelOverlaySecondaryLabel(product: Product): string | null {
-  if (product.manufacturer === "Zinatex") {
-    const c = product.collection?.trim();
-    return c || null;
+  if (isZinatexProduct(product)) {
+    const label = getZinatexListingLabel(product);
+    return label || null;
   }
   if (isAcmeProduct(product)) {
     const s = getAcmeProductCardSkuLabel(product);
@@ -35,8 +39,11 @@ export function getReelOverlaySecondaryLabel(product: Product): string | null {
   return cat || null;
 }
 
-/** Main reel title line — matches PDP/card rules for ACME and Nationwide FD. */
+/** Main reel title line — matches PDP/card rules per manufacturer. */
 export function getReelOverlayTitle(product: Product): string {
+  if (isZinatexProduct(product)) {
+    return product.name;
+  }
   if (isAcmeProduct(product)) {
     return getAcmeProductDetailHeadingFromDescription(product.description);
   }

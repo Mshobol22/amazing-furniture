@@ -25,6 +25,11 @@ import {
   getUnitedFurnitureProductHeading,
   isUnitedFurnitureProduct,
 } from "@/lib/united-product-display";
+import {
+  getZinatexCardListingLine,
+  getZinatexProductDisplayName,
+  isZinatexProduct,
+} from "@/lib/zinatex-product-display";
 
 interface ProductCardProps {
   product: Product;
@@ -141,14 +146,21 @@ export default function ProductCard({
         </Link>
       </div>
       <div className="flex flex-col gap-1.5 p-3">
-        <p className="font-sans text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <p
+          className={cn(
+            "font-sans text-xs font-semibold tracking-wide text-gray-500",
+            isZinatexProduct(product) ? "normal-case" : "uppercase"
+          )}
+        >
           {isNationwideFDProduct(product)
             ? getNationwideFDProductListingLabel(product)
             : isAcmeProduct(product)
               ? getAcmeProductCardSkuLabel(product)
               : isUnitedFurnitureProduct(product)
                 ? getUnitedFurnitureListingLabel(product)
-                : getCategoryBadgeLabel(product.category)}
+                : isZinatexProduct(product)
+                  ? getZinatexCardListingLine(product)
+                  : getCategoryBadgeLabel(product.category)}
         </p>
         <Link
           href={`/products/${product.slug}`}
@@ -160,7 +172,9 @@ export default function ProductCard({
               ? getAcmeProductCardDisplayName(product)
               : isUnitedFurnitureProduct(product)
                 ? getUnitedFurnitureProductHeading(product)
-                : product.name}
+                : isZinatexProduct(product)
+                  ? getZinatexProductDisplayName(product)
+                  : product.name}
         </Link>
         <p className="font-sans text-base font-semibold tabular-nums text-gray-900">
           {product.on_sale && product.sale_price != null ? (
