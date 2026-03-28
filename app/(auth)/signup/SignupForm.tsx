@@ -55,6 +55,10 @@ function GoogleIcon() {
 
 export default function SignupForm() {
   const searchParams = useSearchParams();
+  const redirectQuery = searchParams.get("redirect");
+  const loginHref = redirectQuery
+    ? `/login?redirect=${encodeURIComponent(redirectQuery)}`
+    : "/login";
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -97,10 +101,12 @@ export default function SignupForm() {
   const onGoogleSignUp = async () => {
     setError(null);
     try {
+      const nextPath = searchParams.get("redirect") || "/account";
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
       await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: "https://www.amazinghomefurniturestore.com/auth/callback",
+          redirectTo,
         },
       });
     } catch {
@@ -233,7 +239,7 @@ export default function SignupForm() {
 
           <p className="mt-6 text-center text-sm text-warm-gray">
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-walnut hover:underline">
+            <Link href={loginHref} className="font-medium text-walnut hover:underline">
               Sign in
             </Link>
           </p>

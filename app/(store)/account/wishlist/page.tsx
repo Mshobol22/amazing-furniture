@@ -1,0 +1,62 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import WishlistAccountGrid from "@/components/account/WishlistAccountGrid";
+import type { Product } from "@/types";
+
+export const metadata: Metadata = {
+  title: "Wishlist",
+};
+
+export default async function AccountWishlistPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    const h = headers();
+    const path = h.get("x-pathname") ?? "/account/wishlist";
+    redirect(`/login?redirect=${encodeURIComponent(path)}`);
+  }
+
+  const { data: wishRows } = await supabase
+    .from("wishlists")
+    .select("product_id, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const ids = (wishRows ?? []).map((r) => r.product_id as string).filter(Boolean);
+
+  if (ids.length === 0) {
+    return (
+      <div className="rounded-xl border border-[#1C1C1C]/10 bg-white p-10 text-center shadow-sm">
+        <h1 className="font-sans text-xl font-semibold text-charcoal">Wishlist</h1>
+        <p className="mt-3 text-warm-gray">Your wishlist is empty</p>
+        <Link
+          href="/collections/all"
+          className="mt-6 inline-flex rounded-lg bg-[#2D4A3E] px-5 py-2.5 text-sm font-medium text-cream hover:bg-[#1E3329]"
+        >
+          Browse products
+        </Link>
+      </div>
+    );
+  }
+
+  const { data: products } = await supabase.from("products").select("*").in("id", ids);
+
+  const map = new Map((products ?? []).map((p) => [p.id as string, p as Product]));
+  const ordered: Product[] = ids.map((id) => map.get(id)).filter((p): p is Product => Boolean(p));
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-sans text-xl font-semibold text-charcoal sm:text-2xl">Wishlist</h1>
+        <p className="mt-1 text-sm text-warm-gray">{ordered.length} saved items</p>
+      </div>
+      <WishlistAccountGrid products={ordered} />
+    </div>
+  );
+}

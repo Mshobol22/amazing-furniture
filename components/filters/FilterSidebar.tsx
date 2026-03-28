@@ -25,6 +25,8 @@ interface FilterSidebarProps {
   mobileOpen?: boolean;
   onMobileClose?: () => void;
   hideInline?: boolean;
+  /** Single desktop column: renders one inline sidebar inside aside + optional mobile sheet (avoids two FilterSidebar roots). */
+  desktopAsideLayout?: { asideClassName: string; innerClassName: string };
 }
 
 function FilterSidebarContent({
@@ -213,17 +215,28 @@ export default function FilterSidebar({
   mobileOpen = false,
   onMobileClose,
   hideInline = false,
+  desktopAsideLayout,
 }: FilterSidebarProps) {
+  const sharedContent = (
+    <FilterSidebarContent
+      sections={sections}
+      activeFilters={activeFilters}
+      onChange={onChange}
+      onClear={onClear}
+    />
+  );
+
+  const desktopBlock = desktopAsideLayout ? (
+    <aside className={desktopAsideLayout.asideClassName}>
+      <div className={desktopAsideLayout.innerClassName}>{sharedContent}</div>
+    </aside>
+  ) : !hideInline ? (
+    sharedContent
+  ) : null;
+
   return (
     <>
-      {!hideInline ? (
-        <FilterSidebarContent
-          sections={sections}
-          activeFilters={activeFilters}
-          onChange={onChange}
-          onClear={onClear}
-        />
-      ) : null}
+      {desktopBlock}
 
       {mobileOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">

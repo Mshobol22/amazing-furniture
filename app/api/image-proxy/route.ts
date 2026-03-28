@@ -12,6 +12,10 @@ function normalizeProxyUrlParam(rawUrl: string): string {
     // Keep raw value when malformed encoding is present.
   }
 
+  // Next.js decodes query params before searchParams.get(); e.g. Living%20Room → "Living Room".
+  // Literal spaces break `new URL()` and `fetch()`; restore %20 for the path.
+  decodedUrl = decodedUrl.split(" ").join("%20");
+
   const parsed = new URL(decodedUrl);
   // Re-encode only path segments; preserve protocol, host, and query string.
   parsed.pathname = parsed.pathname
@@ -50,11 +54,13 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const safeUrlParam = rawUrl.split(" ").join("%20");
+
   // Decode + re-encode pathname segments before any fetch.
   let safeUrl: string;
   let parsedUrl: URL;
   try {
-    safeUrl = normalizeProxyUrlParam(rawUrl);
+    safeUrl = normalizeProxyUrlParam(safeUrlParam);
     parsedUrl = new URL(safeUrl);
   } catch {
     return NextResponse.json(

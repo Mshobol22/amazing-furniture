@@ -17,6 +17,10 @@ import CategoryExploreReelTrigger from "@/components/reel/CategoryExploreReelTri
 import ProductDetailReelTrigger from "@/components/reel/ProductDetailReelTrigger";
 import type { Metadata } from "next";
 import type { ProductVariant } from "@/types";
+import {
+  getNationwideFDProductHeading,
+  isNationwideFDProduct,
+} from "@/lib/nfd-product-display";
 
 function enrichProductTitle(name: string, category: string): string {
   const categoryKeywords: Record<string, string> = {
@@ -67,7 +71,9 @@ export async function generateMetadata({
   }
   const product = resolved.product;
 
-  const enrichedTitle = enrichProductTitle(product.name, product.category);
+  const enrichedTitle = isNationwideFDProduct(product)
+    ? getNationwideFDProductHeading(product)
+    : enrichProductTitle(product.name, product.category);
 
   return {
     title: `${enrichedTitle} | Amazing Home Furniture`,
@@ -257,11 +263,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             {/* Product info */}
             <div>
-              <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
-                {getCategoryBadgeLabel(product.category)}
-              </p>
+              {isNationwideFDProduct(product) ? (
+                <div className="mb-1 space-y-1">
+                  <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
+                    {product.collection?.trim()
+                      ? product.collection.trim()
+                      : getCategoryBadgeLabel(product.category)}
+                  </p>
+                  <p className="font-sans text-xs font-semibold uppercase tracking-wide text-[#2D4A3E]">
+                    Nationwide FD
+                  </p>
+                </div>
+              ) : (
+                <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
+                  {getCategoryBadgeLabel(product.category)}
+                </p>
+              )}
               <h1 className="font-playfair text-2xl font-semibold leading-tight text-[#1C1C1C] md:text-3xl">
-                {product.name}
+                {isNationwideFDProduct(product)
+                  ? getNationwideFDProductHeading(product)
+                  : product.name}
               </h1>
 
               {/* Price */}
@@ -397,7 +418,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Product",
-              name: product.name,
+              name: isNationwideFDProduct(product)
+                ? getNationwideFDProductHeading(product)
+                : product.name,
               description: product.description,
               sku: product.sku,
               image: product.images,

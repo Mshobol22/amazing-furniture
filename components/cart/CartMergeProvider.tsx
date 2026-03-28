@@ -3,45 +3,46 @@
 import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import useCartStore, { readGuestCart, clearGuestCart } from "@/store/cartStore";
+import {
+  getOrCreateSessionId,
+  clearSessionId,
+  readSessionId,
+  cartItemsToPayload,
+} from "@/lib/cart-session";
+import type { CartItem } from "@/types";
 
-async function triggerMerge() {
-  const guestItems = readGuestCart();
-  const storeItems = useCartStore.getState().items;
+async function postGuestCart(sessionId: string, items: CartItem[]) {
+  const res = await fetch("/api/cart/guest", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      session_id: sessionId,
+      items: cartItemsToPayload(items),
+    }),
+  });
+  return res.ok;
+}
 
-  // Build a combined guest list (store items + localStorage) keyed by product + variant
-  const combined = new Map<string, { product_id: string; variant_id?: string; quantity: number }>();
-  for (const item of storeItems) {
-    const key = `${item.product.id}:${item.variant_id ?? ""}`;
-    combined.set(key, {
-      product_id: item.product.id,
-      variant_id: item.variant_id,
-      quantity: item.quantity,
-    });
+async function postMerge(
+  sessionId?: string | null,
+  fallbackGuestItems?: CartItem[]
+) {
+  const body: {
+    session_id?: string;
+    guest_items?: ReturnType<typeof cartItemsToPayload>;
+  } = {};
+  if (sessionId) body.session_id = sessionId;
+  if (fallbackGuestItems?.length) {
+    body.guest_items = cartItemsToPayload(fallbackGuestItems);
   }
-  for (const item of guestItems) {
-    const key = `${item.product.id}:${item.variant_id ?? ""}`;
-    const existing = combined.get(key);
-    combined.set(key, {
-      product_id: item.product.id,
-      variant_id: item.variant_id,
-      quantity: (existing?.quantity ?? 0) + item.quantity,
-    });
-  }
-
-  const itemsToMerge = Array.from(combined.values());
-  if (itemsToMerge.length === 0) return;
-
   const res = await fetch("/api/cart/merge", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ guest_items: itemsToMerge }),
+    body: JSON.stringify(body),
   });
-
-  if (res.ok) {
-    const { items } = await res.json();
-    if (Array.isArray(items)) useCartStore.getState().setItems(items);
-    clearGuestCart();
-  }
+  if (!res.ok) return null;
+  const data = (await res.json()) as { items?: unknown };
+  return Array.isArray(data.items) ? data.items : null;
 }
 
 export default function CartMergeProvider({
@@ -50,59 +51,88 @@ export default function CartMergeProvider({
   children: React.ReactNode;
 }) {
   const hasMerged = useRef(false);
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
 
-    // Restore guest cart on initial load (covers page refresh)
     const stored = readGuestCart();
     const current = useCartStore.getState().items;
     if (stored.length > 0 && current.length === 0) {
       useCartStore.getState().setItems(stored);
     }
 
-    // Check if user is already signed in on mount (catches post-OAuth redirect)
-    const checkAndMerge = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user && !hasMerged.current) {
-        const guestItems = readGuestCart();
-        if (guestItems.length > 0) {
-          hasMerged.current = true;
-          try {
-            await triggerMerge();
-          } catch {
-            hasMerged.current = false;
-          }
+    const mergeSignedInCart = async () => {
+      if (hasMerged.current) return;
+      const items = useCartStore.getState().items;
+      let sid = readSessionId() ?? "";
+
+      if (items.length > 0 && !sid) {
+        sid = getOrCreateSessionId();
+      }
+
+      hasMerged.current = true;
+      try {
+        let syncOk = true;
+        if (items.length > 0 && sid) {
+          syncOk = await postGuestCart(sid, items);
         }
+
+        const merged = await postMerge(
+          sid || undefined,
+          !syncOk && items.length > 0 ? items : undefined
+        );
+
+        if (merged) {
+          useCartStore.getState().setItems(merged);
+          clearSessionId();
+          clearGuestCart();
+        } else {
+          hasMerged.current = false;
+        }
+      } catch {
+        hasMerged.current = false;
       }
     };
 
-    checkAndMerge();
+    const init = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) await mergeSignedInCart();
+    };
 
-    // Also listen for auth state changes (covers in-tab sign-in)
+    void init();
+
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === "SIGNED_IN" && !hasMerged.current) {
-        const guestItems = readGuestCart();
-        if (guestItems.length > 0) {
-          hasMerged.current = true;
-          try {
-            await triggerMerge();
-          } catch {
-            hasMerged.current = false;
-          }
-        }
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        await mergeSignedInCart();
       }
       if (event === "SIGNED_OUT") {
         hasMerged.current = false;
+        clearSessionId();
       }
+    });
+
+    const unsubscribeCart = useCartStore.subscribe((state) => {
+      if (syncTimer.current) clearTimeout(syncTimer.current);
+      syncTimer.current = setTimeout(() => {
+        void supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user) return;
+          if (state.items.length === 0) return;
+          const sid = getOrCreateSessionId();
+          if (!sid) return;
+          void postGuestCart(sid, useCartStore.getState().items);
+        });
+      }, 450);
     });
 
     return () => {
       subscription.unsubscribe();
+      unsubscribeCart();
+      if (syncTimer.current) clearTimeout(syncTimer.current);
     };
   }, []);
 

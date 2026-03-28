@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "audit-slugs": "tsx scripts/audit-slugs.ts"
+    "audit-slugs": "tsx scripts/audit-slugs.ts",
+    "fix-acme-images": "tsx scripts/fix-acme-images.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",

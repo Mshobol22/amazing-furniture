@@ -2,9 +2,15 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const pathWithSearch = pathname + request.nextUrl.search;
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", pathWithSearch);
+
   let response = NextResponse.next({
     request: {
-      headers: request.headers,
+      headers: requestHeaders,
     },
   });
 
@@ -29,10 +35,13 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
-
   if (pathname.startsWith("/account") && !user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(
+      new URL(
+        `/login?redirect=${encodeURIComponent(pathWithSearch)}`,
+        request.url
+      )
+    );
   }
 
   if (pathname === "/checkout" && !user) {

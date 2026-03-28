@@ -5,23 +5,40 @@ import { Search, X } from "lucide-react";
 
 interface SmartSearchBarProps {
   placeholder: string;
-  onSearch: (query: string) => void;
+  /** Uncontrolled: debounced callback (default 400ms). */
+  onSearch?: (query: string) => void;
+  /** Controlled: parent owns value; no internal debounce. */
+  value?: string;
+  onValueChange?: (value: string) => void;
+  debounceMs?: number;
   className?: string;
 }
 
 export default function SmartSearchBar({
   placeholder,
   onSearch,
+  value: controlledValue,
+  onValueChange,
+  debounceMs = 400,
   className,
 }: SmartSearchBarProps) {
-  const [value, setValue] = useState("");
+  const isControlled = controlledValue !== undefined && onValueChange !== undefined;
+  const [internalValue, setInternalValue] = useState("");
 
   useEffect(() => {
+    if (isControlled || !onSearch) return;
     const timer = window.setTimeout(() => {
-      onSearch(value.trim());
-    }, 300);
+      onSearch(internalValue.trim());
+    }, debounceMs);
     return () => window.clearTimeout(timer);
-  }, [value, onSearch]);
+  }, [internalValue, debounceMs, isControlled, onSearch]);
+
+  const displayValue = isControlled ? controlledValue : internalValue;
+
+  const setValue = (next: string) => {
+    if (isControlled) onValueChange!(next);
+    else setInternalValue(next);
+  };
 
   return (
     <div className={className}>
@@ -32,17 +49,17 @@ export default function SmartSearchBar({
         />
         <input
           type="text"
-          value={value}
+          value={displayValue}
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
           className="w-full rounded-xl border border-[#1C1C1C]/15 bg-white py-2.5 pl-10 pr-10 text-sm text-[#1C1C1C] outline-none ring-0 transition focus:border-[#2D4A3E] focus:ring-2 focus:ring-[#2D4A3E]/30"
         />
-        {value ? (
+        {displayValue ? (
           <button
             type="button"
             onClick={() => {
               setValue("");
-              onSearch("");
+              if (!isControlled && onSearch) onSearch("");
             }}
             className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#1C1C1C]/60 hover:text-[#1C1C1C]"
             aria-label="Clear search"
