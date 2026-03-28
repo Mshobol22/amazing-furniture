@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
     const seed = seedParam == null ? null : seedParsed.value;
     const supabase = getAnonClient();
 
+    // Full row for mapRowToProduct — includes UF page_id, bundle_skus, page_features, description
     const baseQuery = supabase
       .from("products")
       .select("*")

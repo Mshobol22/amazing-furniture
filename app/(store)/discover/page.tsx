@@ -21,6 +21,7 @@ function seededSortValue(id: string, seed: number): number {
 async function getInitialDiscoverPayload(seed: number): Promise<DiscoverResponse> {
   const LIMIT = 20;
   const supabase = createAdminClient();
+  // select("*") so DiscoverReel gets UF page_id, bundle_skus, page_features, description via mapRowToProduct
   const { data, error } = await supabase
     .from("products")
     .select("*")

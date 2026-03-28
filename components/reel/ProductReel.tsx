@@ -16,6 +16,14 @@ import { toast } from "@/hooks/use-toast";
 import type { Product } from "@/types";
 import { zinatexColorNameToCss } from "@/components/reel/zinatex-reel-colors";
 import { proxyImage } from "@/lib/utils";
+import { isAcmeProduct } from "@/lib/acme-product-display";
+import { isNationwideFDProduct } from "@/lib/nfd-product-display";
+import { isUnitedFurnitureProduct } from "@/lib/united-product-display";
+import {
+  formatReelSecondaryPillText,
+  getReelOverlaySecondaryLabel,
+  getReelOverlayTitle,
+} from "@/lib/reel-product-display";
 
 type ReelCard = Product | { type: "divider"; id: "divider-card" };
 
@@ -473,10 +481,8 @@ export default function ProductReel({
           const activeSlide = slides[clampedSlideIndex];
           const activeProduct = activeSlide?.product ?? product;
           const activePrice = getPriceLabel(activeProduct);
-          const categoryPill =
-            activeProduct.manufacturer === "Zinatex"
-              ? activeProduct.collection
-              : activeProduct.category;
+          const reelSecondaryLabel = getReelOverlaySecondaryLabel(activeProduct);
+          const reelTitle = getReelOverlayTitle(activeProduct);
           const isWishlisted = wishlistedIds.has(activeProduct.id);
           const isAdded = Boolean(isAddingToCart.get(activeProduct.id));
           const useColorDots =
@@ -637,7 +643,7 @@ export default function ProductReel({
                       >
                         <Image
                           src={src}
-                          alt={slide.product.name}
+                          alt={getReelOverlayTitle(slide.product)}
                           fill
                           style={{ objectFit: "contain" }}
                           priority={priority}
@@ -733,11 +739,28 @@ export default function ProductReel({
                     </span>
                   ) : null}
 
+                  {(isAcmeProduct(activeProduct) ||
+                    isNationwideFDProduct(activeProduct) ||
+                    isUnitedFurnitureProduct(activeProduct)) && (
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {activeProduct.manufacturer ? (
+                        <span className="inline-flex rounded-full border border-white/20 bg-black/55 px-2.5 py-1 text-xs text-white shadow-sm backdrop-blur-[2px]">
+                          {activeProduct.manufacturer}
+                        </span>
+                      ) : null}
+                      {reelSecondaryLabel ? (
+                        <span className="inline-flex rounded-full border border-white/20 bg-black/45 px-2.5 py-1 text-xs text-white shadow-sm backdrop-blur-[2px]">
+                          {formatReelSecondaryPillText(reelSecondaryLabel)}
+                        </span>
+                      ) : null}
+                    </div>
+                  )}
+
                   <h2
                     className="mt-1 line-clamp-2 text-lg font-bold text-white"
                     style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}
                   >
-                    {activeProduct.name}
+                    {reelTitle}
                   </h2>
 
                   {activeProduct.color ? (
@@ -872,7 +895,7 @@ export default function ProductReel({
                       id={`reel-desc-title-${product.id}`}
                       className="mb-1 text-base font-semibold text-white"
                     >
-                      {activeProduct.name}
+                      {reelTitle}
                     </p>
                     <div className="mb-2 flex flex-wrap gap-2">
                       {activeProduct.manufacturer ? (
@@ -880,9 +903,9 @@ export default function ProductReel({
                           {activeProduct.manufacturer}
                         </span>
                       ) : null}
-                      {categoryPill ? (
+                      {reelSecondaryLabel ? (
                         <span className="inline-flex rounded-full bg-white/60 px-2.5 py-1 text-xs capitalize text-[#1C1C1C]">
-                          {String(categoryPill).replace("-", " ")}
+                          {formatReelSecondaryPillText(reelSecondaryLabel)}
                         </span>
                       ) : null}
                     </div>

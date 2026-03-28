@@ -20,6 +20,11 @@ import {
   getNationwideFDProductListingLabel,
   isNationwideFDProduct,
 } from "@/lib/nfd-product-display";
+import {
+  getUnitedFurnitureListingLabel,
+  getUnitedFurnitureProductHeading,
+  isUnitedFurnitureProduct,
+} from "@/lib/united-product-display";
 
 interface ProductCardProps {
   product: Product;
@@ -141,7 +146,9 @@ export default function ProductCard({
             ? getNationwideFDProductListingLabel(product)
             : isAcmeProduct(product)
               ? getAcmeProductCardSkuLabel(product)
-              : getCategoryBadgeLabel(product.category)}
+              : isUnitedFurnitureProduct(product)
+                ? getUnitedFurnitureListingLabel(product)
+                : getCategoryBadgeLabel(product.category)}
         </p>
         <Link
           href={`/products/${product.slug}`}
@@ -151,7 +158,9 @@ export default function ProductCard({
             ? getNationwideFDProductHeading(product)
             : isAcmeProduct(product)
               ? getAcmeProductCardDisplayName(product)
-              : product.name}
+              : isUnitedFurnitureProduct(product)
+                ? getUnitedFurnitureProductHeading(product)
+                : product.name}
         </Link>
         <p className="font-sans text-base font-semibold tabular-nums text-gray-900">
           {product.on_sale && product.sale_price != null ? (

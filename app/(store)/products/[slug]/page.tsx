@@ -16,13 +16,14 @@ import ProductCard from "@/components/products/ProductCard";
 import CategoryExploreReelTrigger from "@/components/reel/CategoryExploreReelTrigger";
 import ProductDetailReelTrigger from "@/components/reel/ProductDetailReelTrigger";
 import type { Metadata } from "next";
-import type { ProductVariant } from "@/types";
+import type { Product, ProductVariant } from "@/types";
 import {
   getNationwideFDProductHeading,
   getNationwideFDProductListingLabel,
   isNationwideFDProduct,
 } from "@/lib/nfd-product-display";
 import {
+  getUnitedFurnitureListingLabel,
   getUnitedFurnitureProductHeading,
   getUnitedFurnitureSkuLineKind,
   getUnitedFurnitureSkuLineValue,
@@ -64,6 +65,24 @@ function getCategoryBadgeLabel(category: string): string {
   };
 
   return labels[category] ?? category.replace(/-/g, " ").toUpperCase();
+}
+
+/** Minimal row shape for "Also in this collection" when mapping UF display title */
+function siblingProductTitle(sibling: {
+  manufacturer: string | null;
+  name: string;
+  description: string | null;
+  bundle_skus: string[] | null;
+}): string {
+  if (sibling.manufacturer === "United Furniture") {
+    return getUnitedFurnitureProductHeading({
+      manufacturer: sibling.manufacturer,
+      name: sibling.name,
+      description: sibling.description ?? "",
+      bundle_skus: Array.isArray(sibling.bundle_skus) ? sibling.bundle_skus : [],
+    } as Product);
+  }
+  return sibling.name;
 }
 
 interface ProductPageProps {
@@ -150,6 +169,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
     sale_price: number | null;
     on_sale: boolean | null;
     piece_type: string | null;
+    manufacturer: string | null;
+    description: string | null;
+    page_id: string | null;
+    bundle_skus: string[] | null;
   }> = [];
 
   const hasCollectionGroup = !!product.collection_group;
@@ -291,16 +314,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
                   {getAcmeProductCardSkuLabel(product)}
                 </p>
+              ) : isUF ? (
+                <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
+                  {getUnitedFurnitureListingLabel(product)}
+                </p>
               ) : (
                 <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
                   {getCategoryBadgeLabel(product.category)}
                 </p>
               )}
-              {isUF && product.page_id?.trim() ? (
-                <p className="mt-1 font-sans text-xs font-medium tabular-nums tracking-wide text-[#1C1C1C]/45">
-                  {product.page_id.trim()}
-                </p>
-              ) : null}
               <h1 className="font-playfair text-2xl font-semibold leading-tight text-[#1C1C1C] md:text-3xl">
                 {isNationwideFDProduct(product)
                   ? getNationwideFDProductHeading(product)
@@ -403,7 +425,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                       <div className="relative mb-2 aspect-[4/3] overflow-hidden rounded-md bg-white">
                         <Image
                           src={imageSrc}
-                          alt={sibling.name}
+                          alt={siblingProductTitle(sibling)}
                           fill
                           className="object-cover"
                           sizes="(max-width: 768px) 160px, 200px"
@@ -415,7 +437,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                         </p>
                       ) : null}
                       <p className="line-clamp-2 text-sm font-medium text-[#1C1C1C]">
-                        {sibling.name}
+                        {siblingProductTitle(sibling)}
                       </p>
                       <p className="mt-1 text-sm font-semibold text-[#1C1C1C]">
                         {formatPrice(

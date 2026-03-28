@@ -46,6 +46,9 @@ export async function GET(request: NextRequest) {
     const imageFilter =
       "images_validated.eq.true,and(images_validated.is.null,images.not.is.null,images.neq.{})";
 
+    // select("*") returns all columns needed for reel UI (description, collection_group,
+    // piece_type, sku, finish, collection, catalog_size, product_details, page_id,
+    // bundle_skus, page_features for United Furniture, etc.)
     const { data: collectionData, error: collectionError } = await supabase
       .from("products")
       .select("*")

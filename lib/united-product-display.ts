@@ -9,6 +9,31 @@ export function isUnitedFurnitureProduct(
   return product.manufacturer === "United Furniture";
 }
 
+/** Category badge when `page_id` is missing — matches card/PDP category line */
+function unitedCategoryBadgeLabel(category: string): string {
+  const labels: Record<string, string> = {
+    bed: "BED",
+    "bedroom-furniture": "BEDROOM FURNITURE",
+    sofa: "SOFA",
+    chair: "CHAIR",
+    table: "TABLE",
+    cabinet: "CABINET",
+    "tv-stand": "TV STAND",
+    rug: "RUG",
+    other: "OTHER",
+  };
+  return labels[category] ?? category.replace(/-/g, " ").toUpperCase();
+}
+
+/**
+ * Label above title (cards, PDP, reel): Page ID when set; otherwise category badge.
+ */
+export function getUnitedFurnitureListingLabel(product: Product): string {
+  const pid = product.page_id != null ? String(product.page_id).trim() : "";
+  if (pid) return pid;
+  return unitedCategoryBadgeLabel(product.category);
+}
+
 function nonEmptyBundleSkus(product: Product): string[] {
   const raw = product.bundle_skus ?? [];
   return raw

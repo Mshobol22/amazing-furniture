@@ -168,6 +168,7 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = getAnonClient();
+    // Full rows for reel display (UF page_id, bundle_skus, page_features, description, etc.)
     const { data, error } = await supabase
       .from("products")
       .select("*")

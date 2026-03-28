@@ -9,6 +9,11 @@ import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
 import { zinatexColorNameToCss } from "@/components/reel/zinatex-reel-colors";
 import { proxyImage } from "@/lib/utils";
+import {
+  formatReelSecondaryPillText,
+  getReelOverlaySecondaryLabel,
+  getReelOverlayTitle,
+} from "@/lib/reel-product-display";
 
 type ReelSlide = {
   product: Product;
@@ -438,10 +443,8 @@ export default function DiscoverReel({
           const activeSlide = slides[clampedSlideIndex];
           const activeProduct = activeSlide?.product ?? product;
           const activePrice = getPriceLabel(activeProduct);
-          const categoryPill =
-            activeProduct.manufacturer === "Zinatex"
-              ? activeProduct.collection
-              : activeProduct.category;
+          const reelSecondaryLabel = getReelOverlaySecondaryLabel(activeProduct);
+          const reelTitle = getReelOverlayTitle(activeProduct);
           const isWishlisted = wishlistedIds.has(activeProduct.id);
           const isAdded = Boolean(isAddingToCart.get(activeProduct.id));
           const useColorDots =
@@ -599,7 +602,7 @@ export default function DiscoverReel({
                       >
                         <Image
                           src={src}
-                          alt={slide.product.name}
+                          alt={getReelOverlayTitle(slide.product)}
                           fill
                           style={{ objectFit: "contain" }}
                           priority={priority}
@@ -689,9 +692,9 @@ export default function DiscoverReel({
                         {activeProduct.manufacturer}
                       </span>
                     ) : null}
-                    {categoryPill ? (
+                    {reelSecondaryLabel ? (
                       <span className="inline-flex rounded-full border border-white/20 bg-black/45 px-2.5 py-1 text-xs capitalize text-white shadow-sm backdrop-blur-[2px]">
-                        {String(categoryPill).replace("-", " ")}
+                        {formatReelSecondaryPillText(reelSecondaryLabel)}
                       </span>
                     ) : null}
                   </div>
@@ -700,7 +703,7 @@ export default function DiscoverReel({
                     className="mt-1 line-clamp-2 text-lg font-bold text-white"
                     style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}
                   >
-                    {activeProduct.name}
+                    {reelTitle}
                   </h2>
 
                   {activeProduct.color ? (
@@ -832,7 +835,7 @@ export default function DiscoverReel({
                       id={`discover-desc-title-${product.id}`}
                       className="mb-1 text-base font-semibold text-white"
                     >
-                      {activeProduct.name}
+                      {reelTitle}
                     </p>
                     <div className="mb-2 flex flex-wrap gap-2">
                       {activeProduct.manufacturer ? (
@@ -840,9 +843,9 @@ export default function DiscoverReel({
                           {activeProduct.manufacturer}
                         </span>
                       ) : null}
-                    {categoryPill ? (
+                    {reelSecondaryLabel ? (
                         <span className="inline-flex rounded-full bg-white/60 px-2.5 py-1 text-xs capitalize text-[#1C1C1C]">
-                        {String(categoryPill).replace("-", " ")}
+                        {formatReelSecondaryPillText(reelSecondaryLabel)}
                         </span>
                       ) : null}
                     </div>
