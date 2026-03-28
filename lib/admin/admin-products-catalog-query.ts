@@ -47,13 +47,14 @@ export function parseAdminCatalogSearchParams(sp: URLSearchParams): AdminCatalog
   return { q, manufacturer, category, stock, sort, page };
 }
 
+/** Loose Supabase query builder chain (count head + select *). */
+type AdminProductsQuery = any;
+
 /** Applies admin catalog filters (ANDed). Search uses OR on name + sku. */
 export function applyAdminCatalogFilters(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  base: any,
+  base: AdminProductsQuery,
   f: Pick<AdminCatalogFilters, "q" | "manufacturer" | "category" | "stock">
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any {
+): AdminProductsQuery {
   let query = base;
 
   const searchCore = stripIlikeWildcards(f.q);
@@ -88,11 +89,9 @@ export function applyAdminCatalogFilters(
 }
 
 export function orderAdminCatalog(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  query: any,
+  query: AdminProductsQuery,
   sort: AdminCatalogSort
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any {
+): AdminProductsQuery {
   switch (sort) {
     case "price-asc":
       return query.order("price", { ascending: true });
