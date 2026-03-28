@@ -34,3 +34,28 @@ export function getNationwideFDProductHeading(product: Product): string {
   if (fromDesc) return `${sku}${TITLE_SEP}${fromDesc}`;
   return sku;
 }
+
+/** Same uppercase category line as product cards (non-NFD default label). */
+function categoryBadgeLabel(category: string): string {
+  const labels: Record<string, string> = {
+    bed: "BED",
+    "bedroom-furniture": "BEDROOM FURNITURE",
+    sofa: "SOFA",
+    chair: "CHAIR",
+    table: "TABLE",
+    cabinet: "CABINET",
+    "tv-stand": "TV STAND",
+    rug: "RUG",
+    other: "OTHER",
+  };
+  return labels[category] ?? category.replace(/-/g, " ").toUpperCase();
+}
+
+/**
+ * NFD listing label: collection_group code, or category badge if missing.
+ */
+export function getNationwideFDProductListingLabel(product: Product): string {
+  const g = product.collection_group?.trim();
+  if (g) return g;
+  return categoryBadgeLabel(product.category);
+}

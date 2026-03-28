@@ -8,6 +8,11 @@ import { productLeadImageSrc } from "@/lib/nfd-image-proxy";
 import { useContextualReelContext } from "@/components/reel/ContextualReelProvider";
 import { useReelContext } from "@/components/reel/ReelProvider";
 import { formatPrice } from "@/lib/format-price";
+import {
+  getNationwideFDProductHeading,
+  getNationwideFDProductListingLabel,
+  isNationwideFDProduct,
+} from "@/lib/nfd-product-display";
 
 interface BrandProductGridCardProps {
   product: Product;
@@ -81,13 +86,17 @@ export default function BrandProductGridCard({
       </Link>
       <div className="space-y-2 p-3">
         <p className="font-sans text-xs font-semibold uppercase tracking-wide text-gray-500">
-          {getCategoryBadgeLabel(product.category)}
+          {isNationwideFDProduct(product)
+            ? getNationwideFDProductListingLabel(product)
+            : getCategoryBadgeLabel(product.category)}
         </p>
         <Link
           href={`/products/${product.slug}`}
           className="line-clamp-2 font-sans text-sm font-medium text-[#1C1C1C] hover:text-[#2D4A3E]"
         >
-          {product.name}
+          {isNationwideFDProduct(product)
+            ? getNationwideFDProductHeading(product)
+            : product.name}
         </Link>
         <p className="font-sans text-base font-semibold tabular-nums text-[#1C1C1C]">
           {product.on_sale && product.sale_price ? (

@@ -19,6 +19,7 @@ import type { Metadata } from "next";
 import type { ProductVariant } from "@/types";
 import {
   getNationwideFDProductHeading,
+  getNationwideFDProductListingLabel,
   isNationwideFDProduct,
 } from "@/lib/nfd-product-display";
 
@@ -264,16 +265,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {/* Product info */}
             <div>
               {isNationwideFDProduct(product) ? (
-                <div className="mb-1 space-y-1">
-                  {product.collection_group?.trim() ? (
-                    <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
-                      {product.collection_group.trim()}
-                    </p>
-                  ) : null}
-                  <p className="font-sans text-xs font-semibold uppercase tracking-wide text-[#2D4A3E]">
-                    Nationwide FD
-                  </p>
-                </div>
+                <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
+                  {getNationwideFDProductListingLabel(product)}
+                </p>
               ) : (
                 <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
                   {getCategoryBadgeLabel(product.category)}

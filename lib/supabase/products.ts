@@ -25,6 +25,7 @@ export function mapRowToProduct(row: Record<string, unknown>): Product {
     tags: (row.tags as string[]) ?? [],
     created_at: row.created_at as string,
     manufacturer: row.manufacturer != null ? (row.manufacturer as string) : null,
+    collection: row.collection != null ? (row.collection as string) : null,
     has_variants: Boolean(row.has_variants),
     variant_type: row.variant_type != null ? (row.variant_type as string) : null,
     collection_group: row.collection_group != null ? (row.collection_group as string) : null,
