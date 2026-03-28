@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { isZinatexListingVisibleRow } from "@/lib/zinatex-listing-filter";
 import { mapRowToProduct } from "@/lib/supabase/products";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +58,15 @@ type ProductRow = Record<string, unknown> & { id: string };
 
 function passesBaseFilters(row: ProductRow): boolean {
   if (row.in_stock !== true) return false;
+  if (
+    !isZinatexListingVisibleRow({
+      manufacturer: row.manufacturer as string | null | undefined,
+      has_variants: row.has_variants as boolean | null | undefined,
+      in_stock: row.in_stock as boolean | null | undefined,
+    })
+  ) {
+    return false;
+  }
   const images = row.images as string[] | null | undefined;
   if (!Array.isArray(images) || images.length === 0) return false;
   const validated = row.images_validated;

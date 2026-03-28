@@ -24,6 +24,10 @@ import {
   getReelOverlaySecondaryLabel,
   getReelOverlayTitle,
 } from "@/lib/reel-product-display";
+import {
+  fetchZinatexColorVariantsForReel,
+  shouldFetchZinatexReelVariants,
+} from "@/lib/zinatex-reel-variants";
 
 type ReelCard = Product | { type: "divider"; id: "divider-card" };
 
@@ -80,6 +84,7 @@ export default function ProductReel({
 }: ProductReelProps) {
   const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
+  const addVariantItem = useCartStore((state) => state.addVariantItem);
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
   const outerScrollRef = useRef<HTMLDivElement | null>(null);
   const loadingMoreRef = useRef(false);
@@ -114,20 +119,10 @@ export default function ProductReel({
   cardsRef.current = cards;
   const normalizedCategory = (category ?? "").trim();
 
-  const fetchColorVariants = useCallback(async (product: Product): Promise<Product[]> => {
-    if (product.manufacturer !== "Zinatex") return [];
-    if (!product.sku) return [];
-
-    const designNumber = product.sku.split("-")[0];
-    if (!designNumber || Number.isNaN(Number(designNumber))) return [];
-
-    const res = await fetch(
-      `/api/products/color-variants?design_number=${encodeURIComponent(designNumber)}&manufacturer=${encodeURIComponent("Zinatex")}&exclude_id=${encodeURIComponent(product.id)}`
-    );
-    if (!res.ok) return [];
-    const data = (await res.json()) as { variants?: Product[] };
-    return data.variants ?? [];
-  }, []);
+  const fetchColorVariants = useCallback(
+    (product: Product) => fetchZinatexColorVariantsForReel(product),
+    []
+  );
 
   // Touch/double-tap handling on the image area.
   const tapTimeoutRef = useRef<number | null>(null);
@@ -206,18 +201,11 @@ export default function ProductReel({
               const card = cardsRef.current[index];
               if (card && !("type" in card)) {
                 const p = card;
-                if (
-                  p.manufacturer === "Zinatex" &&
-                  p.sku &&
-                  !variantsFetchStartedRef.current.has(p.id)
-                ) {
-                  const designNumber = p.sku.split("-")[0];
-                  if (designNumber && !Number.isNaN(Number(designNumber))) {
-                    variantsFetchStartedRef.current.add(p.id);
-                    void fetchColorVariants(p).then((variants) => {
-                      setVariantsMap((prevMap) => new Map(prevMap).set(p.id, variants));
-                    });
-                  }
+                if (shouldFetchZinatexReelVariants(p) && !variantsFetchStartedRef.current.has(p.id)) {
+                  variantsFetchStartedRef.current.add(p.id);
+                  void fetchColorVariants(p).then((variants) => {
+                    setVariantsMap((prevMap) => new Map(prevMap).set(p.id, variants));
+                  });
                 }
               }
               // One-time reveal per card: stop observing once first seen.
@@ -334,7 +322,11 @@ export default function ProductReel({
 
   const addToCart = useCallback(
     (product: Product) => {
-      addItem(product, 1);
+      if (product.zinatex_reel_variant) {
+        addVariantItem(product, product.zinatex_reel_variant, 1);
+      } else {
+        addItem(product, 1);
+      }
       setIsAddingToCart((prev) => {
         const next = new Map(prev);
         next.set(product.id, true);
@@ -348,7 +340,7 @@ export default function ProductReel({
         });
       }, 1500);
     },
-    [addItem]
+    [addItem, addVariantItem]
   );
 
   const hiddenCardIds = useMemo(() => {

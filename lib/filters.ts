@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ReadonlyURLSearchParams } from "next/navigation";
+import { applyZinatexListingVisibilityFilter } from "@/lib/zinatex-listing-filter";
 
 export interface ProductFilters {
   manufacturer?: string[];
@@ -104,6 +105,8 @@ export function buildSupabaseQuery(
       q = q.order("name", { ascending: true });
   }
 
+  q = applyZinatexListingVisibilityFilter(q);
+
   return q;
 }
 
@@ -157,6 +160,13 @@ export function buildFilterMeta(
 ): FilterMetaRow[] {
   return rawRows
     .filter((row) => {
+      if (
+        row.manufacturer === "Zinatex" &&
+        row.has_variants === false &&
+        row.in_stock === false
+      ) {
+        return false;
+      }
       const imgs = row.images as string[] | null;
       const lead = imgs?.[0];
       if (!lead || typeof lead !== "string") return false;

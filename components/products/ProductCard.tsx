@@ -177,7 +177,16 @@ export default function ProductCard({
                   : product.name}
         </Link>
         <p className="font-sans text-base font-semibold tabular-nums text-gray-900">
-          {product.on_sale && product.sale_price != null ? (
+          {isZinatexProduct(product) &&
+          product.has_variants === true &&
+          product.zinatex_from_price != null ? (
+            <>
+              <span className="text-sm font-medium text-gray-600">From </span>
+              <span className="tabular-nums">
+                {formatPrice(product.zinatex_from_price)}
+              </span>
+            </>
+          ) : product.on_sale && product.sale_price != null ? (
             <>
               <span className="text-base font-semibold text-red-600 tabular-nums">
                 {formatPrice(product.sale_price)}

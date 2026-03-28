@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   applyAcmePlaceholderImageFilter,
+  applyZinatexListingVisibilityFilter,
   isHiddenAcmePlaceholderProduct,
 } from "@/lib/supabase/products";
 
@@ -105,6 +106,7 @@ export async function GET(request: NextRequest) {
         .limit(limit);
 
       ftQuery = applyAcmePlaceholderImageFilter(ftQuery);
+      ftQuery = applyZinatexListingVisibilityFilter(ftQuery);
 
       const { data } = await ftQuery;
       ftResults = (data ?? []) as Record<string, unknown>[];
@@ -119,6 +121,7 @@ export async function GET(request: NextRequest) {
         .limit(limit);
 
       categoryQuery = applyAcmePlaceholderImageFilter(categoryQuery);
+      categoryQuery = applyZinatexListingVisibilityFilter(categoryQuery);
 
       const { data } = await categoryQuery;
       categoryResults = (data ?? []) as Record<string, unknown>[];
@@ -134,6 +137,7 @@ export async function GET(request: NextRequest) {
         .limit(limit);
 
       fuzzyQuery = applyAcmePlaceholderImageFilter(fuzzyQuery);
+      fuzzyQuery = applyZinatexListingVisibilityFilter(fuzzyQuery);
 
       const { data } = await fuzzyQuery;
       fuzzyResults = (data ?? []) as Record<string, unknown>[];
@@ -180,6 +184,7 @@ export async function GET(request: NextRequest) {
       .limit(limit);
 
     fallbackQuery = applyAcmePlaceholderImageFilter(fallbackQuery);
+    fallbackQuery = applyZinatexListingVisibilityFilter(fallbackQuery);
 
     const { data } = await fallbackQuery;
 

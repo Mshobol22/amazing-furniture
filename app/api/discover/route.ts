@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { mapRowToProduct } from "@/lib/supabase/products";
+import {
+  applyZinatexListingVisibilityFilter,
+  mapRowToProduct,
+} from "@/lib/supabase/products";
 
 function getAnonClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -92,13 +95,14 @@ export async function GET(request: NextRequest) {
     const supabase = getAnonClient();
 
     // Full row for mapRowToProduct — UF page_id/bundle_skus/page_features/description; Zinatex collection/subcategory/name
-    const baseQuery = supabase
+    let baseQuery = supabase
       .from("products")
       .select("*")
       .eq("in_stock", true)
       .not("images", "is", null)
-      .not("images", "eq", "{}")
-      .or("images_validated.eq.true,images_validated.is.null");
+      .not("images", "eq", "{}");
+    baseQuery = applyZinatexListingVisibilityFilter(baseQuery);
+    baseQuery = baseQuery.or("images_validated.eq.true,images_validated.is.null");
 
     const { data, error } = await baseQuery;
     if (error) throw error;

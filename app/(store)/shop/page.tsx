@@ -4,6 +4,8 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   applyAcmePlaceholderImageFilter,
+  applyZinatexListingVisibilityFilter,
+  attachZinatexFromPrices,
   mapRowToProduct,
   isHiddenAcmePlaceholderProduct,
 } from "@/lib/supabase/products";
@@ -47,13 +49,15 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const supabase = createAdminClient();
 
   // ── Fetch filter metadata (full unfiltered catalogue) ──────────────────
-  const { data: rawMeta } = await supabase
+  let metaQuery = supabase
     .from("products")
     .select(
-      "manufacturer, category, color, material, collection, price, in_stock, on_sale, images"
+      "manufacturer, category, color, material, collection, price, in_stock, on_sale, images, has_variants"
     )
     .not("images", "is", null)
     .not("images", "eq", "{}");
+  metaQuery = applyZinatexListingVisibilityFilter(metaQuery);
+  const { data: rawMeta } = await metaQuery;
 
   const filterMeta = buildFilterMeta(rawMeta ?? []);
 
@@ -74,9 +78,11 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   productQuery = buildSupabaseQuery(supabase, productQuery, filters).range(from, to);
 
   const { data: rawProducts } = await productQuery;
-  const products = (rawProducts ?? [])
-    .map(mapRowToProduct)
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p));
+  const products = await attachZinatexFromPrices(
+    (rawProducts ?? [])
+      .map(mapRowToProduct)
+      .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+  );
 
   const pageHref = (nextPage: number) => {
     const params = new URLSearchParams(flat);

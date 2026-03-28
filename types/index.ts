@@ -1,3 +1,17 @@
+export type ProductVariant = {
+  id: string;
+  product_id: string;
+  sku: string;
+  size: string | null;
+  color: string | null;
+  price: number;
+  compare_at_price: number | null;
+  stock_qty: number;
+  in_stock: boolean;
+  image_url: string | null;
+  sort_order: number;
+};
+
 export interface Product {
   id: string;
   name: string;
@@ -22,7 +36,12 @@ export interface Product {
   finish?: string | null;
   catalog_size?: string | null;
   product_details?: string | null;
+  /** undefined/null DB = standalone; false/true explicit */
   has_variants?: boolean;
+  /** Lowest in-stock variant sell price for Zinatex parent cards (server-enriched). */
+  zinatex_from_price?: number;
+  /** Discover reel: when set, add-to-cart must use this variant with product as parent. */
+  zinatex_reel_variant?: ProductVariant;
   variant_type?: string | null;
   collection?: string | null;
   /** Zinatex / NFD-style type bucket (e.g. Large Rugs); Zinatex label fallback */
@@ -39,20 +58,6 @@ export interface Product {
   images_validated?: boolean | null;
   color?: string | null;
 }
-
-export type ProductVariant = {
-  id: string;
-  product_id: string;
-  sku: string;
-  size: string | null;
-  color: string | null;
-  price: number;
-  compare_at_price: number | null;
-  stock_qty: number;
-  in_stock: boolean;
-  image_url: string | null;
-  sort_order: number;
-};
 
 export interface CartItem {
   product: Product;

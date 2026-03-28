@@ -132,7 +132,16 @@ export default function BrandProductGridCard({
                   : product.name}
         </Link>
         <p className="font-sans text-base font-semibold tabular-nums text-[#1C1C1C]">
-          {product.on_sale && product.sale_price ? (
+          {isZinatexProduct(product) &&
+          product.has_variants === true &&
+          product.zinatex_from_price != null ? (
+            <>
+              <span className="text-sm font-medium text-gray-600">From </span>
+              <span className="tabular-nums">
+                {formatPrice(product.zinatex_from_price)}
+              </span>
+            </>
+          ) : product.on_sale && product.sale_price ? (
             <>
               <span className="text-base font-semibold text-red-600 tabular-nums">
                 {formatPrice(product.sale_price)}
@@ -185,6 +194,13 @@ export default function BrandProductGridCard({
           >
             Out of Stock
           </button>
+        ) : isZinatexProduct(product) && product.has_variants === true ? (
+          <Link
+            href={`/products/${product.slug}`}
+            className="flex w-full items-center justify-center rounded-lg border border-[#2D4A3E] bg-white px-3 py-2 text-sm font-medium text-[#2D4A3E] hover:bg-[#FAF8F5]"
+          >
+            Choose size &amp; color
+          </Link>
         ) : (
           <button
             type="button"

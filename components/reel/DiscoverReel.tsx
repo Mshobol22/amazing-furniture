@@ -14,6 +14,10 @@ import {
   getReelOverlaySecondaryLabel,
   getReelOverlayTitle,
 } from "@/lib/reel-product-display";
+import {
+  fetchZinatexColorVariantsForReel,
+  shouldFetchZinatexReelVariants,
+} from "@/lib/zinatex-reel-variants";
 
 type ReelSlide = {
   product: Product;
@@ -56,6 +60,7 @@ export default function DiscoverReel({
 }: DiscoverReelProps) {
   const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
+  const addVariantItem = useCartStore((state) => state.addVariantItem);
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
   const outerScrollRef = useRef<HTMLDivElement | null>(null);
   const loadingMoreRef = useRef(false);
@@ -87,20 +92,10 @@ export default function DiscoverReel({
   const variantsFetchStartedRef = useRef<Set<string>>(new Set());
   const slidesByProductRef = useRef<Map<string, ReelSlide[]>>(new Map());
 
-  const fetchColorVariants = useCallback(async (product: Product): Promise<Product[]> => {
-    if (product.manufacturer !== "Zinatex") return [];
-    if (!product.sku) return [];
-
-    const designNumber = product.sku.split("-")[0];
-    if (!designNumber || Number.isNaN(Number(designNumber))) return [];
-
-    const res = await fetch(
-      `/api/products/color-variants?design_number=${encodeURIComponent(designNumber)}&manufacturer=${encodeURIComponent("Zinatex")}&exclude_id=${encodeURIComponent(product.id)}`
-    );
-    if (!res.ok) return [];
-    const data = (await res.json()) as { variants?: Product[] };
-    return data.variants ?? [];
-  }, []);
+  const fetchColorVariants = useCallback(
+    (product: Product) => fetchZinatexColorVariantsForReel(product),
+    []
+  );
 
   // Touch/double-tap handling on the image area.
   const tapTimeoutRef = useRef<number | null>(null);
@@ -307,7 +302,11 @@ export default function DiscoverReel({
 
   const addToCart = useCallback(
     (product: Product) => {
-      addItem(product, 1);
+      if (product.zinatex_reel_variant) {
+        addVariantItem(product, product.zinatex_reel_variant, 1);
+      } else {
+        addItem(product, 1);
+      }
       setIsAddingToCart((prev) => {
         const next = new Map(prev);
         next.set(product.id, true);
@@ -321,7 +320,7 @@ export default function DiscoverReel({
         });
       }, 1500);
     },
-    [addItem]
+    [addItem, addVariantItem]
   );
 
   const hiddenCardIds = useMemo(() => {

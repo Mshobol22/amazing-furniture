@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   mapRowToProduct,
   applyAcmePlaceholderImageFilter,
+  applyZinatexListingVisibilityFilter,
+  attachZinatexFromPrices,
   isHiddenAcmePlaceholderProduct,
 } from "@/lib/supabase/products";
 
@@ -173,7 +175,9 @@ export async function GET(
     return NextResponse.json({ error: "Query failed" }, { status: 500 });
   }
 
-  let products = (data ?? []).map(mapRowToProduct);
+  let products = await attachZinatexFromPrices(
+    (data ?? []).map(mapRowToProduct)
+  );
 
   // Ensure ACME placeholder products are never returned to the UI.
   products = products.filter((p) =>

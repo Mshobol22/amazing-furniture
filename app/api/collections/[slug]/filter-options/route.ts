@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { applyZinatexListingVisibilityFilter } from "@/lib/supabase/products";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,7 @@ export async function GET(
     if (slug !== "all") q = q.eq("category", slug);
     q = q.in("subcategory", types);
     q = q.in("manufacturer", manufacturers);
+    q = applyZinatexListingVisibilityFilter(q);
 
     const { data, error } = await q;
     if (error) {
@@ -100,6 +102,7 @@ export async function GET(
 
   if (slug !== "all") q = q.eq("category", slug);
   q = q.in("subcategory", types);
+  q = applyZinatexListingVisibilityFilter(q);
 
   const { data, error } = await q;
   if (error) {

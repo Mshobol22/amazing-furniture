@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { mapRowToProduct } from "@/lib/supabase/products";
+import {
+  applyZinatexListingVisibilityFilter,
+  mapRowToProduct,
+} from "@/lib/supabase/products";
 
 export const dynamic = "force-dynamic";
 
@@ -49,14 +52,18 @@ export async function GET(request: NextRequest) {
     // select("*") returns all columns needed for reel UI (description, collection_group,
     // piece_type, sku, finish, collection, catalog_size, product_details, page_id,
     // bundle_skus, page_features, subcategory/name for Zinatex, etc.)
-    const { data: collectionData, error: collectionError } = await supabase
+    let collectionQuery = supabase
       .from("products")
       .select("*")
       .eq("collection_group", collectionGroup)
-      .eq("in_stock", true)
+      .eq("in_stock", true);
+    collectionQuery = applyZinatexListingVisibilityFilter(collectionQuery);
+    collectionQuery = collectionQuery
       .or(imageFilter)
       .order("is_collection_hero", { ascending: false })
       .order("piece_type", { ascending: true });
+
+    const { data: collectionData, error: collectionError } = await collectionQuery;
 
     if (collectionError) {
       throw collectionError;
@@ -66,9 +73,9 @@ export async function GET(request: NextRequest) {
       .from("products")
       .select("*")
       .or(`collection_group.is.null,collection_group.neq.${collectionGroup}`)
-      .eq("in_stock", true)
-      .or(imageFilter)
-      .range(offset, offset + limit - 1);
+      .eq("in_stock", true);
+    relatedQuery = applyZinatexListingVisibilityFilter(relatedQuery);
+    relatedQuery = relatedQuery.or(imageFilter).range(offset, offset + limit - 1);
 
     if (category) {
       relatedQuery = relatedQuery.eq("category", category);

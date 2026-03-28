@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Minus, Plus, ShoppingCart } from "lucide-react";
 import type { ProductVariant } from "@/types";
 import { formatPrice } from "@/lib/format-price";
+import { cn } from "@/lib/utils";
 
 /* ── size sort order ──────────────────────────────────────────── */
 
@@ -58,15 +59,17 @@ export default function VariantSelector({
 
   /* derived unique sizes & colors */
   const allSizes = useMemo(
-    () => sortSizes(
-      Array.from(new Set(variants.map((v) => v.size).filter(Boolean) as string[]))
-    ),
+    () =>
+      sortSizes(
+        Array.from(new Set(variants.map((v) => v.size).filter(Boolean) as string[]))
+      ),
     [variants]
   );
   const allColors = useMemo(
-    () => Array.from(
-      new Set(variants.map((v) => v.color).filter(Boolean) as string[])
-    ).sort(),
+    () =>
+      Array.from(
+        new Set(variants.map((v) => v.color).filter(Boolean) as string[])
+      ).sort(),
     [variants]
   );
 
@@ -102,6 +105,18 @@ export default function VariantSelector({
       ).sort()
     : allColors;
 
+  useEffect(() => {
+    if (!selectedSize) return;
+    const cols = Array.from(
+      new Set(
+        variants
+          .filter((v) => v.size === selectedSize && v.color !== null)
+          .map((v) => v.color as string)
+      )
+    ).sort();
+    if (cols.length === 1) setSelectedColor(cols[0]);
+  }, [selectedSize, variants]);
+
   /* resolved variant */
   const selectedVariant =
     selectedSize !== null && selectedColor !== null
@@ -113,6 +128,15 @@ export default function VariantSelector({
   useEffect(() => {
     onVariantChange?.(selectedVariant);
   }, [selectedVariant, onVariantChange]);
+
+  const sizeStepDone = !showSizeSelector || selectedSize !== null;
+  const colorChoicesForSize =
+    selectedSize !== null ? colorsForSelectedSize.length : 0;
+  const needColorPick =
+    showColorSelector &&
+    sizeStepDone &&
+    colorChoicesForSize > 1 &&
+    selectedColor === null;
 
   /* helpers */
   function isSizeFullyOos(size: string) {
@@ -136,9 +160,7 @@ export default function VariantSelector({
   }
 
   function handleSizeClick(size: string) {
-    if (isSizeFullyOos(size)) return;
     setSelectedSize(size);
-    // clear color if it doesn't exist for this new size
     if (
       selectedColor &&
       !variants.some((v) => v.size === size && v.color === selectedColor)
@@ -153,6 +175,11 @@ export default function VariantSelector({
 
   const canAddToCart =
     selectedVariant !== null && selectedVariant.in_stock;
+  const showOosCartCta =
+    selectedVariant !== null &&
+    !selectedVariant.in_stock &&
+    selectedSize !== null &&
+    selectedColor !== null;
 
   /* ── single-variant: simple display ──────────────────────────── */
   if (isSingleVariant) {
@@ -164,6 +191,7 @@ export default function VariantSelector({
           quantity={quantity}
           setQuantity={setQuantity}
           canAdd={v.in_stock}
+          showOutOfStock={!v.in_stock}
           onAdd={() => onAddToCart(v, quantity)}
         />
       </div>
@@ -173,7 +201,6 @@ export default function VariantSelector({
   /* ── multi-variant ────────────────────────────────────────────── */
   return (
     <div className="mt-6 space-y-6">
-      {/* Size selector — buttons when 2+ sizes, static label when only 1 */}
       {showSizeSelector ? (
         <div>
           <p className="mb-3 font-sans text-sm font-medium text-[#1C1C1C]">
@@ -194,16 +221,32 @@ export default function VariantSelector({
                   key={size}
                   type="button"
                   onClick={() => handleSizeClick(size)}
-                  disabled={oos}
-                  className={`rounded px-3 py-1.5 font-sans text-sm transition-colors ${
+                  className={cn(
+                    "relative rounded px-3 py-1.5 font-sans text-sm transition-colors",
                     active
                       ? "border-2 border-[#2D4A3E] bg-[#2D4A3E] font-medium text-white"
-                      : oos
-                      ? "cursor-not-allowed border border-gray-300 text-gray-400 line-through opacity-60"
-                      : "cursor-pointer border border-[#1C1C1C] text-[#1C1C1C] hover:border-[#2D4A3E] hover:text-[#2D4A3E]"
-                  }`}
+                      : "cursor-pointer border border-[#1C1C1C] text-[#1C1C1C] hover:border-[#2D4A3E] hover:text-[#2D4A3E]",
+                    oos && !active && "opacity-80"
+                  )}
                 >
                   {size}
+                  {oos && (
+                    <svg
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 h-full w-full"
+                      viewBox="0 0 100 100"
+                      preserveAspectRatio="none"
+                    >
+                      <line
+                        x1="5"
+                        y1="5"
+                        x2="95"
+                        y2="95"
+                        stroke="#dc2626"
+                        strokeWidth="2.5"
+                      />
+                    </svg>
+                  )}
                 </button>
               );
             })}
@@ -219,8 +262,7 @@ export default function VariantSelector({
         </p>
       ) : null}
 
-      {/* Color selector — buttons when 2+ colors, static label when only 1 */}
-      {showColorSelector ? (
+      {showColorSelector && sizeStepDone ? (
         <div>
           <p className="mb-3 font-sans text-sm font-medium text-[#1C1C1C]">
             Color
@@ -241,13 +283,12 @@ export default function VariantSelector({
                   <button
                     type="button"
                     onClick={() => handleColorClick(color)}
-                    className={`relative rounded px-3 py-1.5 font-sans text-xs transition-colors ${
+                    className={cn(
+                      "relative rounded px-3 py-1.5 font-sans text-xs transition-colors",
                       active
                         ? "border-2 border-[#2D4A3E] bg-[#2D4A3E] font-medium text-white"
-                        : oos
-                        ? "cursor-not-allowed border border-[#1C1C1C] text-[#1C1C1C] opacity-50"
                         : "cursor-pointer border border-[#1C1C1C] text-[#1C1C1C] hover:border-[#2D4A3E] hover:text-[#2D4A3E]"
-                    }`}
+                    )}
                   >
                     {color}
                     {oos && (
@@ -278,7 +319,7 @@ export default function VariantSelector({
             })}
           </div>
         </div>
-      ) : allColors.length === 1 ? (
+      ) : allColors.length === 1 && sizeStepDone ? (
         <p className="font-sans text-sm font-medium text-[#1C1C1C]">
           Color
           <span className="ml-1 font-medium">
@@ -288,28 +329,80 @@ export default function VariantSelector({
         </p>
       ) : null}
 
-      {/* Resolved state — only show prompts when there are actually choices to make */}
       <div>
         {showSizeSelector && selectedSize === null ? (
           <p className="text-sm text-gray-400">
             Select a size to see available options
           </p>
-        ) : showColorSelector && selectedColor === null ? (
-          <p className="text-sm text-gray-400">
-            Select a color to continue
-          </p>
+        ) : needColorPick ? (
+          <div className="space-y-2">
+            {selectedSize ? (
+              <SizeOnlyPrice size={selectedSize} variants={variants} />
+            ) : null}
+            <p className="text-sm text-gray-400">Select a color to continue</p>
+          </div>
         ) : (
           <ResolvedState variant={selectedVariant} />
         )}
       </div>
 
-      {/* Quantity + Add to Cart */}
       <QuantityAndCart
         quantity={quantity}
         setQuantity={setQuantity}
         canAdd={canAddToCart}
+        showOutOfStock={showOosCartCta}
         onAdd={() => selectedVariant && onAddToCart(selectedVariant, quantity)}
       />
+    </div>
+  );
+}
+
+/* ── lowest price for selected size (before color) ───────────── */
+
+function SizeOnlyPrice({
+  size,
+  variants,
+}: {
+  size: string;
+  variants: ProductVariant[];
+}) {
+  const forSize = variants.filter((v) => v.size === size);
+  const inStock = forSize.filter((v) => v.in_stock);
+  const pool = inStock.length > 0 ? inStock : forSize;
+  if (pool.length === 0) return null;
+
+  let best = pool[0];
+  for (const v of pool) {
+    if (v.price < best.price) best = v;
+  }
+  const allOos = forSize.length > 0 && forSize.every((v) => !v.in_stock);
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-baseline gap-3">
+        <span
+          className={cn(
+            "font-sans text-2xl font-bold tabular-nums",
+            allOos ? "text-gray-400" : "text-[#1C1C1C]"
+          )}
+        >
+          {formatPrice(best.price)}
+        </span>
+        {best.compare_at_price != null &&
+          best.compare_at_price > best.price && (
+            <span
+              className={cn(
+                "font-sans text-sm font-normal tabular-nums line-through",
+                allOos ? "text-gray-300" : "text-[#1C1C1C]/45"
+              )}
+            >
+              {formatPrice(best.compare_at_price)}
+            </span>
+          )}
+      </div>
+      {allOos ? (
+        <p className="text-xs text-gray-400">All colors out for this size</p>
+      ) : null}
     </div>
   );
 }
@@ -365,16 +458,17 @@ function QuantityAndCart({
   quantity,
   setQuantity,
   canAdd,
+  showOutOfStock,
   onAdd,
 }: {
   quantity: number;
   setQuantity: (q: number) => void;
   canAdd: boolean;
+  showOutOfStock?: boolean;
   onAdd: () => void;
 }) {
   return (
     <div className="space-y-3">
-      {/* Quantity row */}
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -399,20 +493,30 @@ function QuantityAndCart({
         </button>
       </div>
 
-      {/* Add to Cart button */}
-      <button
-        type="button"
-        onClick={onAdd}
-        disabled={!canAdd}
-        className={`flex w-full items-center justify-center gap-2 rounded py-3 font-sans text-sm font-semibold tracking-wide transition-colors ${
-          canAdd
-            ? "bg-[#2D4A3E] text-white hover:bg-[#3B5E4F]"
-            : "cursor-not-allowed bg-gray-200 text-gray-400"
-        }`}
-      >
-        <ShoppingCart className="h-4 w-4" />
-        Add to Cart
-      </button>
+      {showOutOfStock ? (
+        <button
+          type="button"
+          disabled
+          className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded bg-gray-200 py-3 font-sans text-sm font-semibold tracking-wide text-gray-500"
+        >
+          Out of Stock
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={onAdd}
+          disabled={!canAdd}
+          className={cn(
+            "flex w-full items-center justify-center gap-2 rounded py-3 font-sans text-sm font-semibold tracking-wide transition-colors",
+            canAdd
+              ? "bg-[#2D4A3E] text-white hover:bg-[#3B5E4F]"
+              : "cursor-not-allowed bg-gray-200 text-gray-400"
+          )}
+        >
+          <ShoppingCart className="h-4 w-4" />
+          Add to Cart
+        </button>
+      )}
     </div>
   );
 }
