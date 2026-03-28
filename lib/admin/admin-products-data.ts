@@ -85,6 +85,10 @@ async function fetchAdminFilterStatsFallback(
 export async function fetchAdminFilterStatsSlim(): Promise<AdminFilterStats> {
   const admin = createAdminClient();
 
+  if (process.env.ADMIN_FILTER_STATS_FORCE_FALLBACK === "1") {
+    return fetchAdminFilterStatsFallback(admin);
+  }
+
   const [mfrRes, catRes, mfrCatRes, stockRes] = await Promise.all([
     admin.rpc("admin_products_manufacturer_counts"),
     admin.rpc("admin_products_category_counts"),
@@ -95,17 +99,13 @@ export async function fetchAdminFilterStatsSlim(): Promise<AdminFilterStats> {
   const rpcErr =
     mfrRes.error ?? catRes.error ?? mfrCatRes.error ?? stockRes.error;
   if (rpcErr) {
-    const missingFn =
-      rpcErr.code === "PGRST202" ||
-      /Could not find the function/i.test(rpcErr.message ?? "");
-    if (missingFn || process.env.ADMIN_FILTER_STATS_FORCE_FALLBACK === "1") {
-      console.error(
-        "[admin-products] filter stats RPC unavailable, using in-memory aggregate:",
-        rpcErr.message ?? rpcErr
-      );
-      return fetchAdminFilterStatsFallback(admin);
-    }
-    throw rpcErr;
+    // PGRST202 = function not in schema cache / migration not applied; any RPC error → fallback
+    console.warn(
+      "[admin-products] filter stats RPC failed, using direct products query:",
+      rpcErr.code,
+      rpcErr.message ?? rpcErr
+    );
+    return fetchAdminFilterStatsFallback(admin);
   }
 
   const manufacturerCounts = (mfrRes.data ?? []).map((r: { value: string; count: number | string }) => ({

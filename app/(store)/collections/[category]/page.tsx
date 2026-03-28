@@ -8,6 +8,7 @@ import {
   isHiddenAcmePlaceholderProduct,
   getCategorySubcategories,
 } from "@/lib/supabase/products";
+import { applyZinatexListingVisibilityFilter } from "@/lib/zinatex-listing-filter";
 import { getCategoryDisplayName } from "@/lib/collection-utils";
 import CollectionClient from "@/components/collections/CollectionClient";
 
@@ -192,6 +193,7 @@ export default async function CollectionPage({
     .select("*", { count: "exact" });
 
   productQuery = applyAcmePlaceholderImageFilter(productQuery);
+  productQuery = applyZinatexListingVisibilityFilter(productQuery);
 
   if (category !== "all") {
     productQuery = productQuery.eq("category", category);
