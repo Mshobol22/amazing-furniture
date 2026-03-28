@@ -18,6 +18,10 @@ export interface Product {
   manufacturer?: string | null;
   /** ACME: short display name for cards and headings (e.g. Dresser, Queen Bed) */
   display_name?: string | null;
+  /** ACME datasheet / import fields */
+  finish?: string | null;
+  catalog_size?: string | null;
+  product_details?: string | null;
   has_variants?: boolean;
   variant_type?: string | null;
   collection?: string | null;

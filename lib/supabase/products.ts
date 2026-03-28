@@ -29,6 +29,18 @@ export function mapRowToProduct(row: Record<string, unknown>): Product {
       row.display_name == null || String(row.display_name).trim() === ""
         ? null
         : String(row.display_name).trim(),
+    finish:
+      row.finish == null || String(row.finish).trim() === ""
+        ? null
+        : String(row.finish).trim(),
+    catalog_size:
+      row.catalog_size == null || String(row.catalog_size).trim() === ""
+        ? null
+        : String(row.catalog_size).trim(),
+    product_details:
+      row.product_details == null || String(row.product_details).trim() === ""
+        ? null
+        : String(row.product_details).trim(),
     collection: row.collection != null ? (row.collection as string) : null,
     has_variants: Boolean(row.has_variants),
     variant_type: row.variant_type != null ? (row.variant_type as string) : null,

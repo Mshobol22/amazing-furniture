@@ -28,6 +28,11 @@ import {
   getUnitedFurnitureSkuLineValue,
   isUnitedFurnitureProduct,
 } from "@/lib/united-product-display";
+import {
+  getAcmeProductCardSkuLabel,
+  getAcmeProductDetailHeadingFromDescription,
+  isAcmeProduct,
+} from "@/lib/acme-product-display";
 
 function enrichProductTitle(name: string, category: string): string {
   const categoryKeywords: Record<string, string> = {
@@ -82,7 +87,9 @@ export async function generateMetadata({
     ? getNationwideFDProductHeading(product)
     : isUnitedFurnitureProduct(product)
       ? getUnitedFurnitureProductHeading(product)
-      : enrichProductTitle(product.name, product.category);
+      : isAcmeProduct(product)
+        ? getAcmeProductDetailHeadingFromDescription(product.description)
+        : enrichProductTitle(product.name, product.category);
 
   return {
     title: `${enrichedTitle} | Amazing Home Furniture`,
@@ -280,6 +287,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
                   {getNationwideFDProductListingLabel(product)}
                 </p>
+              ) : isAcmeProduct(product) ? (
+                <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
+                  {getAcmeProductCardSkuLabel(product)}
+                </p>
               ) : (
                 <p className="font-sans text-sm font-semibold uppercase tracking-wide text-gray-500">
                   {getCategoryBadgeLabel(product.category)}
@@ -295,7 +306,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   ? getNationwideFDProductHeading(product)
                   : isUF
                     ? getUnitedFurnitureProductHeading(product)
-                    : product.name}
+                    : isAcmeProduct(product)
+                      ? getAcmeProductDetailHeadingFromDescription(
+                          product.description
+                        )
+                      : product.name}
               </h1>
               {isUF && ufSkuLineValue ? (
                 <p className="mt-2 font-sans text-sm text-[#1C1C1C]/65">
@@ -443,7 +458,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 ? getNationwideFDProductHeading(product)
                 : isUnitedFurnitureProduct(product)
                   ? getUnitedFurnitureProductHeading(product)
-                  : product.name,
+                  : isAcmeProduct(product)
+                    ? getAcmeProductDetailHeadingFromDescription(
+                        product.description
+                      )
+                    : product.name,
               description: product.description,
               sku: product.sku,
               image: product.images,

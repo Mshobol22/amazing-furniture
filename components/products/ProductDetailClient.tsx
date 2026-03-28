@@ -4,6 +4,11 @@ import { useState } from "react";
 import { Check, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cartStore";
+import {
+  getAcmeAboutSpecRows,
+  getAcmeDescriptionIntroAfterDash,
+  isAcmeProduct,
+} from "@/lib/acme-product-display";
 import { isUnitedFurnitureProduct } from "@/lib/united-product-display";
 import type { Product } from "@/types";
 
@@ -22,10 +27,42 @@ export default function ProductDetailClient({
     addItem(product, quantity);
   };
 
+  const acmeIntro = isAcmeProduct(product)
+    ? getAcmeDescriptionIntroAfterDash(product.description)
+    : null;
+  const acmeSpecRows = isAcmeProduct(product) ? getAcmeAboutSpecRows(product) : [];
+  const showAcmeAbout =
+    isAcmeProduct(product) && (Boolean(acmeIntro) || acmeSpecRows.length > 0);
+
   return (
     <>
-      {/* Description — always visible */}
-      {product.description && (
+      {/* About — ACME: intro + spec list; others: plain description */}
+      {showAcmeAbout ? (
+        <div className="mt-4 border-t border-gray-100 pt-4">
+          <p className="mb-2 font-sans text-xs font-medium uppercase tracking-widest text-[#1C1C1C]/50">
+            About This Product
+          </p>
+          {acmeIntro ? (
+            <p className="mb-4 font-cormorant text-lg leading-relaxed text-[#1C1C1C]/80">
+              {acmeIntro}
+            </p>
+          ) : null}
+          {acmeSpecRows.length > 0 ? (
+            <dl className="space-y-3">
+              {acmeSpecRows.map(({ label, value }) => (
+                <div key={label}>
+                  <dt className="font-sans text-xs font-semibold uppercase tracking-wide text-[#1C1C1C]/55">
+                    {label}
+                  </dt>
+                  <dd className="mt-1 font-cormorant text-base leading-relaxed text-[#1C1C1C]/85">
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+        </div>
+      ) : !isAcmeProduct(product) && product.description ? (
         <div className="mt-4 border-t border-gray-100 pt-4">
           <p className="mb-2 font-sans text-xs font-medium uppercase tracking-widest text-[#1C1C1C]/50">
             About This Product
@@ -34,7 +71,7 @@ export default function ProductDetailClient({
             {product.description}
           </p>
         </div>
-      )}
+      ) : null}
 
       {/* Quantity + Add to Cart — desktop */}
       <div className="mt-6 hidden sm:flex flex-col gap-4">

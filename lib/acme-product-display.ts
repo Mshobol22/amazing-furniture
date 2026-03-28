@@ -1,9 +1,55 @@
 import type { Product } from "@/types";
 
+/** Em dash (U+2014) — splits display title vs body in ACME `description` */
+const DESC_SEP = "\u2014";
+
 export function isAcmeProduct(
   product: Pick<Product, "manufacturer">
 ): boolean {
   return product.manufacturer === "ACME";
+}
+
+/**
+ * PDP / metadata H1: text before first —, or full description if no separator.
+ */
+export function getAcmeProductDetailHeadingFromDescription(
+  description: string | null | undefined
+): string {
+  const d = (description ?? "").trim();
+  if (!d) return "";
+  const idx = d.indexOf(DESC_SEP);
+  if (idx < 0) return d;
+  const before = d.slice(0, idx).trim();
+  return before.length > 0 ? before : d;
+}
+
+/**
+ * Intro paragraph for About section: text after first —; null if no separator or empty tail.
+ */
+export function getAcmeDescriptionIntroAfterDash(
+  description: string | null | undefined
+): string | null {
+  const d = (description ?? "").trim();
+  const idx = d.indexOf(DESC_SEP);
+  if (idx < 0) return null;
+  const after = d.slice(idx + DESC_SEP.length).trim();
+  return after.length > 0 ? after : null;
+}
+
+export type AcmeAboutSpecRow = { label: string; value: string };
+
+/** Finish → Collection → Size → Product Details; only non-empty fields. */
+export function getAcmeAboutSpecRows(product: Product): AcmeAboutSpecRow[] {
+  const rows: AcmeAboutSpecRow[] = [];
+  const push = (label: string, raw: string | null | undefined) => {
+    const v = raw != null ? String(raw).trim() : "";
+    if (v) rows.push({ label, value: v });
+  };
+  push("Finish", product.finish);
+  push("Collection", product.collection);
+  push("Size", product.catalog_size);
+  push("Product Details", product.product_details);
+  return rows;
 }
 
 /** Card label line: item number (same role as SKU on the product page). */
