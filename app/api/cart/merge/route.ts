@@ -5,6 +5,7 @@ import {
   isValidSessionId,
   type CartItemPayload,
 } from "@/lib/cart-payload";
+import { resolveCartPayloadToStoredAndFull } from "@/lib/cart-resolve";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -88,55 +89,10 @@ export async function POST(request: Request) {
       };
     });
 
-    const productIds = Array.from(new Set(mergedItemsRaw.map((i) => i.product_id)));
-    const variantIds = Array.from(
-      new Set(
-        mergedItemsRaw
-          .map((i) => i.variant_id)
-          .filter((id): id is string => typeof id === "string")
-      )
+    const { mergedItems, fullItems } = await resolveCartPayloadToStoredAndFull(
+      admin,
+      mergedItemsRaw
     );
-
-    const [{ data: products }, { data: variants }] = await Promise.all([
-      admin.from("products").select("*").in("id", productIds),
-      variantIds.length > 0
-        ? admin
-            .from("product_variants")
-            .select("id, product_id, sku, size, color, price, image_url, stock_qty, in_stock")
-            .in("id", variantIds)
-        : Promise.resolve({ data: [] as Record<string, unknown>[] }),
-    ]);
-
-    const productMap = new Map((products ?? []).map((p) => [p.id as string, p]));
-    const variantMap = new Map((variants ?? []).map((v) => [v.id as string, v]));
-
-    const mergedItems = mergedItemsRaw
-      .map((item) => {
-        const product = productMap.get(item.product_id);
-        if (!product) return null;
-
-        if (item.variant_id) {
-          const variant = variantMap.get(item.variant_id);
-          if (!variant || variant.product_id !== item.product_id) return null;
-          if (!variant.in_stock) return null;
-          const clampedQty = Math.max(
-            1,
-            Math.min(item.quantity, Number(variant.stock_qty) || 99, 99)
-          );
-          return {
-            product_id: item.product_id,
-            variant_id: item.variant_id,
-            quantity: clampedQty,
-          };
-        }
-
-        if (!product.in_stock) return null;
-        return {
-          product_id: item.product_id,
-          quantity: Math.max(1, Math.min(item.quantity, 99)),
-        };
-      })
-      .filter((item): item is CartItemPayload => Boolean(item));
 
     if (existingCart) {
       await admin
@@ -150,30 +106,6 @@ export async function POST(request: Request) {
     if (guestRowId) {
       await admin.from("carts").delete().eq("id", guestRowId);
     }
-
-    const fullItems = mergedItems
-      .map((item) => {
-        const product = productMap.get(item.product_id);
-        if (!product) return null;
-
-        if (item.variant_id) {
-          const variant = variantMap.get(item.variant_id);
-          if (!variant) return null;
-          return {
-            product,
-            quantity: item.quantity,
-            variant_id: variant.id,
-            variant_sku: variant.sku ?? undefined,
-            variant_size: variant.size ?? undefined,
-            variant_color: variant.color ?? undefined,
-            variant_price: typeof variant.price === "number" ? variant.price : undefined,
-            variant_image: variant.image_url ?? undefined,
-          };
-        }
-
-        return { product, quantity: item.quantity };
-      })
-      .filter(Boolean);
 
     return NextResponse.json({ items: fullItems });
   } catch {

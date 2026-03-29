@@ -11,6 +11,20 @@ import {
 } from "@/lib/cart-session";
 import type { CartItem } from "@/types";
 
+async function fetchAndApplyServerCart(
+  cancelled?: () => boolean
+): Promise<void> {
+  const res = await fetch("/api/cart");
+  if (cancelled?.()) return;
+  if (!res.ok) return;
+  const data = (await res.json()) as { items?: unknown };
+  if (cancelled?.()) return;
+  if (!Array.isArray(data.items)) return;
+  useCartStore.getState().setItems(data.items as CartItem[]);
+  clearGuestCart();
+  clearSessionId();
+}
+
 const MERGED_USER_KEY = "cart_merged_user_id";
 
 function readMergedUserId(): string | null {
@@ -84,12 +98,10 @@ export default function CartMergeProvider({
 
   useEffect(() => {
     const supabase = createClient();
-
-    const stored = readGuestCart();
-    const current = useCartStore.getState().items;
-    if (stored.length > 0 && current.length === 0) {
-      useCartStore.getState().setItems(stored);
-    }
+    let cancelled = false;
+    const isCancelled = () => cancelled;
+    let authSubscription: { unsubscribe: () => void } | null = null;
+    let unsubscribeCart: (() => void) | null = null;
 
     const mergeSignedInCart = async (userId: string) => {
       if (hasMerged.current) return;
@@ -114,51 +126,79 @@ export default function CartMergeProvider({
           !syncOk && items.length > 0 ? items : undefined
         );
 
+        if (isCancelled()) return;
+
         if (merged) {
-          useCartStore.getState().setItems(merged);
+          useCartStore.getState().setItems(merged as CartItem[]);
           clearSessionId();
           clearGuestCart();
+        } else {
+          await fetchAndApplyServerCart(isCancelled);
         }
       } catch {
         /* keep hasMerged true — no retry storm; next merge only after SIGNED_OUT + SIGNED_IN */
       }
     };
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Merge only on explicit sign-in, not INITIAL_SESSION or TOKEN_REFRESHED
-      if (event === "SIGNED_IN" && session?.user) {
-        const userId = session.user.id;
-        if (readMergedUserId() === userId) {
-          hasMerged.current = true;
-          return;
-        }
-        await mergeSignedInCart(userId);
+    void (async () => {
+      const stored = readGuestCart();
+      const current = useCartStore.getState().items;
+      if (stored.length > 0 && current.length === 0) {
+        useCartStore.getState().setItems(stored);
       }
-      if (event === "SIGNED_OUT") {
-        hasMerged.current = false;
-        clearMergedUserId();
-        clearSessionId();
-      }
-    });
 
-    const unsubscribeCart = useCartStore.subscribe((state) => {
-      if (syncTimer.current) clearTimeout(syncTimer.current);
-      syncTimer.current = setTimeout(() => {
-        void supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session?.user) return;
-          if (state.items.length === 0) return;
-          const sid = getOrCreateSessionId();
-          if (!sid) return;
-          void postGuestCart(sid, useCartStore.getState().items);
-        });
-      }, 450);
-    });
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (isCancelled()) return;
+
+      if (session?.user) {
+        await fetchAndApplyServerCart(isCancelled);
+      }
+      if (isCancelled()) return;
+
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === "SIGNED_IN" && session?.user) {
+          const userId = session.user.id;
+          if (readMergedUserId() === userId) {
+            hasMerged.current = true;
+            return;
+          }
+          await mergeSignedInCart(userId);
+        }
+        if (event === "SIGNED_OUT") {
+          hasMerged.current = false;
+          clearMergedUserId();
+          clearSessionId();
+        }
+      });
+
+      if (isCancelled()) {
+        subscription.unsubscribe();
+        return;
+      }
+      authSubscription = subscription;
+
+      unsubscribeCart = useCartStore.subscribe((state) => {
+        if (syncTimer.current) clearTimeout(syncTimer.current);
+        syncTimer.current = setTimeout(() => {
+          void supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) return;
+            if (state.items.length === 0) return;
+            const sid = getOrCreateSessionId();
+            if (!sid) return;
+            void postGuestCart(sid, useCartStore.getState().items);
+          });
+        }, 450);
+      });
+    })();
 
     return () => {
-      subscription.unsubscribe();
-      unsubscribeCart();
+      cancelled = true;
+      authSubscription?.unsubscribe();
+      unsubscribeCart?.();
       if (syncTimer.current) clearTimeout(syncTimer.current);
     };
   }, []);
