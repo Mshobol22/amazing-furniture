@@ -11,6 +11,35 @@ import {
 } from "@/lib/cart-session";
 import type { CartItem } from "@/types";
 
+const MERGED_USER_KEY = "cart_merged_user_id";
+
+function readMergedUserId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.sessionStorage.getItem(MERGED_USER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setMergedUserId(userId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(MERGED_USER_KEY, userId);
+  } catch {
+    // no-op (private mode / blocked storage)
+  }
+}
+
+function clearMergedUserId(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(MERGED_USER_KEY);
+  } catch {
+    // no-op
+  }
+}
+
 async function postGuestCart(sessionId: string, items: CartItem[]) {
   const res = await fetch("/api/cart/guest", {
     method: "POST",
@@ -62,9 +91,10 @@ export default function CartMergeProvider({
       useCartStore.getState().setItems(stored);
     }
 
-    const mergeSignedInCart = async () => {
+    const mergeSignedInCart = async (userId: string) => {
       if (hasMerged.current) return;
       hasMerged.current = true;
+      setMergedUserId(userId);
 
       const items = useCartStore.getState().items;
       let sid = readSessionId() ?? "";
@@ -99,10 +129,16 @@ export default function CartMergeProvider({
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       // Merge only on explicit sign-in, not INITIAL_SESSION or TOKEN_REFRESHED
       if (event === "SIGNED_IN" && session?.user) {
-        await mergeSignedInCart();
+        const userId = session.user.id;
+        if (readMergedUserId() === userId) {
+          hasMerged.current = true;
+          return;
+        }
+        await mergeSignedInCart(userId);
       }
       if (event === "SIGNED_OUT") {
         hasMerged.current = false;
+        clearMergedUserId();
         clearSessionId();
       }
     });

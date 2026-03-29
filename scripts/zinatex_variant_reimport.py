@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Zinatex full variant re-import from the Zinatex datasheet CSV.
+Zinatex full variant re-import from the Zinatex datasheet (CSV or XLSX).
 
 Loads NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from .env.local (repo root).
 
@@ -23,7 +23,7 @@ import pandas as pd
 from supabase import Client, create_client
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CSV = Path(r"C:\Users\mshob\OneDrive\Desktop\csv for AHF\zinat datasheet.csv")
+DEFAULT_CSV = Path(r"C:\Users\mshob\OneDrive\csv for AHF\zinat datasheet.xlsx")
 
 DESIGN_SUFFIX_RE = re.compile(r"-B\d+-.+$", re.IGNORECASE)
 BATCH = 100
@@ -154,12 +154,16 @@ def main() -> int:
         print(f"ERROR: CSV not found: {csv_path}")
         return 1
 
-    df = pd.read_csv(csv_path)
+    ext = csv_path.suffix.lower()
+    if ext in {".xlsx", ".xls"}:
+        df = pd.read_excel(csv_path)
+    else:
+        df = pd.read_csv(csv_path)
     c_parent = find_col(df, "parent sku", "parent_sku")
     c_var = find_col(df, "variation sku", "variation_sku")
     c_size = find_col(df, "size")
     c_color = find_col(df, "color")
-    c_msrp = find_col(df, "msrp")
+    c_msrp = find_col(df, "msrp", "retail price / msrp", "retail price", "price")
     c_qty = find_col(df, "quantity on hand", "quantity_on_hand")
     c_cat = find_col(df, "category")
     c_desc = find_col(df, "description")
@@ -176,6 +180,7 @@ def main() -> int:
     parents_created = 0
     parents_updated = 0
     variants_ok = 0
+    variants_deduped = 0
     hidden = 0
     errors: list[str] = []
     variant_skus: set[str] = set()
@@ -283,6 +288,16 @@ def main() -> int:
                 }
             )
 
+        # Avoid ON CONFLICT self-collision when source file has duplicate Variation SKU rows.
+        dedup_by_sku: dict[str, dict] = {}
+        for variant_row in vrows:
+            sku_key = str(variant_row.get("sku") or "").strip()
+            if not sku_key:
+                continue
+            dedup_by_sku[sku_key] = variant_row
+        variants_deduped += max(0, len(vrows) - len(dedup_by_sku))
+        vrows = list(dedup_by_sku.values())
+
         for i in range(0, len(vrows), BATCH):
             chunk = vrows[i : i + BATCH]
             try:
@@ -322,6 +337,7 @@ def main() -> int:
     print(f"Parent products created: {parents_created}")
     print(f"Parent products updated: {parents_updated}")
     print(f"Variant rows upserted (rows): {variants_ok}")
+    print(f"Duplicate variant rows skipped: {variants_deduped}")
     print(f"Individual product rows set in_stock=false: {hidden}")
     print(f"Distinct variant SKUs: {len(variant_skus)}")
     if errors:
