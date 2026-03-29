@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, isAdmin } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export const dynamic = "force-dynamic";
-
 async function checkUrl(url: string): Promise<boolean> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 3000);

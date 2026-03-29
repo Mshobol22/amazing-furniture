@@ -2,8 +2,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { validateCartItems, isValidSessionId } from "@/lib/cart-payload";
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-
 /**
  * Upsert a guest cart row keyed by session_id (no auth).
  * Used so POST /api/cart/merge can load the guest cart server-side after login.

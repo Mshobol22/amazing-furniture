@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, isAdmin } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export const dynamic = "force-dynamic";
 const COLLECTION_GROUP_REGEX = /^[a-zA-Z0-9-]*$/;
 
 function sanitizeHttpsImageUrl(value: unknown): string | null {
