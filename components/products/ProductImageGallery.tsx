@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
@@ -157,6 +157,12 @@ export default function ProductImageGallery({
   primaryImageUrl,
 }: ProductImageGalleryProps) {
   const images = getImages(rawImages);
+  const displayImages = useMemo(() => {
+    if (!primaryImageUrl) return images;
+    return [primaryImageUrl, ...images].filter(
+      (url, index, arr) => arr.indexOf(url) === index
+    );
+  }, [images, primaryImageUrl]);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   useEffect(() => {
@@ -167,21 +173,21 @@ export default function ProductImageGallery({
   const [isZoomed, setIsZoomed] = useState(false);
   const touchStartX = useRef(0);
 
-  const safe = clampIndex(selectedIndex, images.length);
-  const activeImage = (primaryImageUrl && safe === 0) ? primaryImageUrl : images[safe];
+  const safe = clampIndex(selectedIndex, displayImages.length);
+  const activeImage = displayImages[safe];
 
   const goPrev = useCallback(() => {
-    setSelectedIndex((i) => (i > 0 ? i - 1 : images.length - 1));
-  }, [images.length]);
+    setSelectedIndex((i) => (i > 0 ? i - 1 : displayImages.length - 1));
+  }, [displayImages.length]);
 
   const goNext = useCallback(() => {
-    setSelectedIndex((i) => (i < images.length - 1 ? i + 1 : 0));
-  }, [images.length]);
+    setSelectedIndex((i) => (i < displayImages.length - 1 ? i + 1 : 0));
+  }, [displayImages.length]);
 
   const closeLightbox = useCallback(() => setIsLightboxOpen(false), []);
 
   /* zero images */
-  if (images.length === 0) {
+  if (displayImages.length === 0) {
     return (
       <div className="space-y-4">
         <div className="flex aspect-[4/3] items-center justify-center rounded-2xl bg-[#2D4A3E] shadow-lg">
@@ -198,9 +204,9 @@ export default function ProductImageGallery({
       {/* ── DESKTOP: thumbnails left + main right ────────── */}
       <div className="hidden md:flex gap-3">
         {/* Thumbnail strip — left 20% */}
-        {images.length > 1 && (
+        {displayImages.length > 1 && (
           <div className="flex w-[20%] flex-col gap-2 overflow-y-auto max-h-[500px]">
-            {images.map((img, i) => (
+            {displayImages.map((img, i) => (
               <button
                 key={i}
                 type="button"
@@ -268,7 +274,7 @@ export default function ProductImageGallery({
           />
 
           {/* Prev/Next arrows */}
-          {images.length > 1 && (
+          {displayImages.length > 1 && (
             <>
               <button
                 type="button"
@@ -297,7 +303,7 @@ export default function ProductImageGallery({
 
           {/* Counter */}
           <span className="absolute bottom-3 right-3 z-10 rounded bg-black/40 px-2 py-0.5 text-xs text-white">
-            {safe + 1} / {images.length}
+            {safe + 1} / {displayImages.length}
           </span>
         </div>
       </div>
@@ -339,17 +345,17 @@ export default function ProductImageGallery({
           />
 
           {/* Counter */}
-          {images.length > 1 && (
+          {displayImages.length > 1 && (
             <span className="absolute bottom-3 right-3 z-10 rounded bg-black/40 px-2 py-0.5 text-xs text-white">
-              {safe + 1} / {images.length}
+              {safe + 1} / {displayImages.length}
             </span>
           )}
         </div>
 
         {/* Dot indicators */}
-        {images.length > 1 && (
+        {displayImages.length > 1 && (
           <div className="mt-3 flex justify-center gap-2">
-            {images.map((_, i) => (
+            {displayImages.map((_, i) => (
               <button
                 key={i}
                 type="button"
@@ -367,7 +373,7 @@ export default function ProductImageGallery({
       {/* ── LIGHTBOX ─────────────────────────────────────── */}
       {isLightboxOpen && (
         <Lightbox
-          images={images}
+          images={displayImages}
           index={safe}
           manufacturer={manufacturer}
           onClose={closeLightbox}
