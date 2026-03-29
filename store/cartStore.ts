@@ -202,3 +202,16 @@ export const useCartItemCount = () =>
 const useCartStore = useCartStoreBase;
 export default useCartStore;
 export { useCartStore };
+
+/** Wait until persisted `cart-storage` has rehydrated (avoids treating a pre-hydrate empty cart as truth). */
+export function awaitCartPersistHydration(): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  const p = useCartStoreBase.persist;
+  if (p.hasHydrated()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = p.onFinishHydration(() => {
+      done();
+      resolve();
+    });
+  });
+}

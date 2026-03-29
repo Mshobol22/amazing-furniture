@@ -2,7 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import useCartStore, { readGuestCart, clearGuestCart } from "@/store/cartStore";
+import useCartStore, {
+  awaitCartPersistHydration,
+  readGuestCart,
+  clearGuestCart,
+} from "@/store/cartStore";
 import {
   getOrCreateSessionId,
   clearSessionId,
@@ -25,12 +29,13 @@ async function fetchAndApplyServerCart(
   clearSessionId();
 }
 
+/** localStorage (not sessionStorage) so new tabs share merge state and do not re-run guest+server merge. */
 const MERGED_USER_KEY = "cart_merged_user_id";
 
 function readMergedUserId(): string | null {
   if (typeof window === "undefined") return null;
   try {
-    return window.sessionStorage.getItem(MERGED_USER_KEY);
+    return window.localStorage.getItem(MERGED_USER_KEY);
   } catch {
     return null;
   }
@@ -39,7 +44,7 @@ function readMergedUserId(): string | null {
 function setMergedUserId(userId: string): void {
   if (typeof window === "undefined") return;
   try {
-    window.sessionStorage.setItem(MERGED_USER_KEY, userId);
+    window.localStorage.setItem(MERGED_USER_KEY, userId);
   } catch {
     // no-op (private mode / blocked storage)
   }
@@ -48,7 +53,7 @@ function setMergedUserId(userId: string): void {
 function clearMergedUserId(): void {
   if (typeof window === "undefined") return;
   try {
-    window.sessionStorage.removeItem(MERGED_USER_KEY);
+    window.localStorage.removeItem(MERGED_USER_KEY);
   } catch {
     // no-op
   }
@@ -141,6 +146,9 @@ export default function CartMergeProvider({
     };
 
     void (async () => {
+      await awaitCartPersistHydration();
+      if (isCancelled()) return;
+
       const stored = readGuestCart();
       const current = useCartStore.getState().items;
       if (stored.length > 0 && current.length === 0) {
@@ -153,7 +161,17 @@ export default function CartMergeProvider({
       if (isCancelled()) return;
 
       if (session?.user) {
-        await fetchAndApplyServerCart(isCancelled);
+        const userId = session.user.id;
+        const localCount = useCartStore.getState().items.length;
+        const mergedThisTab = readMergedUserId() === userId;
+
+        if (localCount === 0) {
+          await fetchAndApplyServerCart(isCancelled);
+        } else if (!mergedThisTab) {
+          await mergeSignedInCart(userId);
+        } else {
+          await fetchAndApplyServerCart(isCancelled);
+        }
       }
       if (isCancelled()) return;
 
