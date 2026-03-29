@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, isAdmin } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  BEDROOM_MERGED_SLUG,
+  BEDROOM_SOURCE_CATEGORIES,
+} from "@/lib/collections/collection-scope";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +31,11 @@ export async function POST(request: NextRequest) {
     const admin = createAdminClient();
     let query = admin.from("products").select("id, price");
     if (category && category !== "all") {
-      query = query.eq("category", category);
+      if (category === BEDROOM_MERGED_SLUG) {
+        query = query.in("category", [...BEDROOM_SOURCE_CATEGORIES]);
+      } else {
+        query = query.eq("category", category);
+      }
     }
 
     const { data: products } = await query;

@@ -1,14 +1,57 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  BEDROOM_MERGED_SLUG,
+  BEDROOM_SOURCE_CATEGORIES,
+} from "@/lib/collections/collection-scope";
+
+export type AdminCategoryCountRow = { value: string; count: number; label?: string };
 
 export type AdminFilterStats = {
   manufacturerCounts: { value: string; count: number }[];
   /** All categories (global), sorted by count descending */
-  categoryCounts: { value: string; count: number }[];
+  categoryCounts: AdminCategoryCountRow[];
   /** Categories per manufacturer (for sidebar when a manufacturer is selected) */
-  categoriesByManufacturer: Record<string, { value: string; count: number }[]>;
+  categoriesByManufacturer: Record<string, AdminCategoryCountRow[]>;
   stockCounts: { inStock: number; outOfStock: number };
 };
+
+const BEDROOM_ADMIN_LABEL = "Beds & Bedroom Furniture";
+const BEDROOM_SOURCE_SET = new Set<string>(BEDROOM_SOURCE_CATEGORIES);
+
+function mergeBedroomCategoryRows(rows: AdminCategoryCountRow[]): AdminCategoryCountRow[] {
+  let bedroomSum = 0;
+  const rest: AdminCategoryCountRow[] = [];
+  for (const row of rows) {
+    if (BEDROOM_SOURCE_SET.has(row.value)) {
+      bedroomSum += row.count;
+    } else {
+      rest.push(row);
+    }
+  }
+  if (bedroomSum > 0) {
+    rest.push({
+      value: BEDROOM_MERGED_SLUG,
+      count: bedroomSum,
+      label: BEDROOM_ADMIN_LABEL,
+    });
+  }
+  rest.sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
+  return rest;
+}
+
+/** Collapse `bed` + `bedroom-furniture` into virtual `bedroom` for admin filters (matches storefront). */
+export function mergeBedroomAdminCategoryStats(stats: AdminFilterStats): AdminFilterStats {
+  const categoriesByManufacturer: Record<string, AdminCategoryCountRow[]> = {};
+  for (const [mfr, list] of Object.entries(stats.categoriesByManufacturer)) {
+    categoriesByManufacturer[mfr] = mergeBedroomCategoryRows(list.map((r) => ({ ...r })));
+  }
+  return {
+    ...stats,
+    categoryCounts: mergeBedroomCategoryRows(stats.categoryCounts.map((r) => ({ ...r }))),
+    categoriesByManufacturer,
+  };
+}
 
 function toSortedOptions(map: Map<string, number>): { value: string; count: number }[] {
   return Array.from(map.entries())
@@ -73,12 +116,12 @@ async function fetchAdminFilterStatsFallback(
     categoriesByManufacturer[mfr] = toSortedOptions(catMap);
   }
 
-  return {
+  return mergeBedroomAdminCategoryStats({
     manufacturerCounts: toSortedOptions(manufacturerMap),
     categoryCounts: toSortedOptions(categoryMap),
     categoriesByManufacturer,
     stockCounts: { inStock, outOfStock },
-  };
+  });
 }
 
 /** Filter sidebar stats via SQL GROUP BY RPCs (no full-table row scans). */
@@ -136,7 +179,7 @@ export async function fetchAdminFilterStatsSlim(): Promise<AdminFilterStats> {
     | { in_stock: number | string; out_of_stock: number | string }
     | undefined;
 
-  return {
+  return mergeBedroomAdminCategoryStats({
     manufacturerCounts,
     categoryCounts,
     categoriesByManufacturer,
@@ -144,5 +187,5 @@ export async function fetchAdminFilterStatsSlim(): Promise<AdminFilterStats> {
       inStock: Number(stockRow?.in_stock ?? 0),
       outOfStock: Number(stockRow?.out_of_stock ?? 0),
     },
-  };
+  });
 }

@@ -57,6 +57,10 @@ export function mapRowToProduct(row: Record<string, unknown>): Product {
       row.catalog_size == null || String(row.catalog_size).trim() === ""
         ? null
         : String(row.catalog_size).trim(),
+    dimensions:
+      row.dimensions != null && typeof row.dimensions === "object" && !Array.isArray(row.dimensions)
+        ? (row.dimensions as Record<string, unknown>)
+        : null,
     product_details:
       row.product_details == null || String(row.product_details).trim() === ""
         ? null

@@ -62,3 +62,33 @@ export function getZinatexCardListingLine(product: Product): string {
   if (z) return z;
   return categoryBadgeLabel(product.category);
 }
+
+/**
+ * Rug PDP: when the product has no size variants, surface a single size from
+ * `catalog_size` or `dimensions` (e.g. Zinatex `dimensions.size`).
+ */
+export function getStandaloneRugSizeLabel(
+  product: Pick<Product, "category" | "has_variants" | "catalog_size" | "dimensions">
+): string | null {
+  if (product.category !== "rug") return null;
+  if (product.has_variants === true) return null;
+
+  const cs = product.catalog_size?.trim();
+  if (cs) return cs;
+
+  const d = product.dimensions;
+  if (d && typeof d === "object") {
+    const size = d.size;
+    if (typeof size === "string" && size.trim()) return size.trim();
+    const w = d.width;
+    const l = d.length;
+    const parts: string[] = [];
+    if (typeof w === "string" && w.trim()) parts.push(w.trim());
+    else if (typeof w === "number" && Number.isFinite(w)) parts.push(String(w));
+    if (typeof l === "string" && l.trim()) parts.push(l.trim());
+    else if (typeof l === "number" && Number.isFinite(l)) parts.push(String(l));
+    if (parts.length > 0) return parts.join(" × ");
+  }
+
+  return null;
+}

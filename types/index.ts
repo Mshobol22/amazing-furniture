@@ -39,6 +39,8 @@ export interface Product {
   /** ACME datasheet / import fields */
   finish?: string | null;
   catalog_size?: string | null;
+  /** JSONB from DB; Zinatex/rug flows may use `size`, `width`, `length` keys */
+  dimensions?: Record<string, unknown> | null;
   product_details?: string | null;
   /** undefined/null DB = standalone; false/true explicit */
   has_variants?: boolean;

@@ -16,7 +16,10 @@ import {
 } from "@/lib/acme-product-display";
 import { isUnitedFurnitureProduct } from "@/lib/united-product-display";
 import { formatPrice } from "@/lib/format-price";
-import { getStorefrontListPrice } from "@/lib/zinatex-product-display";
+import {
+  getStandaloneRugSizeLabel,
+  getStorefrontListPrice,
+} from "@/lib/zinatex-product-display";
 import ProductCard from "@/components/products/ProductCard";
 import type { Product } from "@/types";
 
@@ -64,6 +67,11 @@ export default function ProductDetailClient({
   const showAcmeAbout =
     isAcmeProduct(product) && (Boolean(acmeIntro) || acmeSpecRows.length > 0);
 
+  const standaloneRugSize = getStandaloneRugSizeLabel(product);
+  const showGenericAbout =
+    !isAcmeProduct(product) &&
+    (Boolean(product.description?.trim()) || Boolean(standaloneRugSize));
+
   const aboutSection =
     showAcmeAbout ? (
       <div
@@ -94,7 +102,7 @@ export default function ProductDetailClient({
           </dl>
         ) : null}
       </div>
-    ) : !isAcmeProduct(product) && product.description ? (
+    ) : showGenericAbout ? (
       <div
         className={
           isComponent ? "mt-6 border-t border-gray-100 pt-6" : "mt-4 border-t border-gray-100 pt-4"
@@ -103,9 +111,29 @@ export default function ProductDetailClient({
         <p className="mb-2 font-sans text-xs font-medium uppercase tracking-widest text-[#1C1C1C]/50">
           About This Product
         </p>
-        <p className="font-cormorant text-lg leading-relaxed text-[#1C1C1C]/80">
-          {product.description}
-        </p>
+        {product.description?.trim() ? (
+          <p className="font-cormorant text-lg leading-relaxed text-[#1C1C1C]/80">
+            {product.description}
+          </p>
+        ) : null}
+        {standaloneRugSize ? (
+          <dl
+            className={
+              product.description?.trim()
+                ? "mt-4 space-y-3"
+                : "space-y-3"
+            }
+          >
+            <div>
+              <dt className="font-sans text-xs font-semibold uppercase tracking-wide text-[#1C1C1C]/55">
+                Size
+              </dt>
+              <dd className="mt-1 font-cormorant text-base leading-relaxed text-[#1C1C1C]/85">
+                {standaloneRugSize}
+              </dd>
+            </div>
+          </dl>
+        ) : null}
       </div>
     ) : null;
 

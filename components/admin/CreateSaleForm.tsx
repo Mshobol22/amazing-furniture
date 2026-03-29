@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation";
 const CATEGORY_OPTIONS = [
   { value: "all", label: "All Products" },
   { value: "sofa", label: "Sofas & Sectionals" },
-  { value: "bed", label: "Beds" },
-  { value: "bedroom-furniture", label: "Bedroom Furniture" },
+  { value: "bedroom", label: "Beds & Bedroom Furniture" },
   { value: "table", label: "Dining & Tables" },
   { value: "chair", label: "Chairs & Recliners" },
   { value: "cabinet", label: "Cabinets & Storage" },
@@ -15,19 +14,6 @@ const CATEGORY_OPTIONS = [
   { value: "rug", label: "Rugs" },
   { value: "other", label: "More Furniture" },
 ];
-
-const PRODUCT_COUNTS: Record<string, number> = {
-  all: 291,
-  sofa: 55,
-  bed: 49,
-  "bedroom-furniture": 0,
-  table: 100,
-  chair: 25,
-  cabinet: 53,
-  "tv-stand": 9,
-  rug: 0,
-  other: 0,
-};
 
 export default function CreateSaleForm() {
   const router = useRouter();
@@ -40,7 +26,6 @@ export default function CreateSaleForm() {
   const discountNum = parseFloat(discount);
   const isValidDiscount =
     !isNaN(discountNum) && discountNum >= 1 && discountNum <= 90;
-  const productCount = PRODUCT_COUNTS[category] ?? 0;
   const categoryLabel =
     CATEGORY_OPTIONS.find((c) => c.value === category)?.label ?? category;
 
@@ -118,7 +103,7 @@ export default function CreateSaleForm() {
         {discount && (
           <p className="text-sm text-warm-gray">
             {isValidDiscount
-              ? `${discountNum}% off ${categoryLabel} — affects ${productCount} products`
+              ? `${discountNum}% off ${categoryLabel}. Submit to apply to matching products.`
               : "Enter a discount between 1 and 90"}
           </p>
         )}

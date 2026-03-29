@@ -1,3 +1,8 @@
+import {
+  BEDROOM_MERGED_SLUG,
+  BEDROOM_SOURCE_CATEGORIES,
+} from "@/lib/collections/collection-scope";
+
 const PAGE_SIZE = 50;
 
 /** Avoid breaking PostgREST `or()` comma-separated filter syntax */
@@ -74,6 +79,8 @@ export function applyAdminCatalogFilters(
   if (f.category) {
     if (f.category === "Uncategorized") {
       query = query.or("category.is.null,category.eq.");
+    } else if (f.category === BEDROOM_MERGED_SLUG) {
+      query = query.in("category", [...BEDROOM_SOURCE_CATEGORIES]);
     } else {
       query = query.eq("category", f.category);
     }

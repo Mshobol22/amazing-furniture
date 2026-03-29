@@ -202,6 +202,13 @@ function ProductsTableInner({ filterStats }: ProductsTableProps) {
   );
 
   useEffect(() => {
+    if (categoryFromUrl === "bed" || categoryFromUrl === "bedroom-furniture") {
+      const sp = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+      sp.set("category", "bedroom");
+      sp.set("page", "1");
+      router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
+      return;
+    }
     if (!categoryFromUrl) return;
     if (categoryAllowed.has(categoryFromUrl)) return;
     const sp = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
@@ -404,7 +411,11 @@ function ProductsTableInner({ filterStats }: ProductsTableProps) {
         label: "Category",
         type: "checkbox",
         defaultOpen: true,
-        options: categoryOptions,
+        options: categoryOptions.map((c) =>
+          c.value === "bedroom" && !c.label
+            ? { ...c, label: "Beds & Bedroom Furniture" }
+            : c
+        ),
       },
       {
         id: "stock",
