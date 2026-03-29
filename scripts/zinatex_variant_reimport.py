@@ -265,6 +265,7 @@ def main() -> int:
                 continue
             qty = parse_qty(row.get(c_qty))
             variant_skus.add(var_sku)
+            var_img = main_image_url(row.get(c_img))
             raw_m = row.get(c_msrp)
             cmp_at: float | None = None
             if raw_m is not None and not (isinstance(raw_m, float) and pd.isna(raw_m)):
@@ -285,6 +286,7 @@ def main() -> int:
                     "in_stock": qty > 0,
                     "stock_qty": qty,
                     "sort_order": 0,
+                    "image_url": var_img,
                 }
             )
 

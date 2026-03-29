@@ -39,12 +39,17 @@ export default function ProductVariantPageClient({
     <div className="mb-8 grid gap-6 lg:grid-cols-[55%_1fr]">
       {/* Image gallery — syncs primary image with selected variant */}
       <ProductImageGallery
+        key={selectedVariant?.id ?? "no-variant"}
         rawImages={product.images}
         productName={product.name}
         manufacturer={product.manufacturer}
         onSale={product.on_sale}
         salePrice={product.sale_price}
-        primaryImageUrl={selectedVariant?.image_url ?? null}
+        primaryImageUrl={
+          selectedVariant?.image_url?.startsWith("https://")
+            ? selectedVariant.image_url
+            : null
+        }
       />
 
       {/* Product info + variant selector */}
