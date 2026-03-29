@@ -64,6 +64,8 @@ export default function CartMergeProvider({
 
     const mergeSignedInCart = async () => {
       if (hasMerged.current) return;
+      hasMerged.current = true;
+
       const items = useCartStore.getState().items;
       let sid = readSessionId() ?? "";
 
@@ -71,7 +73,6 @@ export default function CartMergeProvider({
         sid = getOrCreateSessionId();
       }
 
-      hasMerged.current = true;
       try {
         let syncOk = true;
         if (items.length > 0 && sid) {
@@ -87,26 +88,16 @@ export default function CartMergeProvider({
           useCartStore.getState().setItems(merged);
           clearSessionId();
           clearGuestCart();
-        } else {
-          hasMerged.current = false;
         }
       } catch {
-        hasMerged.current = false;
+        /* keep hasMerged true — no retry storm; next merge only after SIGNED_OUT + SIGNED_IN */
       }
     };
-
-    const init = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user) await mergeSignedInCart();
-    };
-
-    void init();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Merge only on explicit sign-in, not INITIAL_SESSION or TOKEN_REFRESHED
       if (event === "SIGNED_IN" && session?.user) {
         await mergeSignedInCart();
       }
