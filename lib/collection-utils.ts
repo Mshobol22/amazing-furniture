@@ -1,6 +1,5 @@
 const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
-  bed: "Beds",
-  "bedroom-furniture": "Bedroom Furniture",
+  bedroom: "Beds & Bedroom Furniture",
   sofa: "Sofas & Sectionals",
   chair: "Chairs & Recliners",
   table: "Dining & Tables",

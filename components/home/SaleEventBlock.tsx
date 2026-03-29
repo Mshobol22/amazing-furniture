@@ -2,17 +2,20 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getActiveSaleEvents } from '@/lib/actions/sale-actions'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { applyAcmeComponentListingFilter } from '@/lib/supabase/products'
 import { productLeadImageSrc } from '@/lib/nfd-image-proxy'
 
 async function getOnSaleImages(): Promise<string[]> {
   const supabase = createAdminClient()
-  const { data } = await supabase
+  let q = supabase
     .from('products')
     .select('manufacturer, images')
     .eq('on_sale', true)
     .eq('in_stock', true)
     .not('images', 'is', null)
     .limit(8)
+  q = applyAcmeComponentListingFilter(q)
+  const { data } = await q
   if (!data) return []
   const images: string[] = []
   for (const row of data) {

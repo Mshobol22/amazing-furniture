@@ -169,7 +169,7 @@ def load_zinatex():
             price_raw = to_float(raw)
             if not sku or price_raw is None:
                 continue
-            calculated = round((price_raw / 4) * 2.2, 2)
+            calculated = round((price_raw / 4) * 2.3, 2)
             if calculated <= 0:
                 continue
             if sku not in price_map:

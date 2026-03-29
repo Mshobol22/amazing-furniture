@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  applyAcmeComponentListingFilter,
   applyAcmePlaceholderImageFilter,
   applyZinatexListingVisibilityFilter,
+  attachZinatexFromPrices,
   isHiddenAcmePlaceholderProduct,
+  isHiddenAcmeComponentProduct,
+  mapRowToProduct,
 } from "@/lib/supabase/products";
+import { getStorefrontListPrice } from "@/lib/zinatex-product-display";
+import type { Product } from "@/types";
 
 // Category keyword mapping — user types natural language, we map to DB category
 const CATEGORY_MAP: Record<string, string> = {
@@ -65,6 +71,45 @@ function detectCategory(query: string): string | null {
   return null;
 }
 
+function searchResultPayload(p: Product) {
+  const list = getStorefrontListPrice(p);
+  const onSale = Boolean(
+    p.on_sale && p.sale_price != null && p.sale_price < list
+  );
+  return {
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    price: onSale ? (p.sale_price as number) : list,
+    originalPrice: list,
+    onSale,
+    image: p.images?.[0] ?? null,
+    category: p.category,
+  };
+}
+
+async function hydrateProductsByIdOrder(
+  supabase: ReturnType<typeof createAdminClient>,
+  idOrder: string[]
+): Promise<Product[]> {
+  if (idOrder.length === 0) return [];
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .in("id", idOrder);
+  if (error) throw error;
+  const byId = new Map(
+    (data ?? []).map((r) => [r.id as string, r as Record<string, unknown>])
+  );
+  const ordered = idOrder
+    .map((id) => byId.get(id))
+    .filter((row): row is Record<string, unknown> => row != null)
+    .map(mapRowToProduct)
+    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenAcmeComponentProduct(p));
+  return attachZinatexFromPrices(ordered);
+}
+
 function buildTsQuery(query: string): string {
   const words = query
     .toLowerCase()
@@ -107,6 +152,7 @@ export async function GET(request: NextRequest) {
 
       ftQuery = applyAcmePlaceholderImageFilter(ftQuery);
       ftQuery = applyZinatexListingVisibilityFilter(ftQuery);
+      ftQuery = applyAcmeComponentListingFilter(ftQuery);
 
       const { data } = await ftQuery;
       ftResults = (data ?? []) as Record<string, unknown>[];
@@ -122,6 +168,7 @@ export async function GET(request: NextRequest) {
 
       categoryQuery = applyAcmePlaceholderImageFilter(categoryQuery);
       categoryQuery = applyZinatexListingVisibilityFilter(categoryQuery);
+      categoryQuery = applyAcmeComponentListingFilter(categoryQuery);
 
       const { data } = await categoryQuery;
       categoryResults = (data ?? []) as Record<string, unknown>[];
@@ -138,6 +185,7 @@ export async function GET(request: NextRequest) {
 
       fuzzyQuery = applyAcmePlaceholderImageFilter(fuzzyQuery);
       fuzzyQuery = applyZinatexListingVisibilityFilter(fuzzyQuery);
+      fuzzyQuery = applyAcmeComponentListingFilter(fuzzyQuery);
 
       const { data } = await fuzzyQuery;
       fuzzyResults = (data ?? []) as Record<string, unknown>[];
@@ -160,20 +208,10 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json(
-      visible.slice(0, limit).map((p) => ({
-        id: p.id,
-        name: p.name,
-        slug: p.slug,
-        price: (p.sale_price ?? p.price) as number,
-        originalPrice: p.price as number,
-        onSale: !!(
-          p.sale_price && (p.sale_price as number) < (p.price as number)
-        ),
-        image: (p.images as string[])?.[0] ?? null,
-        category: p.category,
-      }))
-    );
+    const idOrder = visible.slice(0, limit).map((p) => p.id as string);
+    const hydrated = await hydrateProductsByIdOrder(supabase, idOrder);
+
+    return NextResponse.json(hydrated.map(searchResultPayload));
   } catch (err) {
     console.error("Search error:", err);
     let fallbackQuery = supabase
@@ -185,6 +223,7 @@ export async function GET(request: NextRequest) {
 
     fallbackQuery = applyAcmePlaceholderImageFilter(fallbackQuery);
     fallbackQuery = applyZinatexListingVisibilityFilter(fallbackQuery);
+    fallbackQuery = applyAcmeComponentListingFilter(fallbackQuery);
 
     const { data } = await fallbackQuery;
 
@@ -194,17 +233,9 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json(
-      visible.map((p) => ({
-        id: p.id,
-        name: p.name,
-        slug: p.slug,
-        price: p.sale_price ?? p.price,
-        originalPrice: p.price,
-        onSale: !!(p.sale_price && p.sale_price < p.price),
-        image: p.images?.[0] ?? null,
-        category: p.category,
-      }))
-    );
+    const idOrder = visible.slice(0, limit).map((p) => p.id as string);
+    const hydrated = await hydrateProductsByIdOrder(supabase, idOrder);
+
+    return NextResponse.json(hydrated.map(searchResultPayload));
   }
 }

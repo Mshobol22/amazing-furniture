@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { applyZinatexListingVisibilityFilter } from "@/lib/zinatex-listing-filter";
+import { applyAcmeComponentListingFilter } from "@/lib/supabase/products";
 
 export interface ProductFilters {
   manufacturer?: string[];
@@ -106,6 +107,7 @@ export function buildSupabaseQuery(
   }
 
   q = applyZinatexListingVisibilityFilter(q);
+  q = applyAcmeComponentListingFilter(q);
 
   return q;
 }

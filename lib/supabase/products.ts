@@ -10,6 +10,7 @@ import {
   isZinatexListingVisibleRow,
   isZinatexSupersededListingRow,
 } from "@/lib/zinatex-listing-filter";
+import { getStorefrontListPrice } from "@/lib/zinatex-product-display";
 
 export { applyZinatexListingVisibilityFilter, isZinatexListingVisibleRow, isZinatexSupersededListingRow };
 
@@ -32,6 +33,18 @@ export function mapRowToProduct(row: Record<string, unknown>): Product {
     tags: (row.tags as string[]) ?? [],
     created_at: row.created_at as string,
     manufacturer: row.manufacturer != null ? (row.manufacturer as string) : null,
+    acme_product_type:
+      row.acme_product_type == null || String(row.acme_product_type).trim() === ""
+        ? null
+        : String(row.acme_product_type).trim(),
+    acme_kit_parent_sku:
+      row.acme_kit_parent_sku == null || String(row.acme_kit_parent_sku).trim() === ""
+        ? null
+        : String(row.acme_kit_parent_sku).trim(),
+    acme_color_group:
+      row.acme_color_group == null || String(row.acme_color_group).trim() === ""
+        ? null
+        : String(row.acme_color_group).trim(),
     display_name:
       row.display_name == null || String(row.display_name).trim() === ""
         ? null
@@ -110,27 +123,48 @@ export function applyAcmePlaceholderImageFilter(query: any): any {
     .not("images", "is", null);
 }
 
-const ZINATEX_FROM_PRICE_CHUNK = 100;
+/**
+ * Hide ACME KIT components from public listings (category, brand, search, reels).
+ * PDP and direct fetch by slug are unchanged — do not apply on single-product loads.
+ * SQL: NOT (manufacturer = 'ACME' AND acme_product_type = 'component')
+ */
+export function applyAcmeComponentListingFilter(query: any): any {
+  return query.or(
+    "manufacturer.neq.ACME,acme_product_type.is.null,acme_product_type.neq.component"
+  );
+}
 
-/** Sets `zinatex_from_price` on Zinatex parents with variants (min in-stock, else min any). */
-export async function attachZinatexFromPrices(products: Product[]): Promise<Product[]> {
-  const parentIds = products
-    .filter((p) => p.manufacturer === "Zinatex" && p.has_variants === true)
-    .map((p) => p.id);
+export function isHiddenAcmeComponentProduct(
+  product: Pick<Product, "manufacturer" | "acme_product_type">
+): boolean {
+  return (
+    product.manufacturer === "ACME" &&
+    String(product.acme_product_type ?? "").trim() === "component"
+  );
+}
+
+const VARIANT_FROM_PRICE_CHUNK = 100;
+
+/**
+ * Sets `variant_from_price` on every parent with `has_variants` (min in-stock variant
+ * price, else min any variant). Zinatex rows also get `zinatex_from_price` for compatibility.
+ */
+export async function attachVariantFromPrices(products: Product[]): Promise<Product[]> {
+  const parentIds = products.filter((p) => p.has_variants === true).map((p) => p.id);
   if (parentIds.length === 0) return products;
 
   const supabase = createAdminClient();
   const inStockMin = new Map<string, number>();
   const anyMin = new Map<string, number>();
 
-  for (let i = 0; i < parentIds.length; i += ZINATEX_FROM_PRICE_CHUNK) {
-    const chunk = parentIds.slice(i, i + ZINATEX_FROM_PRICE_CHUNK);
+  for (let i = 0; i < parentIds.length; i += VARIANT_FROM_PRICE_CHUNK) {
+    const chunk = parentIds.slice(i, i + VARIANT_FROM_PRICE_CHUNK);
     const { data, error } = await supabase
       .from("product_variants")
       .select("product_id, price, in_stock")
       .in("product_id", chunk);
     if (error) {
-      console.error("attachZinatexFromPrices error:", error);
+      console.error("attachVariantFromPrices error:", error);
       continue;
     }
     for (const row of data ?? []) {
@@ -147,12 +181,19 @@ export async function attachZinatexFromPrices(products: Product[]): Promise<Prod
   }
 
   return products.map((p) => {
-    if (p.manufacturer !== "Zinatex" || p.has_variants !== true) return p;
+    if (p.has_variants !== true) return p;
     const from = inStockMin.get(p.id) ?? anyMin.get(p.id);
     if (from === undefined) return p;
-    return { ...p, zinatex_from_price: from };
+    const next: Product = { ...p, variant_from_price: from };
+    if (p.manufacturer === "Zinatex") {
+      next.zinatex_from_price = from;
+    }
+    return next;
   });
 }
+
+/** @deprecated Use `attachVariantFromPrices` (same implementation). */
+export const attachZinatexFromPrices = attachVariantFromPrices;
 
 export async function getProducts(category?: string): Promise<Product[]> {
   const supabase = createAdminClient();
@@ -169,6 +210,7 @@ export async function getProducts(category?: string): Promise<Product[]> {
 
   query = applyAcmePlaceholderImageFilter(query);
   query = applyZinatexListingVisibilityFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
 
@@ -197,6 +239,7 @@ export async function getProductsInCategory(
 
   query = applyAcmePlaceholderImageFilter(query);
   query = applyZinatexListingVisibilityFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
 
@@ -221,6 +264,7 @@ export async function getProductCountByCategory(
 
   query = applyAcmePlaceholderImageFilter(query);
   query = applyZinatexListingVisibilityFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
 
@@ -239,6 +283,7 @@ export async function getTotalProductCount(): Promise<number> {
 
   query = applyAcmePlaceholderImageFilter(query);
   query = applyZinatexListingVisibilityFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
 
@@ -336,6 +381,7 @@ export async function getFeaturedProducts(): Promise<Product[]> {
       .limit(2);
 
     query = applyAcmePlaceholderImageFilter(query);
+    query = applyAcmeComponentListingFilter(query);
 
     const { data, error } = await query;
 
@@ -350,11 +396,12 @@ export async function getFeaturedProducts(): Promise<Product[]> {
         ...filteredRows
           .map(mapRowToProduct)
           .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+          .filter((p) => !isHiddenAcmeComponentProduct(p))
       );
     }
   }
 
-  return products.slice(0, 8);
+  return attachVariantFromPrices(products.slice(0, 8));
 }
 
 export async function searchProducts(query: string): Promise<Product[]> {
@@ -369,14 +416,24 @@ export async function searchProducts(query: string): Promise<Product[]> {
   );
 
   if (!rpcError && Array.isArray(rpcData)) {
+    const visibleRows = (rpcData as Record<string, unknown>[]).filter((r) =>
+      isZinatexListingVisibleRow({
+        manufacturer: r.manufacturer as string | null | undefined,
+        has_variants: r.has_variants as boolean | null | undefined,
+        in_stock: r.in_stock as boolean | null | undefined,
+      })
+    );
     const filteredRows = filterRowsWithValidLeadImage(
-      (rpcData as Record<string, unknown>[]).map((r) => ({
+      visibleRows.map((r) => ({
         ...r,
         images: (r.images as string[] | null | undefined) ?? [],
       }))
     );
-    return filteredRows.map(mapRowToProduct)
-      .filter((p) => !isHiddenAcmePlaceholderProduct(p));
+    const mapped = filteredRows
+      .map(mapRowToProduct)
+      .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+      .filter((p) => !isHiddenAcmeComponentProduct(p));
+    return attachZinatexFromPrices(mapped);
   }
 
   // Fallback: ilike on name (when search_vector/RPC not yet deployed)
@@ -388,6 +445,8 @@ export async function searchProducts(query: string): Promise<Product[]> {
     .limit(15);
 
   queryBuilder = applyAcmePlaceholderImageFilter(queryBuilder);
+  queryBuilder = applyZinatexListingVisibilityFilter(queryBuilder);
+  queryBuilder = applyAcmeComponentListingFilter(queryBuilder);
 
   const { data, error } = await queryBuilder;
 
@@ -396,7 +455,11 @@ export async function searchProducts(query: string): Promise<Product[]> {
     return [];
   }
 
-  return (data ?? []).map(mapRowToProduct).filter((p) => !isHiddenAcmePlaceholderProduct(p));
+  const mapped = (data ?? [])
+    .map(mapRowToProduct)
+    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenAcmeComponentProduct(p));
+  return attachZinatexFromPrices(mapped);
 }
 
 // ── Homepage data fetchers ─────────────────────────────────────────────────
@@ -457,7 +520,7 @@ export interface CategoryImage {
 
 export async function getCategoryImages(): Promise<CategoryImage[]> {
   const supabase = createAdminClient();
-  const categorySlugs = ["sofa", "bed", "bedroom-furniture", "chair", "table", "cabinet", "tv-stand", "rug", "other"];
+  const categorySlugs = ["sofa", "bedroom", "chair", "table", "cabinet", "tv-stand", "rug", "other"];
 
   async function getLeadImageForCategory(
     slug: string,
@@ -469,11 +532,16 @@ export async function getCategoryImages(): Promise<CategoryImage[]> {
     let query = supabase
       .from("products")
       .select("images")
-      .eq("category", slug)
       .eq("in_stock", true)
       .not("images", "is", null)
       .not("images", "eq", "{}")
       .limit(20);
+
+    if (slug === "bedroom") {
+      query = query.in("category", ["bed", "bedroom-furniture"]);
+    } else {
+      query = query.eq("category", slug);
+    }
 
     if (options?.includeManufacturer) {
       query = query.eq("manufacturer", options.includeManufacturer);
@@ -481,6 +549,9 @@ export async function getCategoryImages(): Promise<CategoryImage[]> {
     if (options?.excludeManufacturer) {
       query = query.neq("manufacturer", options.excludeManufacturer);
     }
+
+    query = applyZinatexListingVisibilityFilter(query);
+    query = applyAcmeComponentListingFilter(query);
 
     const { data, error } = await query;
     if (error) {
@@ -506,7 +577,7 @@ export async function getCategoryImages(): Promise<CategoryImage[]> {
 
   const imagesBySlug = await Promise.all(
     categorySlugs.map(async (slug) => {
-      if (slug === "bed") {
+      if (slug === "bedroom") {
         const preferred = await getLeadImageForCategory(slug, { excludeManufacturer: "ACME" });
         if (preferred) return { slug, image: preferred };
         const fallback = await getLeadImageForCategory(slug);
@@ -540,19 +611,22 @@ export async function getSaleProducts(limit = 8): Promise<Product[]> {
     .limit(limit);
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
 
   if (error || !data) return [];
 
-  return data
+  const listed = data
     .map(mapRowToProduct)
     .filter(
       (p) =>
         !isHiddenAcmePlaceholderProduct(p) &&
+        !isHiddenAcmeComponentProduct(p) &&
         p.sale_price != null &&
         p.sale_price < p.price
     );
+  return attachVariantFromPrices(listed);
 }
 
 // ── Brand page data fetchers ──────────────────────────────────────────────
@@ -602,6 +676,8 @@ export async function getProductsByManufacturer(
   }
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
+  query = applyZinatexListingVisibilityFilter(query);
 
   const { data, error, count } = await query;
 
@@ -611,10 +687,13 @@ export async function getProductsByManufacturer(
   }
 
   const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { images?: string[] | null }[]);
+  const mapped = filteredRows
+    .map(mapRowToProduct)
+    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenAcmeComponentProduct(p));
+  const products = await attachVariantFromPrices(mapped);
   return {
-    products: filteredRows
-      .map(mapRowToProduct)
-      .filter((p) => !isHiddenAcmePlaceholderProduct(p)),
+    products,
     total: filteredRows.length,
   };
 }
@@ -629,6 +708,7 @@ export async function getManufacturerCategories(
     .eq("manufacturer", manufacturerName);
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
 
@@ -657,6 +737,8 @@ export async function getInitialCollectionProducts(
   }
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
+  query = applyZinatexListingVisibilityFilter(query);
 
   const { data, count, error } = await query;
   if (error) {
@@ -665,10 +747,13 @@ export async function getInitialCollectionProducts(
   }
 
   const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { images?: string[] | null }[]);
+  const mapped = filteredRows
+    .map(mapRowToProduct)
+    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenAcmeComponentProduct(p));
+  const products = await attachVariantFromPrices(mapped);
   return {
-    products: filteredRows
-      .map(mapRowToProduct)
-      .filter((p) => !isHiddenAcmePlaceholderProduct(p)),
+    products,
     total: filteredRows.length,
   };
 }
@@ -699,6 +784,7 @@ export async function getCategoryManufacturerCounts(
   }
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
   if (error || !data) return [];
@@ -729,6 +815,7 @@ export async function getCategoryCollections(
   }
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
   if (error || !data) return [];
@@ -752,6 +839,7 @@ export async function getCategoryColors(category: string): Promise<string[]> {
   }
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
   if (error || !data) return [];
@@ -792,6 +880,7 @@ export async function getCategorySizes(category: string): Promise<string[]> {
   }
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
   if (error || !data) return [];
@@ -821,11 +910,42 @@ export async function getCategorySubcategories(
   }
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
   if (error || !data) return [];
 
   const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { subcategory?: string; images?: string[] | null }[]);
+  const counts: Record<string, number> = {};
+  for (const row of filteredRows) {
+    const sub = row.subcategory as string;
+    if (sub) counts[sub] = (counts[sub] ?? 0) + 1;
+  }
+
+  return Object.entries(counts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+/** Type counts for merged `/collections/bedroom` (bed + bedroom-furniture, single query — no duplicate products). */
+export async function getMergedBedroomSubcategories(): Promise<SubcategoryCount[]> {
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("products")
+    .select("subcategory, images")
+    .in("category", ["bed", "bedroom-furniture"])
+    .not("subcategory", "is", null);
+
+  query = applyAcmePlaceholderImageFilter(query);
+  query = applyZinatexListingVisibilityFilter(query);
+  query = applyAcmeComponentListingFilter(query);
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  const filteredRows = filterRowsWithValidLeadImage(
+    (data ?? []) as { subcategory?: string; images?: string[] | null }[]
+  );
   const counts: Record<string, number> = {};
   for (const row of filteredRows) {
     const sub = row.subcategory as string;
@@ -848,6 +968,7 @@ export async function getManufacturerSubcategories(
     .not("subcategory", "is", null);
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
 
@@ -876,6 +997,7 @@ export async function getManufacturerCollections(
     .not("collection", "is", null);
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
 
@@ -899,6 +1021,7 @@ export async function getManufacturerColors(
     .not("color", "is", null);
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
 
@@ -922,6 +1045,7 @@ export async function getManufacturerSizes(
     .not("dimensions", "is", null);
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
 
@@ -968,6 +1092,7 @@ export async function getFilteredProducts(
 
   query = applyAcmePlaceholderImageFilter(query);
   query = applyZinatexListingVisibilityFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   // Single category filter (backward compat)
   if (params.category && params.category !== "all") {
@@ -1035,7 +1160,8 @@ export async function getFilteredProducts(
   const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { images?: string[] | null }[]);
   let products = filteredRows
     .map(mapRowToProduct)
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p));
+    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenAcmeComponentProduct(p));
   if (params.sizes && params.sizes.length > 0) {
     const sizeSet = new Set(params.sizes);
     products = products.filter((p) => {
@@ -1068,13 +1194,15 @@ export async function getRugsSpotlight(): Promise<SpotlightProduct[]> {
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("id, name, slug, price, images")
+    .select("*")
     .eq("category", "rug")
     .eq("in_stock", true)
     .order("rating", { ascending: false })
-    .limit(4);
+    .limit(40);
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyZinatexListingVisibilityFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
   if (error) {
@@ -1082,12 +1210,147 @@ export async function getRugsSpotlight(): Promise<SpotlightProduct[]> {
     return [];
   }
   const rows = (data ?? []) as Array<Record<string, unknown> & { images?: string[] | null }>;
-  return filterRowsWithValidLeadImage(rows)
-    .map((r) => ({
-      id: r.id as string,
-      name: r.name as string,
-      slug: r.slug as string,
-      price: Number(r.price),
-      images: (r.images as string[]) ?? [],
-    }));
+  const candidates = filterRowsWithValidLeadImage(rows)
+    .map(mapRowToProduct)
+    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenAcmeComponentProduct(p));
+  const enriched = await attachZinatexFromPrices(candidates);
+  return enriched.slice(0, 4).map((p) => ({
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    price: getStorefrontListPrice(p),
+    images: p.images ?? [],
+    manufacturer: p.manufacturer,
+  }));
+}
+
+/** Parent KIT row for a component's `acme_kit_parent_sku` (ACME only). */
+export async function getAcmeKitParentProductBySku(
+  parentSku: string
+): Promise<Product | null> {
+  const sku = parentSku.trim();
+  if (!sku) return null;
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("manufacturer", "ACME")
+    .eq("sku", sku);
+
+  if (error || !data?.length) {
+    if (error) console.error("getAcmeKitParentProductBySku error:", error);
+    return null;
+  }
+
+  const kitRow = data.find(
+    (r) =>
+      String((r as { acme_product_type?: string }).acme_product_type ?? "").trim() ===
+      "kit"
+  );
+  const row = kitRow ?? data[0];
+  return mapRowToProduct(row as Record<string, unknown>);
+}
+
+/** Other component SKUs sharing the same KIT parent (excludes `product.id`). */
+export async function getAcmeKitSiblingComponents(
+  product: Pick<Product, "id" | "acme_kit_parent_sku">
+): Promise<Product[]> {
+  const parent = String(product.acme_kit_parent_sku ?? "").trim();
+  if (!parent) return [];
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("acme_kit_parent_sku", parent)
+    .neq("id", product.id)
+    .order("name", { ascending: true });
+
+  if (error || !data) {
+    if (error) console.error("getAcmeKitSiblingComponents error:", error);
+    return [];
+  }
+
+  return data.map((row) => mapRowToProduct(row as Record<string, unknown>));
+}
+
+/** Component rows linked to a KIT via `acme_kit_parent_sku` (PDP "What's in this set"). */
+export async function getAcmeKitComponentProducts(
+  parentSku: string
+): Promise<Product[]> {
+  const sku = parentSku.trim();
+  if (!sku) return [];
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("acme_kit_parent_sku", sku)
+    .order("name", { ascending: true });
+
+  if (error || !data) {
+    if (error) console.error("getAcmeKitComponentProducts error:", error);
+    return [];
+  }
+
+  return data.map((row) => mapRowToProduct(row as Record<string, unknown>));
+}
+
+/** All ACME rows sharing a color group (each slug = one finish variant). */
+export async function getAcmeColorGroupVariantProducts(
+  colorGroup: string
+): Promise<Product[]> {
+  const g = colorGroup.trim();
+  if (!g) return [];
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("manufacturer", "ACME")
+    .eq("acme_color_group", g)
+    .order("finish", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (error || !data) {
+    if (error) console.error("getAcmeColorGroupVariantProducts error:", error);
+    return [];
+  }
+
+  const mapped = data.map((row) =>
+    mapRowToProduct(row as Record<string, unknown>)
+  );
+  return attachVariantFromPrices(mapped);
+}
+
+/** Same ACME collection as the KIT, excluding components and the current product (max 8). */
+export async function getAcmeKitCollectionSiblings(
+  product: Pick<Product, "id" | "collection" | "manufacturer">
+): Promise<Product[]> {
+  if (product.manufacturer !== "ACME") return [];
+  const coll = product.collection != null ? String(product.collection).trim() : "";
+  if (!coll) return [];
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("manufacturer", "ACME")
+    .eq("collection", coll)
+    .neq("id", product.id)
+    .or("acme_product_type.is.null,acme_product_type.neq.component")
+    .order("name", { ascending: true })
+    .limit(8);
+
+  if (error || !data) {
+    if (error) console.error("getAcmeKitCollectionSiblings error:", error);
+    return [];
+  }
+
+  const mapped = data.map((row) =>
+    mapRowToProduct(row as Record<string, unknown>)
+  );
+  return attachVariantFromPrices(mapped);
 }

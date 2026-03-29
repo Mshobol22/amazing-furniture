@@ -6,6 +6,23 @@ export function isZinatexProduct(
   return product.manufacturer === "Zinatex";
 }
 
+/** Lowest variant list price for cards when parent has variants (any manufacturer). */
+export function getVariantCardFromPrice(product: Product): number | null {
+  if (product.has_variants !== true) return null;
+  const v = product.variant_from_price ?? product.zinatex_from_price;
+  if (v != null && Number.isFinite(v)) return v;
+  return null;
+}
+
+/**
+ * List price for storefront: min variant when `has_variants` and enriched, else `product.price`.
+ */
+export function getStorefrontListPrice(product: Product): number {
+  const from = getVariantCardFromPrice(product);
+  if (from != null) return from;
+  return product.price;
+}
+
 /**
  * Card / PDP / reel label: rug design series (`collection`), else `subcategory`
  * (e.g. Large Rugs). Empty when both missing — caller may fall back to category badge.

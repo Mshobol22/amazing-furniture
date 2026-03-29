@@ -25,9 +25,11 @@ import {
   isUnitedFurnitureProduct,
 } from "@/lib/united-product-display";
 import {
+  getVariantCardFromPrice,
   getZinatexCardListingLine,
   getZinatexProductDisplayName,
   isZinatexProduct,
+  getStorefrontListPrice,
 } from "@/lib/zinatex-product-display";
 
 interface BrandProductGridCardProps {
@@ -132,26 +134,24 @@ export default function BrandProductGridCard({
                   : product.name}
         </Link>
         <p className="font-sans text-base font-semibold tabular-nums text-[#1C1C1C]">
-          {isZinatexProduct(product) &&
-          product.has_variants === true &&
-          product.zinatex_from_price != null ? (
-            <>
-              <span className="text-sm font-medium text-gray-600">From </span>
-              <span className="tabular-nums">
-                {formatPrice(product.zinatex_from_price)}
-              </span>
-            </>
-          ) : product.on_sale && product.sale_price ? (
+          {product.on_sale && product.sale_price ? (
             <>
               <span className="text-base font-semibold text-red-600 tabular-nums">
                 {formatPrice(product.sale_price)}
               </span>
               <span className="ml-2 text-sm font-normal text-[#1C1C1C]/45 line-through tabular-nums">
-                {formatPrice(product.price)}
+                {formatPrice(getStorefrontListPrice(product))}
+              </span>
+            </>
+          ) : getVariantCardFromPrice(product) != null ? (
+            <>
+              <span className="text-sm font-medium text-gray-600">From </span>
+              <span className="tabular-nums">
+                {formatPrice(getVariantCardFromPrice(product)!)}
               </span>
             </>
           ) : (
-            <>{formatPrice(product.price)}</>
+            <>{formatPrice(getStorefrontListPrice(product))}</>
           )}
         </p>
         {/* Explore buttons — always visible, side by side */}
@@ -194,12 +194,12 @@ export default function BrandProductGridCard({
           >
             Out of Stock
           </button>
-        ) : isZinatexProduct(product) && product.has_variants === true ? (
+        ) : product.has_variants === true ? (
           <Link
             href={`/products/${product.slug}`}
             className="flex w-full items-center justify-center rounded-lg border border-[#2D4A3E] bg-white px-3 py-2 text-sm font-medium text-[#2D4A3E] hover:bg-[#FAF8F5]"
           >
-            Choose size &amp; color
+            {isZinatexProduct(product) ? "Choose size & color" : "Choose options"}
           </Link>
         ) : (
           <button

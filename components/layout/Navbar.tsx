@@ -15,6 +15,7 @@ import {
   Tag,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { applyAcmeComponentListingFilter } from "@/lib/supabase/products";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useCartStore, useCartItemCount } from "@/store/cartStore";
 import { useWishlistStore, useWishlistCount } from "@/store/wishlistStore";
@@ -35,28 +36,25 @@ const CATEGORIES: Record<
   string,
   { name: string; slug: string; subcategories: { label: string; href?: string; dividerTop?: boolean }[] }
 > = {
-  bed: {
-    name: "Beds",
-    slug: "bed",
+  bedroom: {
+    name: "Beds & Bedroom",
+    slug: "bedroom",
     subcategories: [
-      { label: "Beds", href: "/collections/bed?type=Beds" },
-      { label: "Bunk Beds", href: "/collections/bed?type=Bunk+Beds" },
-      { label: "Daybeds", href: "/collections/bed?type=Daybeds" },
-      { label: "Storage Beds", href: "/collections/bed?type=Storage+Beds" },
-      { label: "All Beds", href: "/collections/bed", dividerTop: true },
-    ],
-  },
-  "bedroom-furniture": {
-    name: "Bedroom Furniture",
-    slug: "bedroom-furniture",
-    subcategories: [
-      { label: "Bedroom Sets", href: "/collections/bedroom-furniture?type=Bedroom+Sets" },
-      { label: "Dressers", href: "/collections/bedroom-furniture?type=Dressers" },
-      { label: "Nightstands", href: "/collections/bedroom-furniture?type=Nightstands" },
-      { label: "Chests", href: "/collections/bedroom-furniture?type=Chests" },
-      { label: "Mirrors", href: "/collections/bedroom-furniture?type=Mirrors" },
-      { label: "Vanities", href: "/collections/bedroom-furniture?type=Vanities" },
-      { label: "All Bedroom Furniture", href: "/collections/bedroom-furniture", dividerTop: true },
+      { label: "Beds", href: "/collections/bedroom?type=Beds" },
+      { label: "Bunk Beds", href: "/collections/bedroom?type=Bunk+Beds" },
+      { label: "Daybeds", href: "/collections/bedroom?type=Daybeds" },
+      { label: "Storage Beds", href: "/collections/bedroom?type=Storage+Beds" },
+      { label: "Bedroom Sets", href: "/collections/bedroom?type=Bedroom+Sets" },
+      { label: "Dressers", href: "/collections/bedroom?type=Dressers" },
+      { label: "Nightstands", href: "/collections/bedroom?type=Nightstands" },
+      { label: "Chests", href: "/collections/bedroom?type=Chests" },
+      { label: "Mirrors", href: "/collections/bedroom?type=Mirrors" },
+      { label: "Vanities", href: "/collections/bedroom?type=Vanities" },
+      {
+        label: "All Beds & Bedroom",
+        href: "/collections/bedroom",
+        dividerTop: true,
+      },
     ],
   },
   sofa: {
@@ -185,11 +183,13 @@ export default function Navbar() {
     const supabase = createClient();
 
     async function checkSaleAvailability() {
-      const { data, error } = await supabase
+      let saleProbe = supabase
         .from("products")
         .select("id")
         .eq("on_sale", true)
         .limit(1);
+      saleProbe = applyAcmeComponentListingFilter(saleProbe);
+      const { data, error } = await saleProbe;
 
       if (!cancelled) {
         setHasActiveSaleProducts(!error && (data?.length ?? 0) > 0);
@@ -257,8 +257,16 @@ export default function Navbar() {
   const categoryLabel = (cat: string) =>
     cat.charAt(0).toUpperCase() + cat.slice(1).replace("-", " ");
 
-  const isCollectionActive = (slug: string) =>
-    pathname.startsWith(`/collections/${slug}`);
+  const isCollectionActive = (slug: string) => {
+    if (pathname.startsWith(`/collections/${slug}`)) return true;
+    if (slug === "bedroom") {
+      return (
+        /^\/collections\/bed(?:\/|\?|$)/.test(pathname) ||
+        /^\/collections\/bedroom-furniture(?:\/|\?|$)/.test(pathname)
+      );
+    }
+    return false;
+  };
 
   const isHomepage = pathname === "/";
   const [scrolled, setScrolled] = useState(false);

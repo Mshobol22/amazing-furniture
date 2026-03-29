@@ -1,7 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import {
+  applyAcmeComponentListingFilter,
   applyZinatexListingVisibilityFilter,
+  attachZinatexFromPrices,
   mapRowToProduct,
 } from "@/lib/supabase/products";
 
@@ -102,6 +104,7 @@ export async function GET(request: NextRequest) {
       .not("images", "is", null)
       .not("images", "eq", "{}");
     baseQuery = applyZinatexListingVisibilityFilter(baseQuery);
+    baseQuery = applyAcmeComponentListingFilter(baseQuery);
     baseQuery = baseQuery.or("images_validated.eq.true,images_validated.is.null");
 
     const { data, error } = await baseQuery;
@@ -126,8 +129,13 @@ export async function GET(request: NextRequest) {
     const total = orderedRows.length;
     const hasMore = nextCursor < total;
 
+    const mapped = pagedRows.map((row) =>
+      mapRowToProduct(row as Record<string, unknown>)
+    );
+    const products = await attachZinatexFromPrices(mapped);
+
     return NextResponse.json({
-      products: pagedRows.map((row) => mapRowToProduct(row as Record<string, unknown>)),
+      products,
       nextCursor: hasMore ? nextCursor : null,
       hasMore,
       total,

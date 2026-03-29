@@ -4,6 +4,7 @@ import type { Product } from '@/types'
 import { productLeadImageSrc } from '@/lib/nfd-image-proxy'
 import type { SaleEventWithProducts } from '@/lib/types/sale'
 import { formatPrice } from '@/lib/format-price'
+import { getStorefrontListPrice } from '@/lib/zinatex-product-display'
 
 interface Props {
   products: Product[]
@@ -61,7 +62,8 @@ export default function SaleProductGrid({
         {products.map(product => {
           const image = productLeadImageSrc(product.manufacturer, product.images?.[0])
           const salePrice = product.sale_price
-          const comparePrice = product.compare_price ?? product.price
+          const listPrice = getStorefrontListPrice(product)
+          const comparePrice = product.compare_price ?? listPrice
           const savings =
             salePrice && comparePrice > salePrice
               ? Math.round(comparePrice - salePrice)
@@ -108,7 +110,7 @@ export default function SaleProductGrid({
                     </>
                   ) : (
                     <span className="text-base font-bold text-[#2D4A3E]">
-                      {formatPrice(product.price)}
+                      {formatPrice(listPrice)}
                     </span>
                   )}
                   {savings && savings > 0 && (

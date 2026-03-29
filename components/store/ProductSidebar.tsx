@@ -26,6 +26,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   sofa: "Sofas & Sectionals",
   bed: "Beds",
   "bedroom-furniture": "Bedroom Furniture",
+  bedroom: "Beds & Bedroom Furniture",
   chair: "Chairs & Recliners",
   table: "Dining & Tables",
   cabinet: "Cabinets & Storage",

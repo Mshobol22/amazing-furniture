@@ -3,12 +3,21 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import {
+  applyAcmeComponentListingFilter,
+  attachVariantFromPrices,
+  getAcmeColorGroupVariantProducts,
+  getAcmeKitCollectionSiblings,
+  getAcmeKitComponentProducts,
+  getAcmeKitParentProductBySku,
+  getAcmeKitSiblingComponents,
   getProducts,
+  mapRowToProduct,
   resolveProductPageSlug,
 } from "@/lib/supabase/products";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format-price";
+import AcmeFinishVariantSelector from "@/components/products/AcmeFinishVariantSelector";
 import ProductDetailClient from "@/components/products/ProductDetailClient";
 import ProductImageGallery from "@/components/products/ProductImageGallery";
 import ProductVariantPageClient from "@/components/products/ProductVariantPageClient";
@@ -31,12 +40,17 @@ import {
 } from "@/lib/united-product-display";
 import {
   getAcmeProductCardSkuLabel,
-  getAcmeProductDetailHeadingFromDescription,
+  getAcmeProductDetailHeading,
+  hasAcmeColorGroup,
+  isAcmeComponentProduct,
+  isAcmeKitProduct,
   isAcmeProduct,
 } from "@/lib/acme-product-display";
 import {
+  getVariantCardFromPrice,
   getZinatexCardListingLine,
   getZinatexProductDisplayName,
+  getStorefrontListPrice,
   isZinatexProduct,
 } from "@/lib/zinatex-product-display";
 
@@ -73,19 +87,9 @@ function getCategoryBadgeLabel(category: string): string {
 }
 
 /** Minimal row shape for "Also in this collection" when mapping UF display title */
-function siblingProductTitle(sibling: {
-  manufacturer: string | null;
-  name: string;
-  description: string | null;
-  bundle_skus: string[] | null;
-}): string {
+function siblingProductTitle(sibling: Product): string {
   if (sibling.manufacturer === "United Furniture") {
-    return getUnitedFurnitureProductHeading({
-      manufacturer: sibling.manufacturer,
-      name: sibling.name,
-      description: sibling.description ?? "",
-      bundle_skus: Array.isArray(sibling.bundle_skus) ? sibling.bundle_skus : [],
-    } as Product);
+    return getUnitedFurnitureProductHeading(sibling);
   }
   return sibling.name;
 }
@@ -112,7 +116,7 @@ export async function generateMetadata({
     : isUnitedFurnitureProduct(product)
       ? getUnitedFurnitureProductHeading(product)
       : isAcmeProduct(product)
-        ? getAcmeProductDetailHeadingFromDescription(product.description)
+        ? getAcmeProductDetailHeading(product)
         : enrichProductTitle(product.name, product.category);
 
   return {
@@ -164,21 +168,58 @@ export default async function ProductPage({ params }: ProductPageProps) {
     .filter((p) => p.id !== product.id)
     .slice(0, 4);
 
+  let acmeKitSetPieces: Product[] = [];
+  let acmeCollectionSiblings: Product[] = [];
+  let acmeColorVariants: Product[] = [];
+
+  if (isAcmeKitProduct(product)) {
+    const parentSku = String(product.sku ?? product.name ?? "").trim();
+    if (parentSku) {
+      acmeKitSetPieces = await getAcmeKitComponentProducts(parentSku);
+    }
+  }
+
+  if (hasAcmeColorGroup(product)) {
+    acmeColorVariants = await getAcmeColorGroupVariantProducts(
+      String(product.acme_color_group ?? "").trim()
+    );
+  }
+
+  const acmeShowCompleteCollection =
+    isAcmeKitProduct(product) || hasAcmeColorGroup(product);
+  if (acmeShowCompleteCollection) {
+    let sibs = await getAcmeKitCollectionSiblings(product);
+    const cg = String(product.acme_color_group ?? "").trim();
+    if (cg) {
+      sibs = sibs.filter(
+        (p) => String(p.acme_color_group ?? "").trim() !== cg
+      );
+    }
+    acmeCollectionSiblings = sibs;
+  }
+
+  let acmeComponentParentKit: Product | null = null;
+  let acmeComponentSiblingPieces: Product[] = [];
+  if (isAcmeComponentProduct(product)) {
+    const parentSku = String(product.acme_kit_parent_sku ?? "").trim();
+    if (parentSku) {
+      acmeComponentParentKit = await getAcmeKitParentProductBySku(parentSku);
+      acmeComponentSiblingPieces = await getAcmeKitSiblingComponents(product);
+    }
+  }
+
+  const productImages = product.images ?? [];
+  const acmeComponentUsesParentGallery =
+    isAcmeComponentProduct(product) &&
+    productImages.length === 0 &&
+    String(product.acme_kit_parent_sku ?? "").trim() !== "" &&
+    (acmeComponentParentKit?.images?.length ?? 0) > 0;
+  const pdpGalleryImages = acmeComponentUsesParentGallery
+    ? (acmeComponentParentKit!.images ?? [])
+    : productImages;
+
   let collectionWishlistedIds: string[] = [];
-  let siblingCollectionProducts: Array<{
-    id: string;
-    name: string;
-    slug: string;
-    images: string[] | null;
-    price: number;
-    sale_price: number | null;
-    on_sale: boolean | null;
-    piece_type: string | null;
-    manufacturer: string | null;
-    description: string | null;
-    page_id: string | null;
-    bundle_skus: string[] | null;
-  }> = [];
+  let siblingCollectionProducts: Product[] = [];
 
   const hasCollectionGroup = !!product.collection_group;
   const hasCollection = !!product.collection;
@@ -192,9 +233,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
     let siblingQuery = supabase
       .from("products")
-      .select(
-        "id, name, slug, images, price, sale_price, on_sale, piece_type, manufacturer, description, page_id, bundle_skus, collection, subcategory"
-      )
+      .select("*")
       .neq("id", product.id)
       .limit(6);
 
@@ -208,8 +247,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
         .not("images", "is", null);
     }
 
+    siblingQuery = applyAcmeComponentListingFilter(siblingQuery);
+
     const { data: siblingRows } = await siblingQuery;
-    siblingCollectionProducts = (siblingRows ?? []) as typeof siblingCollectionProducts;
+    const siblingMapped = (siblingRows ?? []).map((r) =>
+      mapRowToProduct(r as Record<string, unknown>)
+    );
+    siblingCollectionProducts = await attachVariantFromPrices(siblingMapped);
 
     if (user) {
       const siblingIds = siblingCollectionProducts.map((p) => p.id);
@@ -289,12 +333,25 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {/* Image gallery */}
             <div className="space-y-3">
               <ProductImageGallery
-                rawImages={product.images}
+                rawImages={pdpGalleryImages}
                 productName={product.name}
                 manufacturer={product.manufacturer}
-                onSale={product.on_sale}
-                salePrice={product.sale_price}
+                onSale={
+                  acmeComponentUsesParentGallery
+                    ? Boolean(acmeComponentParentKit?.on_sale)
+                    : product.on_sale
+                }
+                salePrice={
+                  acmeComponentUsesParentGallery
+                    ? (acmeComponentParentKit?.sale_price ?? null)
+                    : product.sale_price
+                }
               />
+              {acmeComponentUsesParentGallery ? (
+                <p className="text-center font-sans text-xs text-[#1C1C1C]/55">
+                  Image shows complete set.
+                </p>
+              ) : null}
               {product.collection_group ? (
                 <ProductDetailReelTrigger
                   collectionGroup={product.collection_group}
@@ -342,9 +399,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     : isZinatexProduct(product)
                       ? getZinatexProductDisplayName(product)
                       : isAcmeProduct(product)
-                        ? getAcmeProductDetailHeadingFromDescription(
-                            product.description
-                          )
+                        ? getAcmeProductDetailHeading(product)
                         : product.name}
               </h1>
               {isUF && ufSkuLineValue ? (
@@ -409,8 +464,21 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 )}
               </div>
 
-              {/* Quantity + Add to Cart + collapsible description (client) */}
-              <ProductDetailClient product={product} />
+              {hasAcmeColorGroup(product) && acmeColorVariants.length > 1 ? (
+                <AcmeFinishVariantSelector
+                  currentProductId={product.id}
+                  variants={acmeColorVariants}
+                />
+              ) : null}
+
+              {/* Quantity + Add to Cart + description + ACME KIT sections (client) */}
+              <ProductDetailClient
+                product={product}
+                acmeKitSetPieces={acmeKitSetPieces}
+                acmeCollectionSiblings={acmeCollectionSiblings}
+                acmeComponentParentKit={acmeComponentParentKit}
+                acmeComponentSiblingPieces={acmeComponentSiblingPieces}
+              />
             </div>
           </div>
         )}
@@ -453,10 +521,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
                         {siblingProductTitle(sibling)}
                       </p>
                       <p className="mt-1 text-sm font-semibold text-[#1C1C1C]">
-                        {formatPrice(
-                          sibling.on_sale && sibling.sale_price != null
-                            ? sibling.sale_price
-                            : sibling.price
+                        {sibling.on_sale && sibling.sale_price != null ? (
+                          <>
+                            <span className="text-red-600 tabular-nums">
+                              {formatPrice(sibling.sale_price)}
+                            </span>
+                            <span className="ml-1 text-xs font-normal text-[#1C1C1C]/45 line-through tabular-nums">
+                              {formatPrice(getStorefrontListPrice(sibling))}
+                            </span>
+                          </>
+                        ) : getVariantCardFromPrice(sibling) != null ? (
+                          <>
+                            <span className="text-xs font-medium text-[#1C1C1C]/60">
+                              From{" "}
+                            </span>
+                            <span className="tabular-nums">
+                              {formatPrice(getVariantCardFromPrice(sibling)!)}
+                            </span>
+                          </>
+                        ) : (
+                          formatPrice(getStorefrontListPrice(sibling))
                         )}
                       </p>
                     </Link>
@@ -494,9 +578,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 : isUnitedFurnitureProduct(product)
                   ? getUnitedFurnitureProductHeading(product)
                   : isAcmeProduct(product)
-                    ? getAcmeProductDetailHeadingFromDescription(
-                        product.description
-                      )
+                    ? getAcmeProductDetailHeading(product)
                     : isZinatexProduct(product)
                       ? getZinatexProductDisplayName(product)
                       : product.name,

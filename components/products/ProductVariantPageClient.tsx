@@ -6,6 +6,10 @@ import VariantSelector from "@/components/products/VariantSelector";
 import { useCartStore } from "@/store/cartStore";
 import type { Product, ProductVariant } from "@/types";
 import {
+  getAcmeProductDetailHeading,
+  isAcmeProduct,
+} from "@/lib/acme-product-display";
+import {
   getNationwideFDProductHeading,
   getNationwideFDProductListingLabel,
   isNationwideFDProduct,
@@ -73,7 +77,9 @@ export default function ProductVariantPageClient({
             ? getNationwideFDProductHeading(product)
             : isZinatexProduct(product)
               ? getZinatexProductDisplayName(product)
-              : product.name}
+              : isAcmeProduct(product)
+                ? getAcmeProductDetailHeading(product)
+                : product.name}
         </h1>
 
         {product.description && (

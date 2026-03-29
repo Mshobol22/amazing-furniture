@@ -2,19 +2,22 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { applyStorefrontCollectionCategoryFilter } from "@/lib/collections/collection-scope";
 import {
+  applyAcmeComponentListingFilter,
   applyAcmePlaceholderImageFilter,
   mapRowToProduct,
   isHiddenAcmePlaceholderProduct,
+  isHiddenAcmeComponentProduct,
   getCategorySubcategories,
+  getMergedBedroomSubcategories,
 } from "@/lib/supabase/products";
 import { applyZinatexListingVisibilityFilter } from "@/lib/zinatex-listing-filter";
 import { getCategoryDisplayName } from "@/lib/collection-utils";
 import CollectionClient from "@/components/collections/CollectionClient";
 
 const ALLOWED_SLUGS = new Set([
-  "bed",
-  "bedroom-furniture",
+  "bedroom",
   "sofa",
   "chair",
   "table",
@@ -27,8 +30,7 @@ const ALLOWED_SLUGS = new Set([
 
 const CATEGORY_BG: Record<string, string> = {
   sofa: "#1C3A5E",
-  bed: "#2C3E50",
-  "bedroom-furniture": "#2D3561",
+  bedroom: "#2D3561",
   chair: "#3D2B1F",
   table: "#1E3A2F",
   cabinet: "#2D2416",
@@ -49,15 +51,10 @@ const categoryMeta: Record<string, { title: string; description: string }> = {
     description:
       "Shop premium sofas and sectionals. Modern, comfortable designs with free shipping over $299.",
   },
-  bed: {
-    title: "Beds | Amazing Home Furniture",
+  bedroom: {
+    title: "Beds & Bedroom Furniture | Amazing Home Furniture",
     description:
-      "Shop beds and bed frames. Platform beds, upholstered frames, bunk beds, and more. Free shipping over $299.",
-  },
-  "bedroom-furniture": {
-    title: "Bedroom Furniture | Amazing Home Furniture",
-    description:
-      "Shop bedroom furniture sets, dressers, nightstands, chests, mirrors, and vanities. Free shipping over $299.",
+      "Shop beds, bedroom sets, dressers, nightstands, chests, mirrors, vanities, and more. Free shipping over $299.",
   },
   chair: {
     title: "Chairs & Recliners | Amazing Home Furniture",
@@ -165,9 +162,10 @@ export default async function CollectionPage({
 
   const supabase = createAdminClient();
 
-  const [availableSubcategories] = await Promise.all([
-    getCategorySubcategories(category),
-  ]);
+  const availableSubcategories =
+    category === "bedroom"
+      ? await getMergedBedroomSubcategories()
+      : await getCategorySubcategories(category);
 
   // Parse URL filters for SSR initial products (mirrors the products route logic)
   const types = (flat["type"] ?? "")
@@ -194,10 +192,9 @@ export default async function CollectionPage({
 
   productQuery = applyAcmePlaceholderImageFilter(productQuery);
   productQuery = applyZinatexListingVisibilityFilter(productQuery);
+  productQuery = applyAcmeComponentListingFilter(productQuery);
 
-  if (category !== "all") {
-    productQuery = productQuery.eq("category", category);
-  }
+  productQuery = applyStorefrontCollectionCategoryFilter(productQuery, category);
   if (types.length > 0) productQuery = productQuery.in("subcategory", types);
   if (manufacturers.length > 0) productQuery = productQuery.in("manufacturer", manufacturers);
   if (colors.length > 0) {
@@ -233,7 +230,8 @@ export default async function CollectionPage({
   const { data: rawProducts, count } = await productQuery;
   const initialProducts = (rawProducts ?? [])
     .map(mapRowToProduct)
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p));
+    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenAcmeComponentProduct(p));
   const initialTotal = count ?? 0;
 
   return (

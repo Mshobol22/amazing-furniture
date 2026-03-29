@@ -1,4 +1,5 @@
 import type { Product } from "@/types";
+import { getStorefrontListPrice } from "@/lib/zinatex-product-display";
 import {
   getAcmeProductCardSkuLabel,
   getAcmeProductDetailHeadingFromDescription,
@@ -58,4 +59,27 @@ export function getReelOverlayTitle(product: Product): string {
 
 export function formatReelSecondaryPillText(value: string): string {
   return value.replace(/-/g, " ");
+}
+
+const REEL_USD = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
+/** Overlay price: uses `getStorefrontListPrice` (min variant when `has_variants`); variant slides use row `price`. */
+export function getReelPriceLabel(product: Product): {
+  sale: string;
+  regular: string | null;
+} {
+  const base = getStorefrontListPrice(product);
+  if (product.on_sale && product.sale_price != null) {
+    return {
+      sale: REEL_USD.format(Number(product.sale_price.toFixed(2))),
+      regular: REEL_USD.format(Number(base.toFixed(2))),
+    };
+  }
+  return {
+    sale: REEL_USD.format(Number(base.toFixed(2))),
+    regular: null,
+  };
 }

@@ -1,7 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { isZinatexListingVisibleRow } from "@/lib/zinatex-listing-filter";
-import { mapRowToProduct } from "@/lib/supabase/products";
+import {
+  attachZinatexFromPrices,
+  isHiddenAcmeComponentProduct,
+  mapRowToProduct,
+} from "@/lib/supabase/products";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +62,14 @@ type ProductRow = Record<string, unknown> & { id: string };
 
 function passesBaseFilters(row: ProductRow): boolean {
   if (row.in_stock !== true) return false;
+  if (
+    isHiddenAcmeComponentProduct({
+      manufacturer: row.manufacturer as string | null | undefined,
+      acme_product_type: row.acme_product_type as string | null | undefined,
+    })
+  ) {
+    return false;
+  }
   if (
     !isZinatexListingVisibleRow({
       manufacturer: row.manufacturer as string | null | undefined,
@@ -227,8 +239,11 @@ export async function GET(request: NextRequest) {
     const nextOffset = cursor + paged.length;
     const hasMore = nextOffset < total;
 
+    const mapped = paged.map((row) => mapRowToProduct(row));
+    const products = await attachZinatexFromPrices(mapped);
+
     return NextResponse.json({
-      products: paged.map((row) => mapRowToProduct(row)),
+      products,
       nextCursor: hasMore ? nextOffset : null,
       hasMore,
       phase,

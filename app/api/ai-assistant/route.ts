@@ -1,5 +1,6 @@
 import Groq from "groq-sdk";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { applyAcmeComponentListingFilter } from "@/lib/supabase/products";
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -26,11 +27,13 @@ export async function POST(request: Request) {
     }
 
     const supabase = createAdminClient();
-    const { data: products } = await supabase
+    let invQuery = supabase
       .from("products")
       .select("name, slug, price, category")
       .order("name", { ascending: true })
       .limit(300);
+    invQuery = applyAcmeComponentListingFilter(invQuery);
+    const { data: products } = await invQuery;
 
     const productList = (products ?? [])
       .map(

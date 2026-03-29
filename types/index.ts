@@ -32,13 +32,22 @@ export interface Product {
   manufacturer?: string | null;
   /** ACME: short display name for cards and headings (e.g. Dresser, Queen Bed) */
   display_name?: string | null;
+  /** ACME: 'component' | 'kit' | etc. — components hidden from browse listings */
+  acme_product_type?: string | null;
+  acme_kit_parent_sku?: string | null;
+  acme_color_group?: string | null;
   /** ACME datasheet / import fields */
   finish?: string | null;
   catalog_size?: string | null;
   product_details?: string | null;
   /** undefined/null DB = standalone; false/true explicit */
   has_variants?: boolean;
-  /** Lowest in-stock variant sell price for Zinatex parent cards (server-enriched). */
+  /**
+   * Lowest variant sell price for parent rows with `has_variants` (in-stock variants
+   * preferred). Set by `attachVariantFromPrices` / `attachZinatexFromPrices`.
+   */
+  variant_from_price?: number;
+  /** @deprecated same as variant_from_price for Zinatex; kept for older payloads */
   zinatex_from_price?: number;
   /** Discover reel: when set, add-to-cart must use this variant with product as parent. */
   zinatex_reel_variant?: ProductVariant;

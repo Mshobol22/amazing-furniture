@@ -1,7 +1,12 @@
 import Link from "next/link";
 import DiscoverReel from "@/components/reel/DiscoverReel";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { mapRowToProduct } from "@/lib/supabase/products";
+import {
+  applyAcmeComponentListingFilter,
+  applyZinatexListingVisibilityFilter,
+  attachZinatexFromPrices,
+  mapRowToProduct,
+} from "@/lib/supabase/products";
 import type { Product } from "@/types";
 
 type DiscoverResponse = {
@@ -22,13 +27,17 @@ async function getInitialDiscoverPayload(seed: number): Promise<DiscoverResponse
   const LIMIT = 20;
   const supabase = createAdminClient();
   // select("*") so DiscoverReel gets UF + Zinatex fields (collection, subcategory, name, …) via mapRowToProduct
-  const { data, error } = await supabase
+  let baseQuery = supabase
     .from("products")
     .select("*")
     .eq("in_stock", true)
     .not("images", "is", null)
     .not("images", "eq", "{}")
     .or("images_validated.eq.true,images_validated.is.null");
+  baseQuery = applyZinatexListingVisibilityFilter(baseQuery);
+  baseQuery = applyAcmeComponentListingFilter(baseQuery);
+
+  const { data, error } = await baseQuery;
 
   if (error) throw error;
 
@@ -46,8 +55,13 @@ async function getInitialDiscoverPayload(seed: number): Promise<DiscoverResponse
   const pagedRows = orderedRows.slice(0, LIMIT);
   const nextCursor = pagedRows.length < orderedRows.length ? pagedRows.length : null;
 
+  const mapped = pagedRows.map((row) =>
+    mapRowToProduct(row as Record<string, unknown>)
+  );
+  const products = await attachZinatexFromPrices(mapped);
+
   return {
-    products: pagedRows.map((row) => mapRowToProduct(row as Record<string, unknown>)),
+    products,
     nextCursor,
   };
 }

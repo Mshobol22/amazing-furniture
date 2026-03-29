@@ -4,6 +4,7 @@
 // request context (no cookie store available).
 import { createClient } from "@supabase/supabase-js";
 import type { Product } from "@/types";
+import { applyAcmeComponentListingFilter } from "@/lib/supabase/products";
 
 export interface ReelQueryResult {
   collectionPieces: Product[];
@@ -24,7 +25,7 @@ export async function getReelProducts(
   const supabase = getAnonClient();
 
   // Step 1: All pieces from this collection with validated images
-  const collectionQuery = supabase
+  let collectionQuery = supabase
     .from("products")
     .select("*")
     .eq("collection_group", collectionGroup)
@@ -34,6 +35,7 @@ export async function getReelProducts(
     .filter("images", "neq", "{}")
     .order("is_collection_hero", { ascending: false })
     .order("piece_type", { ascending: true });
+  collectionQuery = applyAcmeComponentListingFilter(collectionQuery);
 
   const { data: collectionPieces, error: collectionError } = await collectionQuery;
 
@@ -42,7 +44,7 @@ export async function getReelProducts(
   }
 
   // Step 2: Related products from same category, different/no collection
-  const relatedQuery = supabase
+  let relatedQuery = supabase
     .from("products")
     .select("*")
     .eq("category", category)
@@ -52,6 +54,7 @@ export async function getReelProducts(
     .not("images", "is", null)
     .filter("images", "neq", "{}")
     .limit(limit);
+  relatedQuery = applyAcmeComponentListingFilter(relatedQuery);
 
   // Supabase JS v2 does not support ORDER BY RANDOM() natively;
   // results will be in default insertion order. For true randomness,

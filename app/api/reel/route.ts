@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
+  applyAcmeComponentListingFilter,
   applyZinatexListingVisibilityFilter,
+  attachZinatexFromPrices,
   mapRowToProduct,
 } from "@/lib/supabase/products";
 
@@ -58,6 +60,7 @@ export async function GET(request: NextRequest) {
       .eq("collection_group", collectionGroup)
       .eq("in_stock", true);
     collectionQuery = applyZinatexListingVisibilityFilter(collectionQuery);
+    collectionQuery = applyAcmeComponentListingFilter(collectionQuery);
     collectionQuery = collectionQuery
       .or(imageFilter)
       .order("is_collection_hero", { ascending: false })
@@ -75,6 +78,7 @@ export async function GET(request: NextRequest) {
       .or(`collection_group.is.null,collection_group.neq.${collectionGroup}`)
       .eq("in_stock", true);
     relatedQuery = applyZinatexListingVisibilityFilter(relatedQuery);
+    relatedQuery = applyAcmeComponentListingFilter(relatedQuery);
     relatedQuery = relatedQuery.or(imageFilter).range(offset, offset + limit - 1);
 
     if (category) {
@@ -87,14 +91,19 @@ export async function GET(request: NextRequest) {
       throw relatedError;
     }
 
-    const relatedProducts = (relatedData ?? []).map((row) =>
+    const collectionMapped = (collectionData ?? []).map((row) =>
       mapRowToProduct(row as Record<string, unknown>)
     );
+    const relatedMapped = (relatedData ?? []).map((row) =>
+      mapRowToProduct(row as Record<string, unknown>)
+    );
+    const [collectionPieces, relatedProducts] = await Promise.all([
+      attachZinatexFromPrices(collectionMapped),
+      attachZinatexFromPrices(relatedMapped),
+    ]);
 
     return NextResponse.json({
-      collectionPieces: (collectionData ?? []).map((row) =>
-        mapRowToProduct(row as Record<string, unknown>)
-      ),
+      collectionPieces,
       relatedProducts,
       nextOffset: offset + relatedProducts.length,
       hasMore: relatedProducts.length === limit,

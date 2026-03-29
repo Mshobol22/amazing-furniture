@@ -4,6 +4,10 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import WishlistAccountGrid from "@/components/account/WishlistAccountGrid";
+import {
+  attachZinatexFromPrices,
+  mapRowToProduct,
+} from "@/lib/supabase/products";
 import type { Product } from "@/types";
 
 export const metadata: Metadata = {
@@ -45,18 +49,26 @@ export default async function AccountWishlistPage() {
     );
   }
 
-  const { data: products } = await supabase.from("products").select("*").in("id", ids);
+  const { data: rawRows } = await supabase.from("products").select("*").in("id", ids);
 
-  const map = new Map((products ?? []).map((p) => [p.id as string, p as Product]));
-  const ordered: Product[] = ids.map((id) => map.get(id)).filter((p): p is Product => Boolean(p));
+  const byId = new Map(
+    (rawRows ?? []).map((r) => {
+      const p = mapRowToProduct(r as Record<string, unknown>);
+      return [p.id, p] as const;
+    })
+  );
+  const ordered = ids
+    .map((id) => byId.get(id))
+    .filter((p): p is Product => Boolean(p));
+  const orderedEnriched = await attachZinatexFromPrices(ordered);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-sans text-xl font-semibold text-charcoal sm:text-2xl">Wishlist</h1>
-        <p className="mt-1 text-sm text-warm-gray">{ordered.length} saved items</p>
+        <p className="mt-1 text-sm text-warm-gray">{orderedEnriched.length} saved items</p>
       </div>
-      <WishlistAccountGrid products={ordered} />
+      <WishlistAccountGrid products={orderedEnriched} />
     </div>
   );
 }

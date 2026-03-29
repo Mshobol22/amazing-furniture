@@ -8,6 +8,7 @@ import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
 import { productLeadImageSrc } from "@/lib/nfd-image-proxy";
 import { formatPrice } from "@/lib/format-price";
+import { getStorefrontListPrice } from "@/lib/zinatex-product-display";
 import { Button } from "@/components/ui/button";
 import { getEffectivePrice } from "@/store/cartStore";
 
@@ -98,7 +99,7 @@ export default function WishlistAccountGrid({ products }: { products: Product[] 
                   <>
                     <span className="text-red-600">{formatPrice(product.sale_price)}</span>
                     <span className="ml-2 text-sm font-normal text-[#1C1C1C]/45 line-through">
-                      {formatPrice(product.price)}
+                      {formatPrice(getStorefrontListPrice(product))}
                     </span>
                   </>
                 ) : (

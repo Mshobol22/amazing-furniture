@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { mapRowToProduct } from "@/lib/supabase/products";
+import {
+  applyAcmeComponentListingFilter,
+  mapRowToProduct,
+} from "@/lib/supabase/products";
 import type { Product, ProductVariant } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -135,6 +138,8 @@ export async function GET(request: NextRequest) {
     if (excludeId) {
       query = query.neq("id", excludeId);
     }
+
+    query = applyAcmeComponentListingFilter(query);
 
     const { data, error } = await query;
 

@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { proxyImage, FALLBACK_IMAGE } from "@/lib/utils";
 import type { Product } from "@/types";
 import { formatPrice } from "@/lib/format-price";
+import { getStorefrontListPrice } from "@/lib/zinatex-product-display";
 
 interface SaleSectionProps {
   products: Product[];
@@ -43,9 +44,11 @@ export default function SaleSection({ products }: SaleSectionProps) {
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
           {products.map((product) => {
             const img = getValidImage(product.images);
-            const savings = product.sale_price != null
-              ? Math.round(product.price - product.sale_price)
-              : 0;
+            const list = getStorefrontListPrice(product);
+            const savings =
+              product.sale_price != null
+                ? Math.round(list - product.sale_price)
+                : 0;
 
             return (
               <Link
@@ -87,7 +90,7 @@ export default function SaleSection({ products }: SaleSectionProps) {
                     {product.name}
                   </p>
                   <p className="text-xs text-gray-400 line-through">
-                    {formatPrice(product.price)}
+                    {formatPrice(list)}
                   </p>
                   <p className="text-lg font-bold text-[#2D4A3E]">
                     {product.sale_price != null ? formatPrice(product.sale_price) : null}

@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { applyStorefrontCollectionCategoryFilter } from "@/lib/collections/collection-scope";
+import { applyZinatexListingVisibilityFilter } from "@/lib/zinatex-listing-filter";
 import {
   mapRowToProduct,
+  applyAcmeComponentListingFilter,
   applyAcmePlaceholderImageFilter,
-  applyZinatexListingVisibilityFilter,
   attachZinatexFromPrices,
   isHiddenAcmePlaceholderProduct,
+  isHiddenAcmeComponentProduct,
 } from "@/lib/supabase/products";
 
 const ALLOWED_SLUGS = new Set([
-  "bed",
-  "bedroom-furniture",
+  "bedroom",
   "sofa",
   "chair",
   "table",
@@ -94,11 +96,11 @@ export async function GET(
 
   // Hidden ACME placeholders (images[1]) should never appear in collection browsing.
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyZinatexListingVisibilityFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
-  // Category filter — skip for 'all'
-  if (slug !== "all") {
-    query = query.eq("category", slug);
-  }
+  // Category filter — `bedroom` = bed ∪ bedroom-furniture (no duplicate rows)
+  query = applyStorefrontCollectionCategoryFilter(query, slug);
 
   // Manufacturer filter
   const manufacturerFilter = slug === "all" ? allManufacturers : manufacturers;
@@ -181,7 +183,8 @@ export async function GET(
 
   // Ensure ACME placeholder products are never returned to the UI.
   products = products.filter((p) =>
-    !isHiddenAcmePlaceholderProduct({ images: p.images })
+    !isHiddenAcmePlaceholderProduct({ images: p.images }) &&
+    !isHiddenAcmeComponentProduct(p)
   );
 
   // Rug size filter — applied post-fetch (dimensions is JSONB)

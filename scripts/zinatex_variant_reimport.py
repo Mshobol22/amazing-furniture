@@ -118,8 +118,8 @@ def money_round(msrp: object) -> Decimal | None:
         return None
     if m <= 0:
         return None
-    # round((MSRP / 4) * 2.2, 2)
-    out = (m / Decimal(4)) * Decimal("2.2")
+    # round((MSRP / 4) * 2.3, 2)
+    out = (m / Decimal(4)) * Decimal("2.3")
     return out.quantize(Decimal("0.01"))
 
 

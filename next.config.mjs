@@ -41,6 +41,16 @@ const nextConfig = {
         destination: "/placeholder-furniture.svg",
         permanent: false,
       },
+      {
+        source: "/collections/bed",
+        destination: "/collections/bedroom",
+        permanent: true,
+      },
+      {
+        source: "/collections/bedroom-furniture",
+        destination: "/collections/bedroom",
+        permanent: true,
+      },
     ];
   },
 };

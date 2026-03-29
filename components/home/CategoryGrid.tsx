@@ -3,8 +3,7 @@ import Link from "next/link";
 
 const CATEGORY_META = [
   { name: "Sofas", slug: "sofa" },
-  { name: "Beds", slug: "bed" },
-  { name: "Bedroom", slug: "bedroom-furniture" },
+  { name: "Bedroom", slug: "bedroom" },
   { name: "Chairs", slug: "chair" },
   { name: "Tables", slug: "table" },
   { name: "Cabinets", slug: "cabinet" },

@@ -13,6 +13,7 @@ import {
   formatReelSecondaryPillText,
   getReelOverlaySecondaryLabel,
   getReelOverlayTitle,
+  getReelPriceLabel,
 } from "@/lib/reel-product-display";
 import {
   fetchZinatexColorVariantsForReel,
@@ -34,24 +35,6 @@ interface DiscoverReelProps {
 }
 
 const PLACEHOLDER_IMAGE = "/images/placeholder-product.svg";
-
-const USD_FORMATTER = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
-
-function getPriceLabel(product: Product) {
-  if (product.on_sale && product.sale_price != null) {
-    return {
-      sale: USD_FORMATTER.format(Number(product.sale_price.toFixed(2))),
-      regular: USD_FORMATTER.format(Number(product.price.toFixed(2))),
-    };
-  }
-  return {
-    sale: USD_FORMATTER.format(Number(product.price.toFixed(2))),
-    regular: null,
-  };
-}
 
 export default function DiscoverReel({
   initialProducts,
@@ -441,7 +424,7 @@ export default function DiscoverReel({
           );
           const activeSlide = slides[clampedSlideIndex];
           const activeProduct = activeSlide?.product ?? product;
-          const activePrice = getPriceLabel(activeProduct);
+          const activePrice = getReelPriceLabel(activeProduct);
           const reelSecondaryLabel = getReelOverlaySecondaryLabel(activeProduct);
           const reelTitle = getReelOverlayTitle(activeProduct);
           const isWishlisted = wishlistedIds.has(activeProduct.id);

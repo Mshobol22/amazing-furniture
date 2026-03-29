@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const CATEGORIES = [
-  { name: "Beds", slug: "bed" },
-  { name: "Bedroom Furniture", slug: "bedroom-furniture" },
+  { name: "Beds & Bedroom", slug: "bedroom" },
   { name: "Sofas & Sectionals", slug: "sofa" },
   { name: "Chairs & Recliners", slug: "chair" },
   { name: "Dining & Tables", slug: "table" },

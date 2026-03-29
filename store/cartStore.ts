@@ -1,9 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { getStorefrontListPrice } from "@/lib/zinatex-product-display";
 import type { CartItem, Product, ProductVariant } from "@/types";
 
 export const getEffectivePrice = (p: Product) =>
-  p.on_sale && p.sale_price != null ? p.sale_price : p.price;
+  p.on_sale && p.sale_price != null
+    ? p.sale_price
+    : getStorefrontListPrice(p);
 
 export const getCartItemPrice = (item: CartItem) =>
   item.variant_price ?? getEffectivePrice(item.product);

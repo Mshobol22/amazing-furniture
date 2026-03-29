@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import ProductGrid from "@/components/products/ProductGrid";
 import CollectionSidebar from "@/components/collections/CollectionSidebar";
 import Pagination from "@/components/brands/Pagination";
+import { isBedroomMergedSlug } from "@/lib/collections/collection-scope";
 import type { Product } from "@/types";
 import type { SubcategoryCount } from "@/lib/supabase/products";
 
@@ -62,7 +63,9 @@ export default function CollectionClient({
     return raw?.split(",").map((s) => s.trim()).filter(Boolean)[0];
   }, [isAll, searchParams]);
 
-  const collectionCategorySlugForGrid = isAll ? undefined : slug;
+  // Merged bedroom page is not a real DB category — contextual reel uses each product's category.
+  const collectionCategorySlugForGrid =
+    isAll || isBedroomMergedSlug(slug) ? undefined : slug;
   const sortOptions = isAll
     ? [...BASE_SORT_OPTIONS, { value: "created-desc", label: "Newest Arrivals" }]
     : BASE_SORT_OPTIONS;

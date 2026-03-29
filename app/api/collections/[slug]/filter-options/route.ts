@@ -7,8 +7,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const ALLOWED_SLUGS = new Set([
-  "bed",
-  "bedroom-furniture",
+  "bedroom",
   "sofa",
   "chair",
   "table",

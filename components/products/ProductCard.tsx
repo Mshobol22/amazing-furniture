@@ -26,9 +26,11 @@ import {
   isUnitedFurnitureProduct,
 } from "@/lib/united-product-display";
 import {
+  getVariantCardFromPrice,
   getZinatexCardListingLine,
   getZinatexProductDisplayName,
   isZinatexProduct,
+  getStorefrontListPrice,
 } from "@/lib/zinatex-product-display";
 
 interface ProductCardProps {
@@ -177,29 +179,27 @@ export default function ProductCard({
                   : product.name}
         </Link>
         <p className="font-sans text-base font-semibold tabular-nums text-gray-900">
-          {isZinatexProduct(product) &&
-          product.has_variants === true &&
-          product.zinatex_from_price != null ? (
-            <>
-              <span className="text-sm font-medium text-gray-600">From </span>
-              <span className="tabular-nums">
-                {formatPrice(product.zinatex_from_price)}
-              </span>
-            </>
-          ) : product.on_sale && product.sale_price != null ? (
+          {product.on_sale && product.sale_price != null ? (
             <>
               <span className="text-base font-semibold text-red-600 tabular-nums">
                 {formatPrice(product.sale_price)}
               </span>
               <span className="ml-2 text-sm font-normal text-[#1C1C1C]/45 line-through tabular-nums">
-                {formatPrice(product.price)}
+                {formatPrice(getStorefrontListPrice(product))}
+              </span>
+            </>
+          ) : getVariantCardFromPrice(product) != null ? (
+            <>
+              <span className="text-sm font-medium text-gray-600">From </span>
+              <span className="tabular-nums">
+                {formatPrice(getVariantCardFromPrice(product)!)}
               </span>
             </>
           ) : (
             <>
-              {formatPrice(product.price)}
+              {formatPrice(getStorefrontListPrice(product))}
               {product.compare_price != null &&
-                product.compare_price > product.price && (
+                product.compare_price > getStorefrontListPrice(product) && (
                   <span className="ml-2 text-sm font-normal text-[#1C1C1C]/45 line-through tabular-nums">
                     {formatPrice(product.compare_price)}
                   </span>

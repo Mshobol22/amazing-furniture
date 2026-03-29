@@ -3,11 +3,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  applyAcmeComponentListingFilter,
   applyAcmePlaceholderImageFilter,
   applyZinatexListingVisibilityFilter,
   attachZinatexFromPrices,
   mapRowToProduct,
   isHiddenAcmePlaceholderProduct,
+  isHiddenAcmeComponentProduct,
 } from "@/lib/supabase/products";
 import {
   parseFiltersFromSearchParams,
@@ -57,6 +59,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     .not("images", "is", null)
     .not("images", "eq", "{}");
   metaQuery = applyZinatexListingVisibilityFilter(metaQuery);
+  metaQuery = applyAcmeComponentListingFilter(metaQuery);
   const { data: rawMeta } = await metaQuery;
 
   const filterMeta = buildFilterMeta(rawMeta ?? []);
@@ -82,6 +85,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     (rawProducts ?? [])
       .map(mapRowToProduct)
       .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+      .filter((p) => !isHiddenAcmeComponentProduct(p))
   );
 
   const pageHref = (nextPage: number) => {

@@ -1,10 +1,32 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Product } from "@/types";
 import {
+  applyAcmeComponentListingFilter,
   applyAcmePlaceholderImageFilter,
   isHiddenAcmePlaceholderProduct,
+  isHiddenAcmeComponentProduct,
   mapRowToProduct,
 } from "@/lib/supabase/products";
+
+/** Min variant prices need service role; hydrate after anon `products` query. */
+async function enrichProductsWithVariantPrices(
+  products: Product[]
+): Promise<Product[]> {
+  if (typeof window === "undefined" || products.length === 0) return products;
+  try {
+    const res = await fetch("/api/products/by-ids", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: products.map((p) => p.id) }),
+    });
+    if (!res.ok) return products;
+    const body = (await res.json()) as { products?: Product[] };
+    const byId = new Map((body.products ?? []).map((p) => [p.id, p]));
+    return products.map((p) => byId.get(p.id) ?? p);
+  } catch {
+    return products;
+  }
+}
 
 type ValueCount = { value: string; count: number };
 
@@ -31,11 +53,13 @@ export async function fetchBrandCategories(
   field: "category" | "collection" = "category"
 ): Promise<ValueCount[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
+  let q = supabase
     .from("products")
     .select(field)
     .eq("manufacturer", manufacturer)
     .eq("in_stock", true);
+  q = applyAcmeComponentListingFilter(q);
+  const { data, error } = await q;
 
   if (error || !data) return [];
   return aggregateCounts(data as Array<Record<string, unknown>>, field);
@@ -53,6 +77,7 @@ export async function fetchBrandCollections(
     .eq("category", category)
     .eq("in_stock", true);
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
   if (error || !data) return [];
@@ -63,6 +88,7 @@ export async function fetchAllManufacturers(): Promise<ValueCount[]> {
   const supabase = createClient();
   let query = supabase.from("products").select("manufacturer").eq("in_stock", true);
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
   if (error || !data) return [];
@@ -73,6 +99,7 @@ export async function fetchAllCategories(manufacturer?: string): Promise<ValueCo
   const supabase = createClient();
   let query = supabase.from("products").select("category").eq("in_stock", true);
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
   if (manufacturer) {
     query = query.eq("manufacturer", manufacturer);
   }
@@ -91,6 +118,7 @@ export async function fetchManufacturersForCategory(category: string): Promise<V
     .eq("in_stock", true)
     .eq("category", category);
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   const { data, error } = await query;
   if (error || !data) return [];
@@ -112,6 +140,7 @@ export async function fetchColorsForFilters(params: {
   const supabase = createClient();
   let query = supabase.from("products").select("color").eq("in_stock", true);
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   if (params.category) {
     query = query.eq("category", params.category);
@@ -147,6 +176,7 @@ export async function fetchMaterialsForFilters(params: {
   const supabase = createClient();
   let query = supabase.from("products").select("material").eq("in_stock", true);
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   if (params.category) {
     query = query.eq("category", params.category);
@@ -218,6 +248,7 @@ export async function fetchBrandProducts(
     .eq("in_stock", true);
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   if (params.category) query = query.eq("category", params.category);
   if (params.excludeCategory) query = query.neq("category", params.excludeCategory);
@@ -251,10 +282,11 @@ export async function fetchBrandProducts(
 
   const products = data
     .map((row) => mapRowToProduct(row as Record<string, unknown>))
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p));
+    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenAcmeComponentProduct(p));
 
   return {
-    products,
+    products: await enrichProductsWithVariantPrices(products),
     total: count ?? 0,
   };
 }
@@ -288,6 +320,7 @@ export async function fetchAllProducts(
     .eq("in_stock", true);
 
   query = applyAcmePlaceholderImageFilter(query);
+  query = applyAcmeComponentListingFilter(query);
 
   if (params.manufacturer) {
     query = query.eq("manufacturer", params.manufacturer);
@@ -331,10 +364,11 @@ export async function fetchAllProducts(
 
   const products = data
     .map((row) => mapRowToProduct(row as Record<string, unknown>))
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p));
+    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenAcmeComponentProduct(p));
 
   return {
-    products,
+    products: await enrichProductsWithVariantPrices(products),
     total: count ?? 0,
   };
 }

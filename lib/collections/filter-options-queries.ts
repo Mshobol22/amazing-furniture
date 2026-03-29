@@ -4,6 +4,8 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { applyStorefrontCollectionCategoryFilter } from "@/lib/collections/collection-scope";
+import { applyAcmeComponentListingFilter } from "@/lib/supabase/products";
 import { applyZinatexListingVisibilityFilter } from "@/lib/zinatex-listing-filter";
 
 export async function queryManufacturersForTypes(
@@ -17,9 +19,10 @@ export async function queryManufacturersForTypes(
     .eq("in_stock", true)
     .not("manufacturer", "is", null);
 
-  if (slug !== "all") q = q.eq("category", slug);
+  q = applyStorefrontCollectionCategoryFilter(q, slug);
   q = q.in("subcategory", types);
   q = applyZinatexListingVisibilityFilter(q);
+  q = applyAcmeComponentListingFilter(q);
 
   const { data, error } = await q;
   if (error) throw error;
@@ -48,10 +51,11 @@ export async function queryColorsForTypesAndManufacturers(
     .not("color", "is", null)
     .neq("color", "");
 
-  if (slug !== "all") q = q.eq("category", slug);
+  q = applyStorefrontCollectionCategoryFilter(q, slug);
   q = q.in("subcategory", types);
   q = q.in("manufacturer", manufacturers);
   q = applyZinatexListingVisibilityFilter(q);
+  q = applyAcmeComponentListingFilter(q);
 
   const { data, error } = await q;
   if (error) throw error;
