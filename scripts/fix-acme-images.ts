@@ -34,7 +34,7 @@ const supabase = createClient(url, key);
 function buildSkuImageMap(): Map<string, string[]> {
   const wb = XLSX.readFile(XLSX_PATH, { cellDates: false });
   const ws = wb.Sheets[wb.SheetNames[0]!]!;
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, {
     header: 1,
     defval: null,
   }) as unknown[][];

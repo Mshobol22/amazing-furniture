@@ -647,7 +647,7 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
     return [];
   }
 
-  return (data ?? []).map((row) => ({
+  return (data ?? []).map((row: ManufacturerWithCount) => ({
     ...row,
     product_count: Number(row.product_count ?? 0),
     count: Number(row.count ?? 0),
