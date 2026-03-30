@@ -164,6 +164,7 @@ export default function ProductImageGallery({
     );
   }, [images, primaryImageUrl]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [activeImageFailed, setActiveImageFailed] = useState(false);
 
   useEffect(() => {
     if (primaryImageUrl) setSelectedIndex(0);
@@ -175,6 +176,18 @@ export default function ProductImageGallery({
 
   const safe = clampIndex(selectedIndex, displayImages.length);
   const activeImage = displayImages[safe];
+  const usesComingSoonCard =
+    manufacturer === "ACME" || manufacturer === "Nationwide FD";
+  const showComingSoonCard =
+    usesComingSoonCard &&
+    (displayImages.length === 0 ||
+      activeImageFailed ||
+      typeof activeImage !== "string" ||
+      !activeImage.startsWith("http"));
+
+  useEffect(() => {
+    setActiveImageFailed(false);
+  }, [activeImage]);
 
   const goPrev = useCallback(() => {
     setSelectedIndex((i) => (i > 0 ? i - 1 : displayImages.length - 1));
@@ -257,21 +270,33 @@ export default function ProductImageGallery({
             </span>
           )}
 
-          <Image
-            src={proxyImage(activeImage, { manufacturer })}
-            alt={productName}
-            fill
-            className="object-contain transition-transform duration-150"
-            style={{
-              transform: isZoomed ? "scale(2)" : "scale(1)",
-              transformOrigin: zoomOrigin,
-            }}
-            priority
-            sizes="(max-width: 1024px) 100vw, 55vw"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
-            }}
-          />
+          {showComingSoonCard ? (
+            <div className="flex h-full w-full items-center justify-center bg-[#2D4A3E]/10 px-4 text-center">
+              <span className="font-sans text-base font-semibold text-[#2D4A3E]">
+                Image coming soon
+              </span>
+            </div>
+          ) : (
+            <Image
+              src={proxyImage(activeImage, { manufacturer })}
+              alt={productName}
+              fill
+              className="object-contain transition-transform duration-150"
+              style={{
+                transform: isZoomed ? "scale(2)" : "scale(1)",
+                transformOrigin: zoomOrigin,
+              }}
+              priority
+              sizes="(max-width: 1024px) 100vw, 55vw"
+              onError={(e) => {
+                if (usesComingSoonCard) {
+                  setActiveImageFailed(true);
+                  return;
+                }
+                (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+              }}
+            />
+          )}
 
           {/* Prev/Next arrows */}
           {displayImages.length > 1 && (
@@ -332,17 +357,29 @@ export default function ProductImageGallery({
             </span>
           )}
 
-          <Image
-            src={proxyImage(activeImage, { manufacturer })}
-            alt={productName}
-            fill
-            className="object-contain transition-opacity duration-150"
-            priority
-            sizes="100vw"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
-            }}
-          />
+          {showComingSoonCard ? (
+            <div className="flex h-full w-full items-center justify-center bg-[#2D4A3E]/10 px-4 text-center">
+              <span className="font-sans text-base font-semibold text-[#2D4A3E]">
+                Image coming soon
+              </span>
+            </div>
+          ) : (
+            <Image
+              src={proxyImage(activeImage, { manufacturer })}
+              alt={productName}
+              fill
+              className="object-contain transition-opacity duration-150"
+              priority
+              sizes="100vw"
+              onError={(e) => {
+                if (usesComingSoonCard) {
+                  setActiveImageFailed(true);
+                  return;
+                }
+                (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+              }}
+            />
+          )}
 
           {/* Counter */}
           {displayImages.length > 1 && (

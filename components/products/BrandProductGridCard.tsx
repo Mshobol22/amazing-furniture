@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
@@ -31,6 +30,7 @@ import {
   isZinatexProduct,
   getStorefrontListPrice,
 } from "@/lib/zinatex-product-display";
+import { ProductCardImage } from "@/components/ui/ProductCardImage";
 
 interface BrandProductGridCardProps {
   product: Product;
@@ -77,17 +77,14 @@ export default function BrandProductGridCard({
               Part of collection
             </span>
           ) : null}
-          {safeImage ? (
-            <Image
-              src={safeImage}
-              alt={product.name}
-              fill
-              className="object-contain p-2"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          ) : (
-            <div className="h-full w-full" />
-          )}
+          <ProductCardImage
+            src={safeImage}
+            alt={product.name}
+            manufacturer={product.manufacturer}
+            imageClassName="object-contain p-2"
+            cardClassName="bg-[#FAF8F5]"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
           {product.in_stock === false && (
             <div className="absolute inset-0 z-[5] flex items-center justify-center bg-black/50">
               <span className="rounded bg-black/60 px-3 py-1 text-xs font-semibold tracking-wide text-white">

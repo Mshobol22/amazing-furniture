@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Heart } from "lucide-react";
-import { ProductImage } from "@/components/ui/ProductImage";
+import { ProductCardImage } from "@/components/ui/ProductCardImage";
 import { useWishlistStore } from "@/store/wishlistStore";
 import type { Product } from "@/types";
 import { cn } from "@/lib/utils";
@@ -125,18 +125,14 @@ export default function ProductCard({
         </button>
         <Link href={`/products/${product.slug}`} className="block">
           <div className="relative aspect-square">
-            {safeImage ? (
-              <ProductImage
-                src={safeImage}
-                alt={product.name}
-                manufacturer={product.manufacturer}
-                fill
-                className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              />
-            ) : (
-              <div className="h-full w-full rounded bg-gray-100" aria-hidden="true" />
-            )}
+            <ProductCardImage
+              src={safeImage}
+              alt={product.name}
+              manufacturer={product.manufacturer}
+              imageClassName="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+              cardClassName="rounded bg-gray-100"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            />
             {product.in_stock === false && (
               <div className="absolute inset-0 z-[5] flex items-center justify-center bg-black/50">
                 <span className="rounded bg-black/60 px-3 py-1 text-xs font-semibold tracking-wide text-white">

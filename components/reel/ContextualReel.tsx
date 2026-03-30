@@ -15,7 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
 import { zinatexColorNameToCss } from "@/components/reel/zinatex-reel-colors";
-import { proxyImage } from "@/lib/utils";
+import { FALLBACK_IMAGE, proxyImage } from "@/lib/utils";
 import {
   formatReelSecondaryPillText,
   getReelOverlaySecondaryLabel,
@@ -53,6 +53,10 @@ interface ContextualReelProps {
 }
 
 const PLACEHOLDER_IMAGE = "/images/placeholder-product.svg";
+
+function shouldUseComingSoonCard(manufacturer: string | null | undefined): boolean {
+  return manufacturer === "ACME" || manufacturer === "Nationwide FD";
+}
 
 export default function ContextualReel({
   isOpen,
@@ -640,9 +644,20 @@ export default function ContextualReel({
                     const failedForCard = imageErrorMap
                       .get(slide.errorProductId)
                       ?.has(slide.errorImageIndex);
+                    const usesComingSoonCard = shouldUseComingSoonCard(
+                      slide.product.manufacturer
+                    );
                     const src = failedForCard
                       ? PLACEHOLDER_IMAGE
-                      : proxyImage(slide.imageUrl, { manufacturer: slide.product.manufacturer });
+                      : proxyImage(slide.imageUrl, {
+                          manufacturer: slide.product.manufacturer,
+                        });
+                    const showComingSoonCard =
+                      usesComingSoonCard &&
+                      (failedForCard ||
+                        typeof slide.imageUrl !== "string" ||
+                        !slide.imageUrl.startsWith("https://") ||
+                        src === FALLBACK_IMAGE);
                     const priority = cardIndex === 0 && imageIndex === 0;
                     const collectionName = slide.product.collection?.trim();
 
@@ -652,17 +667,25 @@ export default function ContextualReel({
                         className="relative h-full w-full shrink-0 snap-start"
                         style={{ background: "#111" }}
                       >
-                        <Image
-                          src={src}
-                          alt={getReelOverlayTitle(slide.product)}
-                          fill
-                          style={{ objectFit: "contain" }}
-                          priority={priority}
-                          loading={priority ? undefined : "lazy"}
-                          onError={() =>
-                            handleImageError(slide.errorProductId, slide.errorImageIndex)
-                          }
-                        />
+                        {showComingSoonCard ? (
+                          <div className="flex h-full w-full items-center justify-center bg-[#2D4A3E]/10 px-4 text-center">
+                            <span className="font-sans text-base font-semibold text-[#2D4A3E]">
+                              Image coming soon
+                            </span>
+                          </div>
+                        ) : (
+                          <Image
+                            src={src}
+                            alt={getReelOverlayTitle(slide.product)}
+                            fill
+                            style={{ objectFit: "contain" }}
+                            priority={priority}
+                            loading={priority ? undefined : "lazy"}
+                            onError={() =>
+                              handleImageError(slide.errorProductId, slide.errorImageIndex)
+                            }
+                          />
+                        )}
                         {collectionName ? (
                           <span className="absolute left-2 top-2 rounded-full bg-[#2D4A3E] px-2 py-1 text-xs text-white">
                             Part of {collectionName}

@@ -1,10 +1,10 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import type { Product } from '@/types'
 import { productLeadImageSrc } from '@/lib/nfd-image-proxy'
 import type { SaleEventWithProducts } from '@/lib/types/sale'
 import { formatPrice } from '@/lib/format-price'
 import { getStorefrontListPrice } from '@/lib/zinatex-product-display'
+import { ProductCardImage } from '@/components/ui/ProductCardImage'
 
 interface Props {
   products: Product[]
@@ -76,17 +76,14 @@ export default function SaleProductGrid({
               className="group rounded-xl border border-[#ede8e3] bg-white overflow-hidden transition-shadow hover:shadow-md"
             >
               <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#FAF8F5]">
-                {image ? (
-                  <Image
-                    src={image}
-                    alt={product.name}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  />
-                ) : (
-                  <div className="h-full w-full bg-[#ede8e3]" />
-                )}
+                <ProductCardImage
+                  src={image}
+                  alt={product.name}
+                  manufacturer={product.manufacturer}
+                  imageClassName="object-cover transition-transform duration-300 group-hover:scale-105"
+                  cardClassName="bg-[#ede8e3]"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
                 <span
                   className="absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white"
                   style={{ backgroundColor: badgeColor }}

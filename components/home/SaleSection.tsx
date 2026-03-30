@@ -1,10 +1,9 @@
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowRight } from "lucide-react";
-import { proxyImage, FALLBACK_IMAGE } from "@/lib/utils";
 import type { Product } from "@/types";
 import { formatPrice } from "@/lib/format-price";
 import { getStorefrontListPrice } from "@/lib/zinatex-product-display";
+import { ProductCardImage } from "@/components/ui/ProductCardImage";
 
 interface SaleSectionProps {
   products: Product[];
@@ -58,22 +57,14 @@ export default function SaleSection({ products }: SaleSectionProps) {
               >
                 {/* Image */}
                 <div className="relative aspect-[4/3] overflow-hidden bg-gray-50">
-                  {img ? (
-                    <Image
-                      src={proxyImage(img, { manufacturer: product.manufacturer })}
-                      alt={product.name}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      sizes="240px"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
-                      }}
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center bg-[#2D4A3E]/10">
-                      <span className="text-sm text-[#2D4A3E]">No Image</span>
-                    </div>
-                  )}
+                  <ProductCardImage
+                    src={img}
+                    alt={product.name}
+                    manufacturer={product.manufacturer}
+                    imageClassName="object-cover transition-transform duration-300 group-hover:scale-105"
+                    cardClassName="bg-[#2D4A3E]/10"
+                    sizes="240px"
+                  />
                   <span className="absolute left-2 top-2 z-10 rounded bg-[#2D4A3E] px-2 py-1 text-xs font-bold text-white">
                     SALE
                   </span>

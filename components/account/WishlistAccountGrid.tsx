@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
@@ -11,6 +10,7 @@ import { formatPrice } from "@/lib/format-price";
 import { getStorefrontListPrice } from "@/lib/zinatex-product-display";
 import { Button } from "@/components/ui/button";
 import { getEffectivePrice } from "@/store/cartStore";
+import { ProductCardImage } from "@/components/ui/ProductCardImage";
 
 function getCategoryBadgeLabel(category: string): string {
   const labels: Record<string, string> = {
@@ -57,17 +57,14 @@ export default function WishlistAccountGrid({ products }: { products: Product[] 
             <div className="relative">
               <Link href={`/products/${product.slug}`} className="block">
                 <div className="relative aspect-square bg-[#FAF8F5]">
-                  {safeImage ? (
-                    <Image
-                      src={safeImage}
-                      alt={product.name}
-                      fill
-                      className="object-contain p-2"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
-                  ) : (
-                    <div className="h-full w-full" />
-                  )}
+                  <ProductCardImage
+                    src={safeImage}
+                    alt={product.name}
+                    manufacturer={product.manufacturer}
+                    imageClassName="object-contain p-2"
+                    cardClassName="bg-[#FAF8F5]"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  />
                   {product.on_sale && (
                     <span className="absolute left-2 top-2 rounded bg-red-600 px-2 py-1 text-xs font-semibold text-white">
                       SALE
