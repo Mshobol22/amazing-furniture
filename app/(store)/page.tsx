@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import TrustSignalStrip from "@/components/home/TrustSignalStrip";
 import CategoryGrid from "@/components/home/CategoryGrid";
 import PromoBanner from "@/components/home/PromoBanner";
@@ -65,16 +64,6 @@ export default async function StorePage() {
 
   return (
     <div className="min-h-screen bg-cream">
-      <section className="border-b border-[#2D4A3E]/20 bg-[#FAF8F5]">
-        <div className="mx-auto flex max-w-7xl items-center justify-center px-4 py-2 text-center">
-          <Link
-            href="/financing"
-            className="font-sans text-sm font-semibold text-[#2D4A3E] underline-offset-4 hover:underline"
-          >
-            Flexible Financing Available - Apply with Koalafi or Synchrony
-          </Link>
-        </div>
-      </section>
       <HeroSlideshow slides={slides} />
       <ManufacturerSection manufacturers={manufacturers} />
       <SaleEventBlock />

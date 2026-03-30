@@ -9,6 +9,7 @@ import SplashScreen from "@/components/SplashScreen";
 import AnnouncementBanner from "@/components/layout/AnnouncementBanner";
 import BackToTop from "@/components/layout/BackToTop";
 import IdleDiscountPopup from "@/components/IdleDiscountPopup";
+import FinancingNoticeBar from "@/components/layout/FinancingNoticeBar";
 
 export default function StoreLayout({
   children,
@@ -23,7 +24,8 @@ export default function StoreLayout({
       {isDiscover ? null : <SplashScreen />}
       {isDiscover ? null : <AnnouncementBanner />}
       {isDiscover ? null : <ConditionalStoreNav />}
-      <main className={isDiscover ? "flex-1" : "flex-1 pt-14 lg:pt-24"}>{children}</main>
+      {isDiscover ? null : <FinancingNoticeBar />}
+      <main className={isDiscover ? "flex-1" : "flex-1"}>{children}</main>
       {isDiscover ? null : <Footer />}
       <CartDrawer />
       {isDiscover ? null : <BackToTop />}

@@ -12,12 +12,6 @@ export const metadata = {
     "Flexible financing options for your furniture purchase at Amazing Home Furniture with Synchrony and Koalafi.",
 };
 
-const PLANS = [
-  { plan: "3 Months", apr: "0% APR*", min: "$200+", highlight: false, badge: null },
-  { plan: "6 Months", apr: "0% APR*", min: "$400+", highlight: true, badge: "Most Popular" },
-  { plan: "12 Months", apr: "Low APR", min: "$800+", highlight: false, badge: null },
-];
-
 const STEPS = [
   {
     step: "01",
@@ -73,66 +67,27 @@ export default function FinancingPage() {
             Buy Now, Pay Later
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-white/70">
-            Furnish your entire home today with flexible payment plans through
-            our financing partners, Synchrony and Koalafi.
+            Furnish your entire home today with flexible financing through our
+            approved partners, Synchrony and Koalafi.
           </p>
-          <a
-            href="https://www.synchrony.com/financing"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-[#2D4A3E] px-8 py-3 font-semibold text-white transition-colors hover:bg-[#7a5c10]"
-          >
-            Apply with Synchrony
-          </a>
-        </div>
-      </section>
-
-      {/* Payment plans */}
-      <section className="bg-[#FAF8F5] py-16">
-        <div className="mx-auto max-w-4xl px-4">
-          <h2 className="mb-8 text-center text-2xl font-bold text-[#1C1C1C]">
-            Payment Plans
-          </h2>
-          <div className="grid gap-6 md:grid-cols-3">
-            {PLANS.map((p) => (
-              <div
-                key={p.plan}
-                className={`relative rounded-2xl border-2 p-6 ${
-                  p.highlight
-                    ? "border-[#2D4A3E] bg-white shadow-lg"
-                    : "border-gray-200 bg-white"
-                }`}
-              >
-                {p.badge && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#2D4A3E] px-3 py-1 text-xs font-semibold text-white">
-                    {p.badge}
-                  </span>
-                )}
-                <div className="mb-1 text-2xl font-bold text-[#1C1C1C]">
-                  {p.plan}
-                </div>
-                <div className="mb-3 text-lg font-semibold text-[#2D4A3E]">
-                  {p.apr}
-                </div>
-                <div className="text-sm text-gray-500">Orders {p.min}</div>
-                <a
-                  href="https://shop.koalafi.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`mt-6 block rounded-lg px-4 py-2.5 text-center font-medium transition-colors ${
-                    p.highlight
-                      ? "bg-[#2D4A3E] text-white hover:bg-[#7a5c10]"
-                      : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                  }`}
-                >
-                  Apply Now
-                </a>
-              </div>
-            ))}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="https://www.mysynchrony.com/mmc/GI235655800"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#2D4A3E] px-8 py-3 font-semibold text-white transition-colors hover:bg-[#1E3329]"
+            >
+              Apply with Synchrony
+            </a>
+            <a
+              href="http://dealer.koalafi.com/ApplicationForm/IntroScreen?publicStoreId=828ad4f3-138a-4ccc-ac65-2bf170a430aa&cm=Copy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-8 py-3 font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              Apply with Koalafi
+            </a>
           </div>
-          <p className="mt-6 text-center text-xs text-gray-400">
-            *Subject to approval. Terms and conditions apply via Synchrony or Koalafi.
-          </p>
         </div>
       </section>
 
