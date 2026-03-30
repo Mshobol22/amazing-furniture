@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Check, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -76,7 +77,7 @@ export default function ProductDetailClient({
           About This Product
         </p>
         {acmeIntro ? (
-          <p className="mb-4 font-cormorant text-lg leading-relaxed text-[#1C1C1C]/80">
+          <p className="mb-4 font-cormorant text-lg font-semibold leading-relaxed text-[#1C1C1C]">
             {acmeIntro}
           </p>
         ) : null}
@@ -87,7 +88,7 @@ export default function ProductDetailClient({
                 <dt className="font-sans text-xs font-semibold uppercase tracking-wide text-[#1C1C1C]/55">
                   {label}
                 </dt>
-                <dd className="mt-1 font-cormorant text-base leading-relaxed text-[#1C1C1C]/85">
+                <dd className="mt-1 font-cormorant text-base font-semibold leading-relaxed text-[#1C1C1C]">
                   {value}
                 </dd>
               </div>
@@ -105,7 +106,7 @@ export default function ProductDetailClient({
           About This Product
         </p>
         {product.description?.trim() ? (
-          <p className="font-cormorant text-lg leading-relaxed text-[#1C1C1C]/80">
+          <p className="font-cormorant text-lg font-semibold leading-relaxed text-[#1C1C1C]">
             {product.description}
           </p>
         ) : null}
@@ -121,7 +122,7 @@ export default function ProductDetailClient({
               <dt className="font-sans text-xs font-semibold uppercase tracking-wide text-[#1C1C1C]/55">
                 Size
               </dt>
-              <dd className="mt-1 font-cormorant text-base leading-relaxed text-[#1C1C1C]/85">
+              <dd className="mt-1 font-cormorant text-base font-semibold leading-relaxed text-[#1C1C1C]">
                 {standaloneRugSize}
               </dd>
             </div>
@@ -130,48 +131,68 @@ export default function ProductDetailClient({
       </div>
     ) : null;
 
+  const parentKitThumb =
+    acmeComponentParentKit?.images?.[0] &&
+    String(acmeComponentParentKit.images[0]).startsWith("https://")
+      ? acmeComponentParentKit.images[0]
+      : null;
+
   const partOfSetSection =
     isComponent && acmeComponentParentKit ? (
       <section
         className="mt-6 border-t border-gray-100 pt-6"
         aria-labelledby="acme-component-parent-kit-heading"
       >
-        <h3
+        <p
           id="acme-component-parent-kit-heading"
-          className="mb-3 font-cormorant text-lg font-semibold text-[#1C1C1C] md:text-xl"
+          className="mb-2 font-sans text-xs font-medium uppercase tracking-widest text-[#1C1C1C]/50"
         >
           Part of this set
-        </h3>
+        </p>
         <Link
           href={`/products/${acmeComponentParentKit.slug}`}
-          className="block rounded-xl border-2 border-[#2D4A3E]/35 bg-[#FAF8F5] p-4 shadow-sm transition-colors hover:border-[#2D4A3E] md:p-5"
+          className="flex gap-4 rounded-lg border border-[#1C1C1C]/15 bg-[#FAF8F5] p-4 transition-colors hover:border-[#2D4A3E]/50 md:gap-5 md:p-5"
         >
-          <p className="font-cormorant text-xl font-semibold text-[#1C1C1C] md:text-2xl">
-            {getAcmeProductCardDisplayName(acmeComponentParentKit) ||
-              acmeComponentParentKit.name}
-          </p>
-          <div className="mt-3 flex flex-wrap items-baseline gap-2">
-            {acmeComponentParentKit.on_sale &&
-            acmeComponentParentKit.sale_price != null &&
-            acmeComponentParentKit.sale_price < acmeComponentParentKit.price ? (
-              <>
-                <span className="font-sans text-2xl font-bold tabular-nums text-red-600">
-                  {formatPrice(acmeComponentParentKit.sale_price)}
-                </span>
-                <span className="font-sans text-sm tabular-nums text-[#1C1C1C]/45 line-through">
-                  {formatPrice(acmeComponentParentKit.price)}
-                </span>
-              </>
-            ) : (
-              <span className="font-sans text-2xl font-bold tabular-nums text-[#1C1C1C]">
-                {formatPrice(getStorefrontListPrice(acmeComponentParentKit))}
-              </span>
-            )}
+          <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-[#E8E6E1] md:h-24 md:w-24">
+            {parentKitThumb ? (
+              <Image
+                src={parentKitThumb}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="96px"
+              />
+            ) : null}
           </div>
-          <span className="mt-4 inline-flex items-center gap-1 font-sans text-sm font-semibold text-[#2D4A3E]">
-            View Full Set
-            <span aria-hidden>→</span>
-          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-cormorant text-lg font-semibold leading-snug text-[#1C1C1C] md:text-xl">
+              {getAcmeProductCardDisplayName(acmeComponentParentKit) ||
+                acmeComponentParentKit.name}
+            </p>
+            <div className="mt-2 flex flex-wrap items-baseline gap-2">
+              {acmeComponentParentKit.on_sale &&
+              acmeComponentParentKit.sale_price != null &&
+              acmeComponentParentKit.sale_price <
+                acmeComponentParentKit.price ? (
+                <>
+                  <span className="font-sans text-xl font-bold tabular-nums text-red-600 md:text-2xl">
+                    {formatPrice(acmeComponentParentKit.sale_price)}
+                  </span>
+                  <span className="font-sans text-sm tabular-nums text-[#1C1C1C]/45 line-through">
+                    {formatPrice(acmeComponentParentKit.price)}
+                  </span>
+                </>
+              ) : (
+                <span className="font-sans text-xl font-bold tabular-nums text-[#1C1C1C] md:text-2xl">
+                  {formatPrice(getStorefrontListPrice(acmeComponentParentKit))}
+                </span>
+              )}
+            </div>
+            <span className="mt-3 inline-flex items-center gap-1 font-sans text-sm font-semibold text-[#2D4A3E]">
+              View Full Set
+              <span aria-hidden>→</span>
+            </span>
+          </div>
         </Link>
       </section>
     ) : null;
@@ -179,15 +200,15 @@ export default function ProductDetailClient({
   const siblingComponentsSection =
     isComponent && acmeComponentSiblingPieces.length > 0 ? (
       <section
-        className="mt-6 border-t border-gray-100 pt-6"
+        className="mt-8 border-t border-gray-100 pt-6"
         aria-labelledby="acme-component-siblings-heading"
       >
-        <h3
+        <h2
           id="acme-component-siblings-heading"
-          className="mb-3 font-cormorant text-lg font-semibold text-[#1C1C1C] md:text-xl"
+          className="mb-4 font-cormorant text-xl font-semibold text-[#1C1C1C] md:text-2xl"
         >
           Other pieces in this set
-        </h3>
+        </h2>
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
           {acmeComponentSiblingPieces.map((piece) => {
             const title =
@@ -197,8 +218,9 @@ export default function ProductDetailClient({
               <Link
                 key={piece.id}
                 href={`/products/${piece.slug}`}
-                className="flex w-44 shrink-0 flex-col rounded-lg border border-[#1C1C1C]/15 bg-white p-3 transition-colors hover:border-[#2D4A3E] md:w-52"
+                className="flex w-44 shrink-0 flex-col rounded-lg border border-[#1C1C1C]/15 bg-[#FAF8F5] p-3 transition-colors hover:border-[#2D4A3E] md:w-52"
               >
+                <div className="mb-3 aspect-square w-full shrink-0 rounded-md bg-[#E8E6E1]" />
                 <span className="line-clamp-3 font-sans text-sm font-medium leading-snug text-[#1C1C1C]">
                   {title}
                 </span>
@@ -222,7 +244,13 @@ export default function ProductDetailClient({
     ) : null;
 
   const cartDesktop = (
-    <div className="mt-6 hidden sm:flex flex-col gap-4">
+    <div
+      className={
+        isComponent
+          ? "mt-6 flex flex-col gap-4"
+          : "mt-6 hidden flex-col gap-4 sm:flex"
+      }
+    >
       <div className="flex items-center gap-2">
         <label htmlFor="quantity" className="text-sm font-medium text-charcoal">
           Quantity:
@@ -305,38 +333,40 @@ export default function ProductDetailClient({
         </section>
       ) : null}
 
-      {/* Sticky CTA — mobile only */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 flex items-center gap-3 border-t border-gray-200 bg-white px-4 py-3 sm:hidden">
-        <select
-          value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
-          className="rounded-md border border-gray-200 bg-white px-2 py-2 text-sm text-charcoal"
-          aria-label="Quantity"
-        >
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </select>
-        {product.in_stock ? (
-          <Button
-            onClick={handleAddToCart}
-            className="flex-1 bg-[#1C1C1C] font-sans font-semibold tracking-wide text-white hover:bg-[#2a2a2a]"
+      {/* Sticky CTA — mobile only (hidden for ACME components: inline cart sits above Part of this set) */}
+      {!isComponent ? (
+        <div className="fixed bottom-0 left-0 right-0 z-30 flex items-center gap-3 border-t border-gray-200 bg-white px-4 py-3 sm:hidden">
+          <select
+            value={quantity}
+            onChange={(e) => setQuantity(Number(e.target.value))}
+            className="rounded-md border border-gray-200 bg-white px-2 py-2 text-sm text-charcoal"
+            aria-label="Quantity"
           >
-            <ShoppingCart className="mr-2 h-4 w-4 text-[#2D4A3E]" />
-            Add to Cart
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            disabled
-            className="flex-1 cursor-not-allowed bg-gray-300 font-sans font-semibold tracking-wide text-gray-600 hover:bg-gray-300"
-          >
-            Out of Stock
-          </Button>
-        )}
-      </div>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+          {product.in_stock ? (
+            <Button
+              onClick={handleAddToCart}
+              className="flex-1 bg-[#1C1C1C] font-sans font-semibold tracking-wide text-white hover:bg-[#2a2a2a]"
+            >
+              <ShoppingCart className="mr-2 h-4 w-4 text-[#2D4A3E]" />
+              Add to Cart
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              disabled
+              className="flex-1 cursor-not-allowed bg-gray-300 font-sans font-semibold tracking-wide text-gray-600 hover:bg-gray-300"
+            >
+              Out of Stock
+            </Button>
+          )}
+        </div>
+      ) : null}
     </>
   );
 }

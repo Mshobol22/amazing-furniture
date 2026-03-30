@@ -10,8 +10,10 @@ import {
   getAcmeKitComponentProducts,
   getAcmeKitParentProductBySku,
   getAcmeKitSiblingComponents,
+  findZinatexCanonicalParentForStyleKey,
   getProducts,
   isProductCardImageReady,
+  isZinatexNumericDesignStyleKey,
   mapRowToProduct,
   resolveProductPageSlug,
 } from "@/lib/supabase/products";
@@ -25,6 +27,7 @@ import ProductVariantPageClient from "@/components/products/ProductVariantPageCl
 import ProductCard from "@/components/products/ProductCard";
 import CategoryExploreReelTrigger from "@/components/reel/CategoryExploreReelTrigger";
 import ProductDetailReelTrigger from "@/components/reel/ProductDetailReelTrigger";
+import { extractZinatexSlugSuffix } from "@/lib/zinatex-slug";
 import type { Metadata } from "next";
 import type { Product, ProductVariant } from "@/types";
 import {
@@ -164,6 +167,23 @@ export default async function ProductPage({ params }: ProductPageProps) {
       .order("sort_order", { ascending: true })
       .order("color", { ascending: true });
     variants = (data ?? []) as ProductVariant[];
+  }
+
+  if (
+    product.manufacturer === "Zinatex" &&
+    product.has_variants &&
+    variants.length === 0
+  ) {
+    const zKey = extractZinatexSlugSuffix(product.slug);
+    if (zKey && isZinatexNumericDesignStyleKey(zKey)) {
+      const canon = await findZinatexCanonicalParentForStyleKey(
+        zKey,
+        product.id
+      );
+      if (canon) {
+        redirect(`/products/${canon.slug}`);
+      }
+    }
   }
 
   const categoryProducts = await getProducts(product.category);
@@ -354,7 +374,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               />
               {acmeComponentUsesParentGallery ? (
                 <p className="text-center font-sans text-xs text-[#1C1C1C]/55">
-                  Image shows complete set.
+                  Image shows complete set
                 </p>
               ) : null}
               {product.collection_group ? (

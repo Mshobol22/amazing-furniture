@@ -356,6 +356,53 @@ async function findZinatexProductByLegacyVariantSlug(
   return mapRowToProduct(productRow as Record<string, unknown>);
 }
 
+/** Only numeric design codes are unique in slugs — never use generic keys like `star` or `premium`. */
+export function isZinatexNumericDesignStyleKey(styleKey: string): boolean {
+  return /^\d{3,}$/.test(styleKey.trim());
+}
+
+/**
+ * When duplicate Zinatex parents share the same `-ztx-{styleKey}` slug suffix, only one
+ * should own `product_variants`. Resolves the row that has variant rows (optional exclude).
+ * Only safe for numeric design keys (e.g. 1099); generic slug suffixes collide across designs.
+ */
+export async function findZinatexCanonicalParentForStyleKey(
+  styleKey: string,
+  excludeProductId: string | null
+): Promise<Product | null> {
+  const key = styleKey.trim().toLowerCase();
+  if (!key || !isZinatexNumericDesignStyleKey(key)) return null;
+  const suffix = `-ztx-${key}`;
+
+  const supabase = createAdminClient();
+  const { data: variantRows, error: vErr } = await supabase
+    .from("product_variants")
+    .select("product_id");
+  if (vErr || !variantRows?.length) return null;
+
+  const withVariants = new Set(
+    variantRows.map((r: { product_id: string }) => r.product_id)
+  );
+
+  const { data: rows, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("manufacturer", "Zinatex");
+
+  if (error || !rows?.length) return null;
+
+  for (const row of rows) {
+    const slug = String((row as { slug: string }).slug ?? "").toLowerCase();
+    if (!slug.endsWith(suffix)) continue;
+    const id = (row as { id: string }).id;
+    if (excludeProductId && id === excludeProductId) continue;
+    if (withVariants.has(id)) {
+      return mapRowToProduct(row as Record<string, unknown>);
+    }
+  }
+  return null;
+}
+
 export type ResolveProductPageSlugResult =
   | { ok: true; product: Product; redirectToSlug?: string }
   | { ok: false };
@@ -366,6 +413,14 @@ export async function resolveProductPageSlug(
   const direct = await getProductBySlug(slug);
   if (direct) {
     return { ok: true, product: direct };
+  }
+
+  const styleKey = extractZinatexSlugSuffix(slug);
+  if (styleKey && isZinatexNumericDesignStyleKey(styleKey)) {
+    const canon = await findZinatexCanonicalParentForStyleKey(styleKey, null);
+    if (canon && canon.slug !== slug) {
+      return { ok: true, product: canon, redirectToSlug: canon.slug };
+    }
   }
 
   const legacy = await findZinatexProductByLegacyVariantSlug(slug);
@@ -1275,8 +1330,10 @@ export async function getAcmeKitSiblingComponents(
   const { data, error } = await supabase
     .from("products")
     .select("*")
+    .eq("manufacturer", "ACME")
     .eq("acme_kit_parent_sku", parent)
     .neq("id", product.id)
+    .order("display_name", { ascending: true, nullsFirst: false })
     .order("name", { ascending: true });
 
   if (error || !data) {
@@ -1298,7 +1355,9 @@ export async function getAcmeKitComponentProducts(
   const { data, error } = await supabase
     .from("products")
     .select("*")
+    .eq("manufacturer", "ACME")
     .eq("acme_kit_parent_sku", sku)
+    .order("display_name", { ascending: true, nullsFirst: false })
     .order("name", { ascending: true });
 
   if (error || !data) {

@@ -87,7 +87,7 @@ export default function ProductVariantPageClient({
             <p className="mb-2 font-sans text-xs font-medium uppercase tracking-widest text-[#1C1C1C]/50">
               About This Product
             </p>
-            <p className="font-cormorant text-lg leading-relaxed text-[#1C1C1C]/80">
+            <p className="font-cormorant text-lg font-semibold leading-relaxed text-[#1C1C1C]">
               {product.description}
             </p>
           </div>
