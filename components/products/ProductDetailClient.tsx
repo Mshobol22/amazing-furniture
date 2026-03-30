@@ -25,6 +25,7 @@ interface ProductDetailClientProps {
   product: Product;
   acmeComponentParentKit?: Product | null;
   acmeComponentSiblingPieces?: Product[];
+  renderSiblingComponentsInline?: boolean;
 }
 
 function acmeComponentCardPrice(piece: Product): { main: number; list?: number } {
@@ -43,6 +44,7 @@ export default function ProductDetailClient({
   product,
   acmeComponentParentKit = null,
   acmeComponentSiblingPieces = [],
+  renderSiblingComponentsInline = true,
 }: ProductDetailClientProps) {
   const [quantity, setQuantity] = useState(1);
   const addItem = useCartStore((state) => state.addItem);
@@ -198,7 +200,9 @@ export default function ProductDetailClient({
     ) : null;
 
   const siblingComponentsSection =
-    isComponent && acmeComponentSiblingPieces.length > 0 ? (
+    renderSiblingComponentsInline &&
+    isComponent &&
+    acmeComponentSiblingPieces.length > 0 ? (
       <section
         className="mt-8 border-t border-gray-100 pt-6"
         aria-labelledby="acme-component-siblings-heading"

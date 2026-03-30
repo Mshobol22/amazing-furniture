@@ -43,6 +43,7 @@ import {
   isUnitedFurnitureProduct,
 } from "@/lib/united-product-display";
 import {
+  getAcmeProductCardDisplayName,
   getAcmeProductCardSkuLabel,
   getAcmeProductDetailHeading,
   hasAcmeColorGroup,
@@ -501,6 +502,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 product={product}
                 acmeComponentParentKit={acmeComponentParentKit}
                 acmeComponentSiblingPieces={acmeComponentSiblingPieces}
+                renderSiblingComponentsInline={false}
               />
             </div>
           </div>
@@ -510,6 +512,71 @@ export default async function ProductPage({ params }: ProductPageProps) {
               acmeKitSetPieces={acmeKitSetPieces}
               acmeCollectionSiblings={acmeCollectionSiblings}
             />
+          ) : null}
+          {isAcmeComponentProduct(product) &&
+          acmeComponentSiblingPieces.length > 0 ? (
+            <section
+              className="mb-10 border-t border-gray-100 pt-6"
+              aria-labelledby="acme-component-siblings-heading"
+            >
+              <h2
+                id="acme-component-siblings-heading"
+                className="mb-4 font-cormorant text-xl font-semibold text-[#1C1C1C] md:text-2xl"
+              >
+                Other pieces in this set
+              </h2>
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                {acmeComponentSiblingPieces.map((piece) => {
+                  const title =
+                    getAcmeProductCardDisplayName(piece) || piece.name || "Piece";
+                  const main = piece.on_sale && piece.sale_price != null && piece.sale_price < getStorefrontListPrice(piece)
+                    ? piece.sale_price
+                    : getStorefrontListPrice(piece);
+                  const list = piece.on_sale && piece.sale_price != null && piece.sale_price < getStorefrontListPrice(piece)
+                    ? getStorefrontListPrice(piece)
+                    : null;
+                  const imageSrc =
+                    piece.images?.[0] && String(piece.images[0]).startsWith("https://")
+                      ? String(piece.images[0])
+                      : null;
+
+                  return (
+                    <Link
+                      key={piece.id}
+                      href={`/products/${piece.slug}`}
+                      className="flex w-44 shrink-0 flex-col rounded-lg border border-[#1C1C1C]/15 bg-[#FAF8F5] p-3 transition-colors hover:border-[#2D4A3E] md:w-52"
+                    >
+                      <div className="relative mb-3 aspect-square w-full shrink-0 overflow-hidden rounded-md bg-[#E8E6E1]">
+                        {imageSrc ? (
+                          <Image
+                            src={imageSrc}
+                            alt={title}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 176px, 208px"
+                          />
+                        ) : null}
+                      </div>
+                      <span className="line-clamp-3 font-sans text-sm font-medium leading-snug text-[#1C1C1C]">
+                        {title}
+                      </span>
+                      <span className="mt-2 font-sans text-base font-semibold tabular-nums text-[#1C1C1C]">
+                        {list != null ? (
+                          <>
+                            <span className="text-red-600">{formatPrice(main)}</span>
+                            <span className="ml-1.5 text-xs font-normal text-[#1C1C1C]/45 line-through">
+                              {formatPrice(list)}
+                            </span>
+                          </>
+                        ) : (
+                          formatPrice(main)
+                        )}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
           ) : null}
           </>
         )}
