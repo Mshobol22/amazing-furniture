@@ -213,20 +213,20 @@ function buildPlans(
   }
 
   const designsToFix = new Set<string>();
-  for (const [k, ids] of slugGroupByDesign) {
+  for (const [k, ids] of Array.from(slugGroupByDesign.entries())) {
     if (ids.length >= 2) designsToFix.add(k);
   }
-  for (const [k, set] of parentsByDesign) {
+  for (const [k, set] of Array.from(parentsByDesign.entries())) {
     if (set.size >= 2) designsToFix.add(k);
   }
 
   const plans: Plan[] = [];
-  const sortedKeys = [...designsToFix].sort((a, b) => Number(a) - Number(b));
+  const sortedKeys = Array.from(designsToFix).sort((a, b) => Number(a) - Number(b));
 
   for (const designKey of sortedKeys) {
     const fromSlug = slugGroupByDesign.get(designKey) ?? [];
-    const fromVar = [...(parentsByDesign.get(designKey) ?? [])];
-    const productIds = [...new Set([...fromSlug, ...fromVar])];
+    const fromVar = Array.from(parentsByDesign.get(designKey) ?? []);
+    const productIds = Array.from(new Set(fromSlug.concat(fromVar)));
     if (productIds.length < 2) continue;
 
     const variantsForDesign = allVariants.filter(
