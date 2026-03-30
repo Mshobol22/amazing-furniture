@@ -476,7 +476,7 @@ async function main() {
 
   let colorGroupsTouched = 0;
 
-  for (const [k, newRows] of keyToNewRows) {
+  for (const [k, newRows] of Array.from(keyToNewRows.entries())) {
     const existingCount = keyToExistingIds.get(k)?.length ?? 0;
     const total = existingCount + newRows.length;
     if (total < 2) continue;
@@ -486,7 +486,7 @@ async function main() {
   }
 
   const existingIdsToSetGroup: { id: string; acme_color_group: string }[] = [];
-  for (const [k, newRows] of keyToNewRows) {
+  for (const [k, newRows] of Array.from(keyToNewRows.entries())) {
     const existingCount = keyToExistingIds.get(k)?.length ?? 0;
     if (existingCount + newRows.length < 2) continue;
     for (const id of keyToExistingIds.get(k) ?? []) {
