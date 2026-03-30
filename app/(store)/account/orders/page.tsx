@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format-price";
+import { CheckCircle2, PackageCheck, Truck, Home } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Orders",
@@ -57,6 +58,40 @@ function StatusBadge({ status }: { status: string }) {
     <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold capitalize text-gray-800">
       {status}
     </span>
+  );
+}
+
+function OrderTimeline({ status }: { status: string }) {
+  const normalized = status.toLowerCase();
+  const steps = [
+    { key: "confirmed", label: "Confirmed", icon: CheckCircle2 },
+    { key: "processing", label: "Processing", icon: PackageCheck },
+    { key: "shipped", label: "Shipped", icon: Truck },
+    { key: "delivered", label: "Delivered", icon: Home },
+  ];
+  const activeIndex =
+    normalized.includes("deliver") ? 3 :
+    normalized.includes("ship") ? 2 :
+    normalized.includes("process") ? 1 :
+    normalized.includes("paid") || normalized.includes("confirm") ? 0 : 0;
+
+  return (
+    <div className="flex items-center gap-1.5">
+      {steps.map((step, idx) => {
+        const Icon = step.icon;
+        const isActive = idx <= activeIndex;
+        return (
+          <div key={step.key} className="flex items-center gap-1.5">
+            <div className={`flex h-6 w-6 items-center justify-center rounded-full ${isActive ? "bg-[#2D4A3E]/15 text-[#2D4A3E]" : "bg-gray-100 text-gray-400"}`}>
+              <Icon className="h-3.5 w-3.5" />
+            </div>
+            {idx < steps.length - 1 ? (
+              <div className={`h-[2px] w-4 ${isActive ? "bg-[#2D4A3E]/40" : "bg-gray-200"}`} />
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -115,6 +150,7 @@ export default async function AccountOrdersPage() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+                <OrderTimeline status={order.status} />
                 <span className="font-sans text-base font-semibold tabular-nums text-charcoal">
                   {formatPrice(Number(order.total) || 0)}
                 </span>

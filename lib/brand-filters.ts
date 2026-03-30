@@ -31,6 +31,15 @@ async function enrichProductsWithVariantPrices(
 
 type ValueCount = { value: string; count: number };
 
+function normalizeManufacturerForProducts(raw: string): string {
+  const value = raw.trim().toLowerCase();
+  if (value === "acme") return "ACME";
+  if (value === "nationwide fd" || value === "nationwide-fd") return "Nationwide FD";
+  if (value === "united furniture" || value === "united-furniture") return "United Furniture";
+  if (value === "zinatex") return "Zinatex";
+  return raw;
+}
+
 function normalizeText(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
@@ -54,10 +63,11 @@ export async function fetchBrandCategories(
   field: "category" | "collection" = "category"
 ): Promise<ValueCount[]> {
   const supabase = createClient();
+  const manufacturerName = normalizeManufacturerForProducts(manufacturer);
   let q = supabase
     .from("products")
     .select(field)
-    .eq("manufacturer", manufacturer)
+    .eq("manufacturer", manufacturerName)
     .eq("in_stock", true);
   q = applyAcmeComponentListingFilter(q);
   const { data, error } = await q;
@@ -71,10 +81,11 @@ export async function fetchBrandCollections(
   category: string
 ): Promise<ValueCount[]> {
   const supabase = createClient();
+  const manufacturerName = normalizeManufacturerForProducts(manufacturer);
   let query = supabase
     .from("products")
     .select("collection")
-    .eq("manufacturer", manufacturer)
+    .eq("manufacturer", manufacturerName)
     .eq("category", category)
     .eq("in_stock", true);
   query = applyAcmePlaceholderImageFilter(query);
@@ -207,7 +218,11 @@ export async function fetchBrandColors(
   category?: string,
   collection?: string
 ): Promise<string[]> {
-  return fetchColorsForFilters({ category, manufacturer, collection });
+  return fetchColorsForFilters({
+    category,
+    manufacturer: normalizeManufacturerForProducts(manufacturer),
+    collection,
+  });
 }
 
 export async function fetchBrandMaterials(
@@ -215,7 +230,11 @@ export async function fetchBrandMaterials(
   category?: string,
   collection?: string
 ): Promise<string[]> {
-  return fetchMaterialsForFilters({ category, manufacturer, collection });
+  return fetchMaterialsForFilters({
+    category,
+    manufacturer: normalizeManufacturerForProducts(manufacturer),
+    collection,
+  });
 }
 
 interface FetchBrandProductsParams {
@@ -237,6 +256,7 @@ export async function fetchBrandProducts(
   params: FetchBrandProductsParams
 ): Promise<{ products: Product[]; total: number }> {
   const supabase = createClient();
+  const manufacturerName = normalizeManufacturerForProducts(params.manufacturer);
   const page = Math.max(1, params.page);
   const perPage = Math.max(1, params.perPage);
   const start = (page - 1) * perPage;
@@ -245,7 +265,7 @@ export async function fetchBrandProducts(
   let query = supabase
     .from("products")
     .select("*", { count: "exact" })
-    .eq("manufacturer", params.manufacturer)
+    .eq("manufacturer", manufacturerName)
     .eq("in_stock", true);
 
   query = applyAcmePlaceholderImageFilter(query);

@@ -40,15 +40,16 @@ export default function SaleProductGrid({
   if (products.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center py-24 text-center">
+        <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#2D4A3E]/10 text-3xl">%</div>
         <p className="mb-2 text-lg font-semibold text-[#1C1C1C]">No sale products yet</p>
-        <p className="mb-6 text-sm text-[#6B6560]">
-          No sale products in this category yet — check back soon!
+        <p className="mb-6 max-w-md text-sm text-[#6B6560]">
+          This sale section is currently empty. Browse our full collections and check back for new markdowns.
         </p>
         <Link
           href="/collections/all"
           className="rounded-lg bg-[#2D4A3E] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#3B5E4F]"
         >
-          Shop All Products
+          Browse Our Collections
         </Link>
       </div>
     )

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isAdminUser } from "@/lib/auth/admin-access";
 import { Button } from "@/components/ui/button";
 import { Package, Heart } from "lucide-react";
+import RecentlyViewedStrip from "@/components/account/RecentlyViewedStrip";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -36,7 +37,7 @@ export default async function AccountDashboardPage() {
   const first = displayName.split(/\s+/)[0] ?? displayName;
   const memberLine = formatMemberSince(user.created_at);
 
-  const [{ count: orderCount }, { count: wishlistCount }] = await Promise.all([
+  const [{ count: orderCount }, { count: wishlistCount }, { data: latestOrder }] = await Promise.all([
     supabase
       .from("orders")
       .select("*", { count: "exact", head: true })
@@ -45,6 +46,13 @@ export default async function AccountDashboardPage() {
       .from("wishlists")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id),
+    supabase
+      .from("orders")
+      .select("id, created_at, total")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const ordersTotal = orderCount ?? 0;
@@ -68,25 +76,30 @@ export default async function AccountDashboardPage() {
         </div>
       ) : null}
 
-      <div>
+      <div className="rounded-xl border border-[#1C1C1C]/10 bg-white p-6 shadow-sm">
         <h1 className="font-sans text-2xl font-semibold text-charcoal sm:text-3xl">
           Welcome back, {first}
         </h1>
         <p className="mt-2 text-sm text-warm-gray">{memberLine}</p>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-[#1C1C1C]/10 bg-white p-6 shadow-sm">
-          <p className="text-sm font-medium text-warm-gray">Total orders</p>
-          <p className="mt-2 font-sans text-3xl font-semibold tabular-nums text-charcoal">
-            {ordersTotal}
-          </p>
-        </div>
-        <div className="rounded-xl border border-[#1C1C1C]/10 bg-white p-6 shadow-sm">
-          <p className="text-sm font-medium text-warm-gray">Wishlist items</p>
-          <p className="mt-2 font-sans text-3xl font-semibold tabular-nums text-charcoal">
-            {wishesTotal}
-          </p>
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-warm-gray">Total Orders</p>
+            <p className="mt-1 text-2xl font-semibold text-charcoal">{ordersTotal}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-warm-gray">Wishlist Items</p>
+            <p className="mt-1 text-2xl font-semibold text-charcoal">{wishesTotal}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-warm-gray">Latest Order</p>
+            {latestOrder?.id ? (
+              <Link href={`/account/orders/${latestOrder.id}`} className="mt-1 inline-block text-sm font-semibold text-[#2D4A3E] underline underline-offset-2">
+                View #{latestOrder.id.slice(-8)}
+              </Link>
+            ) : (
+              <p className="mt-1 text-sm text-warm-gray">No orders yet</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -107,6 +120,7 @@ export default async function AccountDashboardPage() {
           </Link>
         </Button>
       </div>
+      <RecentlyViewedStrip />
     </div>
   );
 }

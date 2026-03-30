@@ -52,7 +52,7 @@ export default function WishlistAccountGrid({ products }: { products: Product[] 
         return (
           <article
             key={product.id}
-            className="overflow-hidden rounded-xl border border-[#1C1C1C]/10 bg-white shadow-sm"
+            className="group overflow-hidden rounded-xl border border-[#1C1C1C]/10 bg-white shadow-sm"
           >
             <div className="relative">
               <Link href={`/products/${product.slug}`} className="block">
@@ -70,6 +70,28 @@ export default function WishlistAccountGrid({ products }: { products: Product[] 
                       SALE
                     </span>
                   )}
+                  <div className="pointer-events-none absolute inset-x-2 bottom-2 translate-y-2 opacity-0 transition duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+                    {inStock ? (
+                      <Button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          addItem(product, 1);
+                        }}
+                        className="w-full bg-[#2D4A3E] text-[#FAF8F5] hover:bg-[#1E3329]"
+                      >
+                        Add to Cart
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        disabled
+                        className="w-full cursor-not-allowed bg-gray-300 text-gray-600 hover:bg-gray-300"
+                      >
+                        Out of Stock
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </Link>
               <button
@@ -103,23 +125,14 @@ export default function WishlistAccountGrid({ products }: { products: Product[] 
                   formatPrice(getEffectivePrice(product))
                 )}
               </p>
-              {!inStock ? (
-                <Button
-                  type="button"
-                  disabled
-                  className="w-full cursor-not-allowed bg-gray-300 text-gray-600 hover:bg-gray-300"
-                >
-                  Out of Stock
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  onClick={() => addItem(product, 1)}
-                  className="w-full bg-[#2D4A3E] text-[#FAF8F5] hover:bg-[#1E3329]"
-                >
-                  Add to Cart
-                </Button>
-              )}
+              <Button
+                type="button"
+                onClick={() => addItem(product, 1)}
+                disabled={!inStock}
+                className="w-full bg-[#2D4A3E] text-[#FAF8F5] hover:bg-[#1E3329] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600"
+              >
+                {inStock ? "Add to Cart" : "Out of Stock"}
+              </Button>
             </div>
           </article>
         );

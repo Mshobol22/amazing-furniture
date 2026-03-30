@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { isZinatexListingVisibleRow } from "@/lib/zinatex-listing-filter";
 import {
+  applyAcmeComponentListingFilter,
   attachZinatexFromPrices,
   isHiddenAcmeComponentProduct,
   mapRowToProduct,
@@ -191,13 +192,15 @@ export async function GET(request: NextRequest) {
 
     const supabase = getAnonClient();
     // Full rows for reel display (UF page_id, bundle_skus, page_features, description, etc.)
-    const { data, error } = await supabase
+    let baseQuery = supabase
       .from("products")
       .select("*")
       .eq("in_stock", true)
       .not("images", "is", null)
       .not("images", "eq", "{}")
       .or("images_validated.eq.true,images_validated.is.null");
+    baseQuery = applyAcmeComponentListingFilter(baseQuery);
+    const { data, error } = await baseQuery;
 
     if (error) throw error;
 
@@ -217,11 +220,13 @@ export async function GET(request: NextRequest) {
 
     let pinRow: ProductRow | null = null;
     if (firstProductId && cursor === 0) {
-      const { data: pinData } = await supabase
+      let pinQuery = supabase
         .from("products")
         .select("*")
         .eq("id", firstProductId)
         .maybeSingle();
+      pinQuery = applyAcmeComponentListingFilter(pinQuery);
+      const { data: pinData } = await pinQuery;
       if (pinData) {
         pinRow = pinData as ProductRow;
       }

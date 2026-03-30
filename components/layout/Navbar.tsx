@@ -16,7 +16,6 @@ import {
   CreditCard,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { applyAcmeComponentListingFilter } from "@/lib/supabase/products";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useCartStore, useCartItemCount } from "@/store/cartStore";
 import { useWishlistStore, useWishlistCount } from "@/store/wishlistStore";
@@ -182,19 +181,25 @@ export default function Navbar() {
 
   useEffect(() => {
     let cancelled = false;
-    const supabase = createClient();
 
     async function checkSaleAvailability() {
-      let saleProbe = supabase
-        .from("products")
-        .select("id")
-        .eq("on_sale", true)
-        .limit(1);
-      saleProbe = applyAcmeComponentListingFilter(saleProbe);
-      const { data, error } = await saleProbe;
+      try {
+        const response = await fetch("/api/sale-nav-availability", {
+          method: "GET",
+          cache: "no-store",
+        });
 
-      if (!cancelled) {
-        setHasActiveSaleProducts(!error && (data?.length ?? 0) > 0);
+        if (!response.ok) {
+          if (!cancelled) setHasActiveSaleProducts(false);
+          return;
+        }
+
+        const data: unknown = await response.json();
+        if (!cancelled) {
+          setHasActiveSaleProducts(Boolean((data as { hasActiveSaleProducts?: boolean })?.hasActiveSaleProducts));
+        }
+      } catch {
+        if (!cancelled) setHasActiveSaleProducts(false);
       }
     }
 

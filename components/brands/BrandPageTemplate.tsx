@@ -492,6 +492,7 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
   };
 
   const headerLogoSrc = brandLogoSrc(manufacturer.name, manufacturer.logo_url);
+  const featuredProducts = products.slice(0, 4);
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#1C1C1C]">
@@ -633,6 +634,28 @@ export default function BrandPageTemplate({ manufacturer, config, initialProduct
         </aside>
 
         <main className="min-w-0">
+          {!loading && featuredProducts.length > 0 ? (
+            <section className="mb-6 rounded-xl border border-[#1C1C1C]/10 bg-white p-4">
+              <div className="mb-3 flex items-end justify-between">
+                <h2 className="text-lg font-semibold text-[#1C1C1C]">Featured picks</h2>
+                <p className="text-xs uppercase tracking-wide text-[#6B6560]">{manufacturer.name}</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {featuredProducts.map((product) => (
+                  <BrandProductGridCard
+                    key={`featured-${product.id}`}
+                    product={product}
+                    brandName={manufacturer.name}
+                    categoryFilter={
+                      selectedCategory && !isMiscCategorySelected
+                        ? selectedCategory
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
           <div className="mb-4 flex items-center justify-between gap-2">
             <button
               type="button"

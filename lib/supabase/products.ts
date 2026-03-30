@@ -137,12 +137,10 @@ export function applyAcmePlaceholderImageFilter(query: any): any {
 /**
  * Hide ACME KIT components from public listings (category, brand, search, reels).
  * PDP and direct fetch by slug are unchanged — do not apply on single-product loads.
- * SQL: NOT (manufacturer = 'ACME' AND acme_product_type = 'component')
+ * SQL equivalent: (acme_product_type != 'component' OR acme_product_type IS NULL)
  */
 export function applyAcmeComponentListingFilter(query: any): any {
-  return query.or(
-    "manufacturer.neq.ACME,acme_product_type.is.null,acme_product_type.neq.component"
-  );
+  return query.or("acme_product_type.neq.component,acme_product_type.is.null");
 }
 
 export function isHiddenAcmeComponentProduct(
@@ -649,7 +647,11 @@ export async function getManufacturersWithCounts(): Promise<ManufacturerWithCoun
     return [];
   }
 
-  return data ?? [];
+  return (data ?? []).map((row) => ({
+    ...row,
+    product_count: Number(row.product_count ?? 0),
+    count: Number(row.count ?? 0),
+  }));
 }
 
 export interface CategoryImage {

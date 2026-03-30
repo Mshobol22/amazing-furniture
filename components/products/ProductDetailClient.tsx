@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Check, ShoppingCart } from "lucide-react";
@@ -47,14 +47,54 @@ export default function ProductDetailClient({
   renderSiblingComponentsInline = true,
 }: ProductDetailClientProps) {
   const [quantity, setQuantity] = useState(1);
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  const mainCtaRef = useRef<HTMLDivElement | null>(null);
   const addItem = useCartStore((state) => state.addItem);
+  const isComponent = isAcmeComponentProduct(product);
 
   const handleAddToCart = () => {
     if (!product.in_stock) return;
     addItem(product, quantity);
   };
 
-  const isComponent = isAcmeComponentProduct(product);
+  useEffect(() => {
+    try {
+      const key = "ahf_recently_viewed";
+      const raw = window.localStorage.getItem(key);
+      const parsed: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        image?: string;
+        manufacturer?: string;
+        price: number;
+      }> = raw ? JSON.parse(raw) : [];
+      const entry = {
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        image: product.images?.[0],
+        manufacturer: product.manufacturer,
+        price: getStorefrontListPrice(product),
+      };
+      const next = [entry, ...parsed.filter((item) => item.id !== product.id)].slice(0, 8);
+      window.localStorage.setItem(key, JSON.stringify(next));
+    } catch {
+      // ignore storage errors
+    }
+  }, [product]);
+
+  useEffect(() => {
+    if (!mainCtaRef.current || isComponent) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowStickyBar(!entry.isIntersecting);
+      },
+      { threshold: 0.25 }
+    );
+    observer.observe(mainCtaRef.current);
+    return () => observer.disconnect();
+  }, [isComponent]);
 
   const acmeIntro = isAcmeProduct(product)
     ? getAcmeDescriptionIntroAfterDash(product.description)
@@ -249,6 +289,7 @@ export default function ProductDetailClient({
 
   const cartDesktop = (
     <div
+      ref={mainCtaRef}
       className={
         isComponent
           ? "mt-6 flex flex-col gap-4"
@@ -338,8 +379,8 @@ export default function ProductDetailClient({
       ) : null}
 
       {/* Sticky CTA — mobile only (hidden for ACME components: inline cart sits above Part of this set) */}
-      {!isComponent ? (
-        <div className="fixed bottom-0 left-0 right-0 z-30 flex items-center gap-3 border-t border-gray-200 bg-white px-4 py-3 sm:hidden">
+      {!isComponent && showStickyBar ? (
+        <div className="fixed bottom-0 left-0 right-0 z-30 flex items-center gap-3 border-t border-gray-200 bg-white px-4 py-3">
           <select
             value={quantity}
             onChange={(e) => setQuantity(Number(e.target.value))}

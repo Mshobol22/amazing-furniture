@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import WishlistAccountGrid from "@/components/account/WishlistAccountGrid";
 import {
+  applyAcmeComponentListingFilter,
   attachZinatexFromPrices,
   mapRowToProduct,
 } from "@/lib/supabase/products";
@@ -38,18 +39,26 @@ export default async function AccountWishlistPage() {
     return (
       <div className="rounded-xl border border-[#1C1C1C]/10 bg-white p-10 text-center shadow-sm">
         <h1 className="font-sans text-xl font-semibold text-charcoal">Wishlist</h1>
+        <div className="mx-auto mt-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#2D4A3E]/10 text-2xl">
+          ❤
+        </div>
         <p className="mt-3 text-warm-gray">Your wishlist is empty</p>
+        <p className="mt-1 text-sm text-warm-gray">
+          Save favorites to build your room mood board.
+        </p>
         <Link
           href="/collections/all"
           className="mt-6 inline-flex rounded-lg bg-[#2D4A3E] px-5 py-2.5 text-sm font-medium text-cream hover:bg-[#1E3329]"
         >
-          Browse products
+          Browse our collections
         </Link>
       </div>
     );
   }
 
-  const { data: rawRows } = await supabase.from("products").select("*").in("id", ids);
+  let wishlistProductsQuery = supabase.from("products").select("*").in("id", ids);
+  wishlistProductsQuery = applyAcmeComponentListingFilter(wishlistProductsQuery);
+  const { data: rawRows } = await wishlistProductsQuery;
 
   const byId = new Map(
     (rawRows ?? []).map((r) => {

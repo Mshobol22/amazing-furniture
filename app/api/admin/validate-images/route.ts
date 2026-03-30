@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, isAdmin } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+const BATCH_SIZE = 75;
+
 async function checkUrl(url: string): Promise<boolean> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 3000);
@@ -29,30 +31,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Parse body gracefully — default to limit 200
-  let limit = 200;
-  try {
-    const body = await request.json();
-    if (typeof body?.limit === "number" && body.limit > 0) {
-      limit = body.limit;
-    }
-  } catch {
-    // Empty or invalid body — use default
-  }
-
-  // Clamp to safe batch range for Vercel function runtime.
-  limit = Math.min(Math.max(Math.floor(limit), 1), 500);
+  const rawOffset = request.nextUrl.searchParams.get("offset");
+  const parsedOffset = Number(rawOffset ?? "0");
+  const offset =
+    Number.isFinite(parsedOffset) && parsedOffset >= 0
+      ? Math.floor(parsedOffset)
+      : 0;
 
   const admin = createAdminClient();
 
-  // Fetch products with unvalidated images
+  const { count: totalProducts } = await admin
+    .from("products")
+    .select("id", { count: "exact", head: true });
+
+  // Process a fixed-size page to keep each invocation fast.
   const { data: products, error: fetchError } = await admin
     .from("products")
-    .select("id, images")
-    .is("images_validated", null)
-    .not("images", "is", null)
-    .filter("images", "neq", "{}")
-    .limit(limit);
+    .select("id, images, images_validated")
+    .order("id", { ascending: true })
+    .range(offset, offset + BATCH_SIZE - 1);
 
   if (fetchError) {
     console.error("validate-images fetch error:", fetchError);
@@ -64,6 +61,7 @@ export async function POST(request: NextRequest) {
   let fullyBroken = 0;
 
   for (const product of products ?? []) {
+    if (product.images_validated !== null) continue;
     const urls: string[] = product.images ?? [];
     if (urls.length === 0) continue;
 
@@ -94,19 +92,24 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Count remaining unvalidated products
-  const { count: remaining } = await admin
+  const { count: remainingUnchecked } = await admin
     .from("products")
     .select("id", { count: "exact", head: true })
     .is("images_validated", null)
     .not("images", "is", null)
     .filter("images", "neq", "{}");
 
+  const rowsReturned = (products ?? []).length;
+  const reachedEnd = rowsReturned < BATCH_SIZE || offset + rowsReturned >= (totalProducts ?? 0);
+  const nextOffset = reachedEnd ? null : offset + BATCH_SIZE;
+
   return NextResponse.json({
-    processed: (products ?? []).length,
+    processed: rowsReturned,
     allValid,
     partialFixed,
     fullyBroken,
-    remaining: remaining ?? 0,
+    remaining: remainingUnchecked ?? 0,
+    nextOffset,
+    totalProducts: totalProducts ?? 0,
   });
 }

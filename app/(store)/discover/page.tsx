@@ -1,6 +1,6 @@
 import Link from "next/link";
 import DiscoverReel from "@/components/reel/DiscoverReel";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import {
   applyAcmeComponentListingFilter,
   applyZinatexListingVisibilityFilter,
@@ -25,7 +25,7 @@ function seededSortValue(id: string, seed: number): number {
 
 async function getInitialDiscoverPayload(seed: number): Promise<DiscoverResponse> {
   const LIMIT = 20;
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   // select("*") so DiscoverReel gets UF + Zinatex fields (collection, subcategory, name, …) via mapRowToProduct
   let baseQuery = supabase
     .from("products")

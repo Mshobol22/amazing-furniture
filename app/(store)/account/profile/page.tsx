@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ProfileSignOut from "@/components/account/ProfileSignOut";
 import {
+  applyAcmeComponentListingFilter,
   attachZinatexFromPrices,
   isProductCardImageReady,
   mapRowToProduct,
@@ -100,22 +101,26 @@ async function loadPersonalizedProducts(userId: string): Promise<Product[]> {
   ).slice(0, 80);
 
   if (seedIds.length === 0) {
-    const { data: fallbackRows } = await supabase
+    let fallbackQuery = supabase
       .from("products")
       .select("*")
       .eq("in_stock", true)
       .order("created_at", { ascending: false })
       .limit(6);
+    fallbackQuery = applyAcmeComponentListingFilter(fallbackQuery);
+    const { data: fallbackRows } = await fallbackQuery;
     const fallback = (fallbackRows ?? []).map((r) =>
       mapRowToProduct(r as Record<string, unknown>)
     );
     return attachZinatexFromPrices(selectImageReadyFirst(fallback, 6));
   }
 
-  const { data: seedRows } = await supabase
+  let seedQuery = supabase
     .from("products")
     .select("*")
     .in("id", seedIds);
+  seedQuery = applyAcmeComponentListingFilter(seedQuery);
+  const { data: seedRows } = await seedQuery;
 
   const seedProducts = (seedRows ?? []).map((r) =>
     mapRowToProduct(r as Record<string, unknown>)
@@ -149,6 +154,7 @@ async function loadPersonalizedProducts(userId: string): Promise<Product[]> {
     .select("*")
     .eq("in_stock", true)
     .limit(120);
+  recQuery = applyAcmeComponentListingFilter(recQuery);
 
   if (manufacturers.length > 0) recQuery = recQuery.in("manufacturer", manufacturers);
   if (categories.length > 0) recQuery = recQuery.in("category", categories);
@@ -188,12 +194,14 @@ async function loadPersonalizedProducts(userId: string): Promise<Product[]> {
   }
 
   const need = 6 - primarySelection.length;
-  const { data: fillerRows } = await supabase
+  let fillerQuery = supabase
     .from("products")
     .select("*")
     .eq("in_stock", true)
     .order("created_at", { ascending: false })
     .limit(40);
+  fillerQuery = applyAcmeComponentListingFilter(fillerQuery);
+  const { data: fillerRows } = await fillerQuery;
 
   const filler = (fillerRows ?? [])
     .map((r) => mapRowToProduct(r as Record<string, unknown>))
@@ -235,6 +243,11 @@ export default async function AccountProfilePage() {
     .join("")
     .toUpperCase()
     .slice(0, 2);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("address_line1, city, state, zip, country")
+    .eq("user_id", user.id)
+    .maybeSingle();
   const jumpBackProducts = await loadPersonalizedProducts(user.id);
 
   return (
@@ -243,6 +256,13 @@ export default async function AccountProfilePage() {
       email={user.email ?? ""}
       avatarUrl={user.user_metadata?.avatar_url}
       initials={initials}
+      initialAddress={{
+        line1: (profile?.address_line1 as string | null) ?? "",
+        city: (profile?.city as string | null) ?? "",
+        state: (profile?.state as string | null) ?? "",
+        zip: (profile?.zip as string | null) ?? "",
+        country: (profile?.country as string | null) ?? "US",
+      }}
       jumpBackProducts={jumpBackProducts}
     />
   );

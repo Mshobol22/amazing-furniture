@@ -9,7 +9,6 @@ interface ManufacturerCard {
   description: string;
   logo_url: string | null;
   backgroundImage: string | null;
-  count?: number | null;
   product_count?: number | null;
   is_active?: boolean;
   comingSoon?: boolean;
@@ -43,7 +42,7 @@ export default function ManufacturerSection({
             .filter(
               (m) =>
                 m.is_active &&
-                Number(m.product_count ?? m.count ?? 0) > 0
+                Number(m.product_count ?? 0) > 0
             )
             .map((m) => {
             const isComing =

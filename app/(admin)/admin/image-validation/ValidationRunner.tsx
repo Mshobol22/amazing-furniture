@@ -9,6 +9,8 @@ interface BatchResult {
   partialFixed: number;
   fullyBroken: number;
   remaining: number;
+  nextOffset: number | null;
+  totalProducts: number;
 }
 
 interface ValidationRunnerProps {
@@ -25,20 +27,21 @@ export default function ValidationRunner({ onAfterRun }: ValidationRunnerProps) 
   const [result, setResult] = useState<BatchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
-  const [progress, setProgress] = useState({ validated: 0, approxTotal: 0 });
+  const [progress, setProgress] = useState({ validated: 0, total: 0 });
   const stopAllRef = useRef(false);
 
-  async function runBatch(limit = 200) {
+  async function runBatch(offset = 0) {
     setLoading(true);
     setSummary(null);
     setError(null);
     setResult(null);
 
     try {
-      const res = await fetch("/api/admin/validate-images", {
+      const res = await fetch(`/api/admin/validate-images?offset=${offset}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ limit }),
+        body: JSON.stringify({}),
+        cache: "no-store",
       });
 
       if (!res.ok) {
@@ -67,35 +70,23 @@ export default function ValidationRunner({ onAfterRun }: ValidationRunnerProps) 
     setSummary(null);
     setError(null);
     setResult(null);
-    setProgress({ validated: 0, approxTotal: 0 });
+    setProgress({ validated: 0, total: 0 });
     stopAllRef.current = false;
 
     let totalAllValid = 0;
     let totalPartialFixed = 0;
     let totalFullyBroken = 0;
     let validated = 0;
-    let approxTotal = 0;
+    let total = 0;
+    let offset = 0;
 
     try {
-      const statsRes = await fetch("/api/admin/validate-images/stats", {
-        method: "GET",
-        cache: "no-store",
-      });
-      if (statsRes.ok) {
-        const stats = (await statsRes.json()) as {
-          valid: number;
-          broken: number;
-          unchecked: number;
-        };
-        approxTotal = Math.max(stats.unchecked, 0);
-        setProgress({ validated: 0, approxTotal });
-      }
-
       while (!stopAllRef.current) {
-        const res = await fetch("/api/admin/validate-images", {
+        const res = await fetch(`/api/admin/validate-images?offset=${offset}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ limit: 500 }),
+          body: JSON.stringify({}),
+          cache: "no-store",
         });
 
         if (!res.ok) {
@@ -109,24 +100,24 @@ export default function ValidationRunner({ onAfterRun }: ValidationRunnerProps) 
         totalAllValid += data.allValid;
         totalPartialFixed += data.partialFixed;
         totalFullyBroken += data.fullyBroken;
-        validated += data.processed;
-        setProgress((prev) => ({
-          validated,
-          approxTotal: prev.approxTotal || approxTotal || validated + data.remaining,
-        }));
+        total = data.totalProducts;
+        validated = data.nextOffset ?? data.totalProducts;
+        setProgress({ validated, total });
+        offset = data.nextOffset ?? offset;
 
-        if (onAfterRun) await onAfterRun();
-        if (data.remaining === 0) break;
-        await sleep(500);
+        if (data.nextOffset == null) break;
+        await sleep(250);
       }
+
+      if (onAfterRun) await onAfterRun();
 
       if (stopAllRef.current) {
         setSummary(
-          `Stopped. ${totalAllValid} valid, ${totalPartialFixed} partial fixed, ${totalFullyBroken} fully broken.`
+          `Stopped at ${validated.toLocaleString()} / ${total.toLocaleString()}. ${totalAllValid} valid, ${totalPartialFixed} partial fixed, ${totalFullyBroken} fully broken.`
         );
       } else {
         setSummary(
-          `Done. ${totalAllValid} valid, ${totalPartialFixed} partial fixed, ${totalFullyBroken} fully broken.`
+          `Done. Validated ${validated.toLocaleString()} / ${total.toLocaleString()} products. ${totalAllValid} valid, ${totalPartialFixed} partial fixed, ${totalFullyBroken} fully broken.`
         );
       }
     } catch (err) {
@@ -143,17 +134,17 @@ export default function ValidationRunner({ onAfterRun }: ValidationRunnerProps) 
         <div>
           <h2 className="text-base font-semibold text-gray-900">Run Validation Batch</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Run a single batch (200) or process all unchecked products automatically.
+            Run a single batch (75) or process all products automatically.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => void runBatch(200)}
+            onClick={() => void runBatch(0)}
             disabled={loading || runningAll}
             className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 transition-colors hover:border-[#2D4A3E] disabled:opacity-50"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
-            {loading ? "Running…" : "Run Batch (200)"}
+            {loading ? "Running…" : "Run Batch (75)"}
           </button>
           <button
             onClick={() => void runAll()}
@@ -174,15 +165,16 @@ export default function ValidationRunner({ onAfterRun }: ValidationRunnerProps) 
       {runningAll ? (
         <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
           <p className="text-sm text-gray-700">
-            Validated {progress.validated} of ~{progress.approxTotal || progress.validated} products...
+            Validated {progress.validated.toLocaleString()} /{" "}
+            {Math.max(progress.total, progress.validated).toLocaleString()} products...
           </p>
           <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-200">
             <div
               className="h-full bg-[#2D4A3E] transition-all"
               style={{
                 width: `${
-                  progress.approxTotal > 0
-                    ? Math.min((progress.validated / progress.approxTotal) * 100, 100)
+                  progress.total > 0
+                    ? Math.min((progress.validated / progress.total) * 100, 100)
                     : 0
                 }%`,
               }}

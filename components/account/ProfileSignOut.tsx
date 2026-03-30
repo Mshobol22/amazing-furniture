@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -15,21 +16,74 @@ export default function ProfileSignOut({
   email,
   avatarUrl,
   initials,
+  initialAddress,
   jumpBackProducts,
 }: {
   displayName: string;
   email: string;
   avatarUrl?: string;
   initials: string;
+  initialAddress: {
+    line1: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
   jumpBackProducts: Product[];
 }) {
   const router = useRouter();
+  const [address, setAddress] = useState({
+    line1: initialAddress.line1,
+    city: initialAddress.city,
+    state: initialAddress.state,
+    zip: initialAddress.zip,
+    country: initialAddress.country,
+  });
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setAddress({
+      line1: initialAddress.line1,
+      city: initialAddress.city,
+      state: initialAddress.state,
+      zip: initialAddress.zip,
+      country: initialAddress.country,
+    });
+  }, [initialAddress]);
 
   const signOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/");
     router.refresh();
+  };
+
+  const onSaveAddress = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/account/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: displayName,
+          email,
+          addressLine1: address.line1,
+          city: address.city,
+          state: address.state,
+          zip: address.zip,
+          country: address.country || "US",
+        }),
+      });
+      if (!res.ok) return;
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2000);
+    } catch {
+      // ignore
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -51,9 +105,75 @@ export default function ProfileSignOut({
             {initials}
           </div>
         )}
-        <div className="text-center sm:text-left">
+        <div className="w-full text-center sm:text-left">
           <p className="font-sans text-lg font-semibold text-charcoal">{displayName}</p>
-          <p className="mt-1 text-sm text-warm-gray">{email}</p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div>
+              <p className="mb-1 text-xs uppercase tracking-wide text-warm-gray">Full name</p>
+              <input
+                type="text"
+                value={displayName}
+                readOnly
+                className="w-full rounded-md border border-[#1C1C1C]/15 bg-[#FAF8F5] px-3 py-2 text-sm text-charcoal"
+              />
+            </div>
+            <div>
+              <p className="mb-1 text-xs uppercase tracking-wide text-warm-gray">Email</p>
+              <input
+                type="email"
+                value={email}
+                readOnly
+                className="w-full rounded-md border border-[#1C1C1C]/15 bg-[#FAF8F5] px-3 py-2 text-sm text-charcoal"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="mt-10 border-t border-light-sand pt-8">
+        <h2 className="text-lg font-semibold text-charcoal">Saved Address</h2>
+        <p className="mt-1 text-sm text-warm-gray">Use this for faster checkout next time.</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <input
+            value={address.line1}
+            onChange={(e) => setAddress((prev) => ({ ...prev, line1: e.target.value }))}
+            placeholder="Street address"
+            className="rounded-md border border-[#1C1C1C]/15 bg-white px-3 py-2 text-sm text-charcoal"
+          />
+          <input
+            value={address.city}
+            onChange={(e) => setAddress((prev) => ({ ...prev, city: e.target.value }))}
+            placeholder="City"
+            className="rounded-md border border-[#1C1C1C]/15 bg-white px-3 py-2 text-sm text-charcoal"
+          />
+          <input
+            value={address.state}
+            onChange={(e) => setAddress((prev) => ({ ...prev, state: e.target.value }))}
+            placeholder="State"
+            className="rounded-md border border-[#1C1C1C]/15 bg-white px-3 py-2 text-sm text-charcoal"
+          />
+          <input
+            value={address.zip}
+            onChange={(e) => setAddress((prev) => ({ ...prev, zip: e.target.value }))}
+            placeholder="ZIP code"
+            className="rounded-md border border-[#1C1C1C]/15 bg-white px-3 py-2 text-sm text-charcoal"
+          />
+          <input
+            value={address.country}
+            onChange={(e) => setAddress((prev) => ({ ...prev, country: e.target.value }))}
+            placeholder="Country"
+            className="rounded-md border border-[#1C1C1C]/15 bg-white px-3 py-2 text-sm text-charcoal"
+          />
+        </div>
+        <div className="mt-3 flex items-center gap-3">
+          <Button
+            type="button"
+            className="bg-[#2D4A3E] text-[#FAF8F5] hover:bg-[#1E3329]"
+            onClick={onSaveAddress}
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "Save Address"}
+          </Button>
+          {saved ? <span className="text-sm text-green-700">Saved</span> : null}
         </div>
       </div>
       <div className="mt-10 border-t border-light-sand pt-8">

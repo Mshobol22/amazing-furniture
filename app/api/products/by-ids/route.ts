@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { attachZinatexFromPrices, mapRowToProduct } from "@/lib/supabase/products";
+import {
+  applyAcmeComponentListingFilter,
+  attachZinatexFromPrices,
+  mapRowToProduct,
+} from "@/lib/supabase/products";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,10 +16,12 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient();
-    const { data } = await supabase
+    let query = supabase
       .from("products")
       .select("*")
       .in("id", ids);
+    query = applyAcmeComponentListingFilter(query);
+    const { data } = await query;
 
     const byId = new Map(
       (data ?? []).map((row) => {
