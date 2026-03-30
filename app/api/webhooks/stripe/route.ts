@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
       if (order.discount_code && order.customer_email) {
         try {
-          await supabaseAdmin.from("discount_redemptions").insert(
+          await supabaseAdmin.from("discount_redemptions").upsert(
             {
               code: order.discount_code,
               email: String(order.customer_email).trim().toLowerCase(),
