@@ -221,12 +221,12 @@ function buildPlans(products: ProductRow[], variants: VariantRow[]): Plan[] {
   }
 
   const plans: Plan[] = [];
-  for (const rows of byName.values()) {
-    if (rows.length < 2) continue;
+  byName.forEach((rows) => {
+    if (rows.length < 2) return;
 
     const hasVariantParent = rows.some((r) => r.has_variants === true);
     const hasStandalone = rows.some((r) => r.has_variants === false);
-    if (!hasVariantParent || !hasStandalone) continue;
+    if (!hasVariantParent || !hasStandalone) return;
 
     const canonical = chooseCanonical(rows, variantsByProduct);
     const duplicates = rows.filter((r) => r.id !== canonical.id);
@@ -283,7 +283,7 @@ function buildPlans(products: ProductRow[], variants: VariantRow[]): Plan[] {
       moveVariantIds,
       insertVariants,
     });
-  }
+  });
 
   plans.sort((a, b) => a.name.localeCompare(b.name));
   return plans;
