@@ -13,6 +13,7 @@ import {
   X,
   ChevronRight,
   Tag,
+  CreditCard,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { applyAcmeComponentListingFilter } from "@/lib/supabase/products";
@@ -360,6 +361,13 @@ export default function Navbar() {
                 Sale
               </Link>
             )}
+            <Link
+              href="/financing"
+              className="hidden sm:flex items-center gap-1.5 text-sm font-semibold tracking-wide text-[#FAF8F5] hover:text-white transition-colors whitespace-nowrap"
+            >
+              <CreditCard className="h-4 w-4" />
+              Financing
+            </Link>
             <button
               onClick={() => setSearchOpen(!searchOpen)}
               className={`flex p-1.5 items-center justify-center rounded sm:p-2 ${iconColor} ${iconHover}`}
@@ -616,6 +624,15 @@ export default function Navbar() {
                 }`}
               >
                 Explore Now
+              </Link>
+              <Link
+                href="/financing"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-4 py-3 font-medium hover:bg-gray-50 ${
+                  pathname === "/financing" ? "text-[#2D4A3E] font-semibold" : "text-[#1C1C1C]"
+                }`}
+              >
+                Financing
               </Link>
               {hasActiveSaleProducts && (
                 <Link

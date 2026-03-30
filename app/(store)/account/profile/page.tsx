@@ -3,7 +3,12 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ProfileSignOut from "@/components/account/ProfileSignOut";
-import { attachZinatexFromPrices, mapRowToProduct } from "@/lib/supabase/products";
+import {
+  attachZinatexFromPrices,
+  isProductCardImageReady,
+  mapRowToProduct,
+} from "@/lib/supabase/products";
+import { shuffleArray } from "@/lib/utils";
 import type { Product } from "@/types";
 
 export const metadata: Metadata = {
@@ -43,6 +48,18 @@ function parseCartProductIds(items: unknown): string[] {
       return typeof r.product_id === "string" ? r.product_id : null;
     })
     .filter((id): id is string => Boolean(id));
+}
+
+function selectImageReadyFirst(products: Product[], limit: number): Product[] {
+  const unique = products.filter(
+    (p, idx, arr) => arr.findIndex((x) => x.id === p.id) === idx
+  );
+  const imageReady = unique.filter((p) => isProductCardImageReady(p));
+  if (imageReady.length >= limit) {
+    return shuffleArray(imageReady).slice(0, limit);
+  }
+  const remainder = unique.filter((p) => !isProductCardImageReady(p));
+  return [...shuffleArray(imageReady), ...shuffleArray(remainder)].slice(0, limit);
 }
 
 async function loadPersonalizedProducts(userId: string): Promise<Product[]> {
@@ -92,7 +109,7 @@ async function loadPersonalizedProducts(userId: string): Promise<Product[]> {
     const fallback = (fallbackRows ?? []).map((r) =>
       mapRowToProduct(r as Record<string, unknown>)
     );
-    return attachZinatexFromPrices(fallback);
+    return attachZinatexFromPrices(selectImageReadyFirst(fallback, 6));
   }
 
   const { data: seedRows } = await supabase
@@ -163,11 +180,14 @@ async function loadPersonalizedProducts(userId: string): Promise<Product[]> {
 
   const merged = [...rankedPool, ...rankedSeeds]
     .filter((p, idx, arr) => arr.findIndex((x) => x.id === p.id) === idx)
-    .slice(0, 6);
+    .slice(0, 18);
 
-  if (merged.length >= 6) return attachZinatexFromPrices(merged);
+  const primarySelection = selectImageReadyFirst(merged, 6);
+  if (primarySelection.length >= 6) {
+    return attachZinatexFromPrices(primarySelection);
+  }
 
-  const need = 6 - merged.length;
+  const need = 6 - primarySelection.length;
   const { data: fillerRows } = await supabase
     .from("products")
     .select("*")
@@ -177,10 +197,19 @@ async function loadPersonalizedProducts(userId: string): Promise<Product[]> {
 
   const filler = (fillerRows ?? [])
     .map((r) => mapRowToProduct(r as Record<string, unknown>))
-    .filter((p) => !seedIds.includes(p.id) && !merged.some((m) => m.id === p.id))
-    .slice(0, need);
+    .filter(
+      (p) =>
+        !seedIds.includes(p.id) &&
+        !primarySelection.some((m) => m.id === p.id) &&
+        !merged.some((m) => m.id === p.id)
+    );
 
-  return attachZinatexFromPrices([...merged, ...filler]);
+  const finalSelection = [
+    ...primarySelection,
+    ...selectImageReadyFirst(filler, need),
+  ].slice(0, 6);
+
+  return attachZinatexFromPrices(finalSelection);
 }
 
 export default async function AccountProfilePage() {
