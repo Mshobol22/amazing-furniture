@@ -154,7 +154,8 @@ export default function Navbar() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [dropdownCloseTimer, setDropdownCloseTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  /** Delayed close — ref avoids stale state and extra re-renders from setState(timer). */
+  const dropdownCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -241,18 +242,44 @@ export default function Navbar() {
     };
   }, []);
 
-  const handleDropdownEnter = (key: string) => {
-    if (dropdownCloseTimer) {
-      clearTimeout(dropdownCloseTimer);
-      setDropdownCloseTimer(null);
+  const DROPDOWN_CLOSE_MS = 320;
+
+  const clearDropdownCloseTimer = () => {
+    if (dropdownCloseTimerRef.current) {
+      clearTimeout(dropdownCloseTimerRef.current);
+      dropdownCloseTimerRef.current = null;
     }
+  };
+
+  const handleDropdownEnter = (key: string) => {
+    clearDropdownCloseTimer();
     setActiveDropdown(key);
   };
 
   const handleDropdownLeave = () => {
-    const timer = setTimeout(() => setActiveDropdown(null), 150);
-    setDropdownCloseTimer(timer);
+    clearDropdownCloseTimer();
+    dropdownCloseTimerRef.current = setTimeout(() => {
+      setActiveDropdown(null);
+      dropdownCloseTimerRef.current = null;
+    }, DROPDOWN_CLOSE_MS);
   };
+
+  useEffect(() => {
+    return () => {
+      if (dropdownCloseTimerRef.current) {
+        clearTimeout(dropdownCloseTimerRef.current);
+        dropdownCloseTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (dropdownCloseTimerRef.current) {
+      clearTimeout(dropdownCloseTimerRef.current);
+      dropdownCloseTimerRef.current = null;
+    }
+    setActiveDropdown(null);
+  }, [pathname]);
 
   const categoryLabel = (cat: string) =>
     cat.charAt(0).toUpperCase() + cat.slice(1).replace("-", " ");
@@ -506,26 +533,32 @@ export default function Navbar() {
                 </Link>
                 {activeDropdown === key && (
                   <div
-                    className="absolute left-0 top-full min-w-[200px] rounded-b-lg border border-[#ede8e3] bg-white p-5 shadow-lg z-50 animate-in fade-in-0 slide-in-from-top-1 duration-150"
-                    style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.10)" }}
-                    onMouseEnter={() => handleDropdownEnter(key)}
-                    onMouseLeave={handleDropdownLeave}
+                    className="absolute left-0 top-full z-50 -mt-2 min-w-[220px] pt-2"
+                    role="presentation"
                   >
-                    {cat.subcategories.map((sub) => {
-                      const href = sub.href ?? `/collections/${cat.slug}`;
-                      return (
-                        <Link
-                          key={sub.label}
-                          href={href}
-                          className={`block py-1.5 text-sm text-[#1C1C1C] hover:text-[#2D4A3E] hover:underline ${
-                            sub.dividerTop ? "mt-2 border-t border-[#ede8e3] pt-3" : ""
-                          }`}
-                          onClick={() => setActiveDropdown(null)}
-                        >
-                          {sub.label}
-                        </Link>
-                      );
-                    })}
+                    <div
+                      className="rounded-b-lg border border-[#ede8e3] bg-white p-5 shadow-lg"
+                      style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.10)" }}
+                    >
+                      {cat.subcategories.map((sub) => {
+                        const href = sub.href ?? `/collections/${cat.slug}`;
+                        return (
+                          <Link
+                            key={sub.label}
+                            href={href}
+                            className={`block py-1.5 text-sm text-[#1C1C1C] hover:text-[#2D4A3E] hover:underline ${
+                              sub.dividerTop ? "mt-2 border-t border-[#ede8e3] pt-3" : ""
+                            }`}
+                            onClick={() => {
+                              clearDropdownCloseTimer();
+                              setActiveDropdown(null);
+                            }}
+                          >
+                            {sub.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
