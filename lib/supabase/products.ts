@@ -110,6 +110,13 @@ export function isHiddenAcmePlaceholderProduct(product: Pick<Product, "images">)
   return ACME_PLACEHOLDER_IMAGE_MARKERS.some((m) => urlLower.includes(m));
 }
 
+/** HTTPS lead image and not an ACME placeholder URL — safe for cards / PDP carousels. */
+export function isProductCardImageReady(product: Pick<Product, "images">): boolean {
+  const u = product.images?.[0];
+  if (typeof u !== "string" || !u.startsWith("https://")) return false;
+  return !isHiddenAcmePlaceholderProduct(product);
+}
+
 function hasValidLeadImage(images: string[] | null | undefined): boolean {
   if (!Array.isArray(images) || images.length === 0) return false;
   const leadImageUrl = images[0];

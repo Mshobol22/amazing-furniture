@@ -11,6 +11,7 @@ import {
   getAcmeKitParentProductBySku,
   getAcmeKitSiblingComponents,
   getProducts,
+  isProductCardImageReady,
   mapRowToProduct,
   resolveProductPageSlug,
 } from "@/lib/supabase/products";
@@ -53,6 +54,8 @@ import {
   getStorefrontListPrice,
   isZinatexProduct,
 } from "@/lib/zinatex-product-display";
+import { shuffleArray } from "@/lib/utils";
+import AcmePdpKitSections from "@/components/products/AcmePdpKitSections";
 
 function enrichProductTitle(name: string, category: string): string {
   const categoryKeywords: Record<string, string> = {
@@ -164,9 +167,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   const categoryProducts = await getProducts(product.category);
-  const relatedProducts = categoryProducts
-    .filter((p) => p.id !== product.id)
-    .slice(0, 4);
+  const relatedCandidates = categoryProducts.filter(
+    (p) => p.id !== product.id && isProductCardImageReady(p)
+  );
+  const relatedProducts = shuffleArray(relatedCandidates).slice(0, 4);
 
   let acmeKitSetPieces: Product[] = [];
   let acmeCollectionSiblings: Product[] = [];
@@ -328,7 +332,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
             )}
           </>
         ) : (
-          /* Standard products — existing layout unchanged */
+          /* Standard products — grid + full-width ACME kit blocks below */
+          <>
           <div className="mb-8 grid gap-6 lg:grid-cols-[55%_1fr]">
             {/* Image gallery */}
             <div className="space-y-3">
@@ -474,13 +479,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {/* Quantity + Add to Cart + description + ACME KIT sections (client) */}
               <ProductDetailClient
                 product={product}
-                acmeKitSetPieces={acmeKitSetPieces}
-                acmeCollectionSiblings={acmeCollectionSiblings}
                 acmeComponentParentKit={acmeComponentParentKit}
                 acmeComponentSiblingPieces={acmeComponentSiblingPieces}
               />
             </div>
           </div>
+          {!isAcmeComponentProduct(product) ? (
+            <AcmePdpKitSections
+              product={product}
+              acmeKitSetPieces={acmeKitSetPieces}
+              acmeCollectionSiblings={acmeCollectionSiblings}
+            />
+          ) : null}
+          </>
         )}
 
         {(hasCollectionGroup || hasCollection) &&
@@ -491,10 +502,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </h2>
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {siblingCollectionProducts
-                .filter((sibling) => {
-                  const first = sibling.images?.[0];
-                  return Boolean(first && first.startsWith("https://"));
-                })
+                .filter((sibling) => isProductCardImageReady(sibling))
                 .map((sibling) => {
                   const imageSrc = sibling.images?.[0] as string;
                   return (
