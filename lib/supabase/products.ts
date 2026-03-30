@@ -356,6 +356,67 @@ async function findZinatexProductByLegacyVariantSlug(
   return mapRowToProduct(productRow as Record<string, unknown>);
 }
 
+/**
+ * Fallback for removed legacy Zinatex parent slugs that used generic style keys
+ * (e.g. `...-ztx-premium`). Resolves by slug base (segment before `-ztx-`) and
+ * prefers the surviving canonical parent row.
+ */
+async function findZinatexProductByLegacyRemovedParentSlug(
+  slug: string
+): Promise<Product | null> {
+  const marker = "-ztx-";
+  const idx = slug.indexOf(marker);
+  if (idx === -1) return null;
+
+  const base = slug.slice(0, idx).trim().toLowerCase();
+  if (!base) return null;
+
+  const supabase = createAdminClient();
+  const { data: rows, error } = await supabase
+    .from("products")
+    .select("id,name,slug,has_variants,in_stock,manufacturer")
+    .eq("manufacturer", "Zinatex")
+    .ilike("slug", `${base}-ztx-%`);
+
+  if (error || !rows?.length) return null;
+
+  const candidateIds = rows.map((r) => r.id as string);
+  const { data: variantRows } = await supabase
+    .from("product_variants")
+    .select("product_id")
+    .in("product_id", candidateIds);
+
+  const variantCountByProduct = new Map<string, number>();
+  for (const row of variantRows ?? []) {
+    const id = row.product_id as string;
+    variantCountByProduct.set(id, (variantCountByProduct.get(id) ?? 0) + 1);
+  }
+
+  const ranked = [...rows].sort((a, b) => {
+    const av = variantCountByProduct.get(a.id as string) ?? 0;
+    const bv = variantCountByProduct.get(b.id as string) ?? 0;
+    if (bv !== av) return bv - av;
+    const ah = a.has_variants === true ? 1 : 0;
+    const bh = b.has_variants === true ? 1 : 0;
+    if (bh !== ah) return bh - ah;
+    const ai = a.in_stock === true ? 1 : 0;
+    const bi = b.in_stock === true ? 1 : 0;
+    if (bi !== ai) return bi - ai;
+    return String(a.id).localeCompare(String(b.id));
+  });
+
+  const best = ranked[0];
+  if (!best) return null;
+
+  const { data: fullRow, error: fullErr } = await supabase
+    .from("products")
+    .select("*")
+    .eq("id", best.id as string)
+    .single();
+  if (fullErr || !fullRow) return null;
+  return mapRowToProduct(fullRow as Record<string, unknown>);
+}
+
 /** Only numeric design codes are unique in slugs — never use generic keys like `star` or `premium`. */
 export function isZinatexNumericDesignStyleKey(styleKey: string): boolean {
   return /^\d{3,}$/.test(styleKey.trim());
@@ -421,6 +482,18 @@ export async function resolveProductPageSlug(
     if (canon && canon.slug !== slug) {
       return { ok: true, product: canon, redirectToSlug: canon.slug };
     }
+  }
+
+  const removedParentFallback = await findZinatexProductByLegacyRemovedParentSlug(slug);
+  if (removedParentFallback) {
+    if (removedParentFallback.slug !== slug) {
+      return {
+        ok: true,
+        product: removedParentFallback,
+        redirectToSlug: removedParentFallback.slug,
+      };
+    }
+    return { ok: true, product: removedParentFallback };
   }
 
   const legacy = await findZinatexProductByLegacyVariantSlug(slug);
