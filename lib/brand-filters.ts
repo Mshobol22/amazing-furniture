@@ -3,7 +3,7 @@ import type { Product } from "@/types";
 import {
   applyAcmeComponentListingFilter,
   applyAcmePlaceholderImageFilter,
-  isHiddenAcmePlaceholderProduct,
+  isHiddenFromProductListingByImage,
   isHiddenAcmeComponentProduct,
   mapRowToProduct,
 } from "@/lib/supabase/products";
@@ -304,7 +304,7 @@ export async function fetchBrandProducts(
 
   const products = data
     .map((row) => mapRowToProduct(row as Record<string, unknown>))
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenFromProductListingByImage(p))
     .filter((p) => !isHiddenAcmeComponentProduct(p));
 
   return {
@@ -387,7 +387,7 @@ export async function fetchAllProducts(
 
   const products = data
     .map((row) => mapRowToProduct(row as Record<string, unknown>))
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenFromProductListingByImage(p))
     .filter((p) => !isHiddenAcmeComponentProduct(p));
 
   return {

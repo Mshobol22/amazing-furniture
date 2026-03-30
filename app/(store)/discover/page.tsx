@@ -5,6 +5,7 @@ import {
   applyAcmeComponentListingFilter,
   applyZinatexListingVisibilityFilter,
   attachZinatexFromPrices,
+  isHiddenFromProductListingByImage,
   mapRowToProduct,
 } from "@/lib/supabase/products";
 import type { Product } from "@/types";
@@ -41,9 +42,11 @@ async function getInitialDiscoverPayload(seed: number): Promise<DiscoverResponse
 
   if (error) throw error;
 
-  const matchingRows = (data ?? []).filter(
-    (row) => Array.isArray(row.images) && row.images.length > 0
-  );
+  const matchingRows = (data ?? []).filter((row) => {
+    if (!Array.isArray(row.images) || row.images.length === 0) return false;
+    const p = mapRowToProduct(row as Record<string, unknown>);
+    return !isHiddenFromProductListingByImage(p);
+  });
 
   const orderedRows = [...matchingRows].sort((a, b) => {
     const diff =

@@ -1,5 +1,9 @@
 import { createAdminClient } from "./admin";
-import { brandLogoSrc, proxyIfNfdManufacturer } from "@/lib/nfd-image-proxy";
+import {
+  brandLogoSrc,
+  productLeadImageSrc,
+  proxyIfNfdManufacturer,
+} from "@/lib/nfd-image-proxy";
 import {
   extractZinatexSlugSuffix,
   normalizeZinatexVariationSkuForSlug,
@@ -110,23 +114,73 @@ export function isHiddenAcmePlaceholderProduct(product: Pick<Product, "images">)
   return ACME_PLACEHOLDER_IMAGE_MARKERS.some((m) => urlLower.includes(m));
 }
 
-/** HTTPS lead image and not an ACME placeholder URL — safe for cards / PDP carousels. */
-export function isProductCardImageReady(product: Pick<Product, "images">): boolean {
+/**
+ * ACME parent/kit/standalone rows only (not KIT components — they use parent imagery on PDP).
+ * Hide when validation failed, URL is a known placeholder, or lead image is missing / not HTTPS
+ * on the official ACME CDN (avoids broken or off-catalog URLs after bad imports).
+ */
+export function isHiddenAcmeBadListingImageProduct(
+  product: Pick<Product, "manufacturer" | "images" | "images_validated" | "acme_product_type">
+): boolean {
+  if (product.manufacturer !== "ACME") return false;
+  if (String(product.acme_product_type ?? "").trim() === "component") return false;
+  if (product.images_validated === false) return true;
+  if (isHiddenAcmePlaceholderProduct(product)) return true;
+  const lead = product.images?.[0];
+  if (typeof lead !== "string" || lead.length === 0) return true;
+  if (!lead.startsWith("https://")) return true;
+  try {
+    const host = new URL(lead).hostname.toLowerCase();
+    if (host !== "www.acmecorp.com" && host !== "acmecorp.com") return true;
+  } catch {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * True when this product must not appear in grids, counts, or search/collection APIs
+ * because the hero image is missing or unacceptable (includes all ACME bad-image rules).
+ */
+export function isHiddenFromProductListingByImage(
+  product: Pick<Product, "manufacturer" | "images" | "images_validated" | "acme_product_type">
+): boolean {
+  if (isHiddenAcmeBadListingImageProduct(product)) return true;
+  const images = product.images;
+  if (!Array.isArray(images) || images.length === 0) return true;
+  const lead = images[0];
+  if (typeof lead !== "string" || lead.length === 0) return true;
+  const urlLower = lead.toLowerCase();
+  if (ACME_PLACEHOLDER_IMAGE_MARKERS.some((m) => urlLower.includes(m))) return true;
+  return false;
+}
+
+type ListingImageRow = {
+  images?: string[] | null;
+  manufacturer?: string | null;
+  images_validated?: boolean | null;
+  acme_product_type?: string | null;
+};
+
+function filterRowsWithValidLeadImage<T extends ListingImageRow>(rows: T[]): T[] {
+  return rows.filter((row) => {
+    const p: Pick<Product, "manufacturer" | "images" | "images_validated" | "acme_product_type"> = {
+      manufacturer: row.manufacturer ?? null,
+      images: Array.isArray(row.images) ? row.images : [],
+      images_validated: row.images_validated ?? null,
+      acme_product_type: row.acme_product_type ?? null,
+    };
+    return !isHiddenFromProductListingByImage(p);
+  });
+}
+
+/** HTTPS lead image and acceptable for cards / PDP carousels. */
+export function isProductCardImageReady(
+  product: Pick<Product, "images" | "manufacturer" | "images_validated" | "acme_product_type">
+): boolean {
+  if (isHiddenFromProductListingByImage(product)) return false;
   const u = product.images?.[0];
-  if (typeof u !== "string" || !u.startsWith("https://")) return false;
-  return !isHiddenAcmePlaceholderProduct(product);
-}
-
-function hasValidLeadImage(images: string[] | null | undefined): boolean {
-  if (!Array.isArray(images) || images.length === 0) return false;
-  const leadImageUrl = images[0];
-  if (typeof leadImageUrl !== "string" || leadImageUrl.length === 0) return false;
-  const urlLower = leadImageUrl.toLowerCase();
-  return !ACME_PLACEHOLDER_IMAGE_MARKERS.some((m) => urlLower.includes(m));
-}
-
-function filterRowsWithValidLeadImage<T extends { images?: string[] | null }>(rows: T[]): T[] {
-  return rows.filter((row) => hasValidLeadImage(row.images));
+  return typeof u === "string" && u.startsWith("https://");
 }
 
 export function applyAcmePlaceholderImageFilter(query: any): any {
@@ -230,7 +284,7 @@ export async function getProducts(category?: string): Promise<Product[]> {
 
   const mapped = (data ?? [])
     .map(mapRowToProduct)
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p));
+    .filter((p) => !isHiddenFromProductListingByImage(p));
   return attachZinatexFromPrices(mapped);
 }
 
@@ -258,7 +312,7 @@ export async function getProductsInCategory(
   }
   const mapped = (data ?? [])
     .map(mapRowToProduct)
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p));
+    .filter((p) => !isHiddenFromProductListingByImage(p));
   return attachZinatexFromPrices(mapped);
 }
 
@@ -268,7 +322,7 @@ export async function getProductCountByCategory(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("images")
+    .select("images, manufacturer, images_validated, acme_product_type")
     .eq("category", category);
 
   query = applyAcmePlaceholderImageFilter(query);
@@ -281,14 +335,21 @@ export async function getProductCountByCategory(
     console.error("getProductCountByCategory error:", error);
     return 0;
   }
-  return filterRowsWithValidLeadImage((data ?? []) as { images?: string[] | null }[]).length;
+  return filterRowsWithValidLeadImage(
+    (data ?? []) as {
+      images?: string[] | null;
+      manufacturer?: string | null;
+      images_validated?: boolean | null;
+      acme_product_type?: string | null;
+    }[]
+  ).length;
 }
 
 export async function getTotalProductCount(): Promise<number> {
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("images");
+    .select("images, manufacturer, images_validated, acme_product_type");
 
   query = applyAcmePlaceholderImageFilter(query);
   query = applyZinatexListingVisibilityFilter(query);
@@ -532,7 +593,7 @@ export async function getFeaturedProducts(): Promise<Product[]> {
       products.push(
         ...filteredRows
           .map(mapRowToProduct)
-          .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+          .filter((p) => !isHiddenFromProductListingByImage(p))
           .filter((p) => !isHiddenAcmeComponentProduct(p))
       );
     }
@@ -568,7 +629,7 @@ export async function searchProducts(query: string): Promise<Product[]> {
     );
     const mapped = filteredRows
       .map(mapRowToProduct)
-      .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+      .filter((p) => !isHiddenFromProductListingByImage(p))
       .filter((p) => !isHiddenAcmeComponentProduct(p));
     return attachZinatexFromPrices(mapped);
   }
@@ -594,7 +655,7 @@ export async function searchProducts(query: string): Promise<Product[]> {
 
   const mapped = (data ?? [])
     .map(mapRowToProduct)
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenFromProductListingByImage(p))
     .filter((p) => !isHiddenAcmeComponentProduct(p));
   return attachZinatexFromPrices(mapped);
 }
@@ -672,7 +733,7 @@ export async function getCategoryImages(): Promise<CategoryImage[]> {
   ): Promise<string | null> {
     let query = supabase
       .from("products")
-      .select("images")
+      .select("images, manufacturer, images_validated, acme_product_type")
       .eq("in_stock", true)
       .not("images", "is", null)
       .not("images", "eq", "{}")
@@ -700,17 +761,25 @@ export async function getCategoryImages(): Promise<CategoryImage[]> {
       return null;
     }
 
-    // Find first product whose lead image is a valid https:// URL
+    // Find first product whose lead image is usable for next/image (https or NFD proxy path).
     for (const row of data ?? []) {
       const images = row.images as string[] | null;
       if (!Array.isArray(images) || images.length === 0) continue;
 
-      // Hide placeholder/coming-soon lead images.
-      if (isHiddenAcmePlaceholderProduct({ images })) continue;
-
-      if (images[0].startsWith("https://")) {
-        return images[0];
+      if (
+        isHiddenFromProductListingByImage({
+          manufacturer: (row.manufacturer as string | null) ?? null,
+          images,
+          images_validated: (row.images_validated as boolean | null) ?? null,
+          acme_product_type: (row.acme_product_type as string | null) ?? null,
+        })
+      ) {
+        continue;
       }
+
+      const mfr = row.manufacturer as string | null | undefined;
+      const src = productLeadImageSrc(mfr, images[0]);
+      if (src) return src;
     }
 
     return null;
@@ -719,6 +788,13 @@ export async function getCategoryImages(): Promise<CategoryImage[]> {
   const imagesBySlug = await Promise.all(
     categorySlugs.map(async (slug) => {
       if (slug === "bedroom") {
+        const preferred = await getLeadImageForCategory(slug, { excludeManufacturer: "ACME" });
+        if (preferred) return { slug, image: preferred };
+        const fallback = await getLeadImageForCategory(slug);
+        return { slug, image: fallback };
+      }
+
+      if (slug === "sofa") {
         const preferred = await getLeadImageForCategory(slug, { excludeManufacturer: "ACME" });
         if (preferred) return { slug, image: preferred };
         const fallback = await getLeadImageForCategory(slug);
@@ -762,7 +838,7 @@ export async function getSaleProducts(limit = 8): Promise<Product[]> {
     .map(mapRowToProduct)
     .filter(
       (p) =>
-        !isHiddenAcmePlaceholderProduct(p) &&
+        !isHiddenFromProductListingByImage(p) &&
         !isHiddenAcmeComponentProduct(p) &&
         p.sale_price != null &&
         p.sale_price < p.price
@@ -830,7 +906,7 @@ export async function getProductsByManufacturer(
   const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { images?: string[] | null }[]);
   const mapped = filteredRows
     .map(mapRowToProduct)
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenFromProductListingByImage(p))
     .filter((p) => !isHiddenAcmeComponentProduct(p));
   const products = await attachVariantFromPrices(mapped);
   return {
@@ -845,7 +921,7 @@ export async function getManufacturerCategories(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("category, images")
+    .select("category, images, manufacturer, images_validated, acme_product_type")
     .eq("manufacturer", manufacturerName);
 
   query = applyAcmePlaceholderImageFilter(query);
@@ -890,7 +966,7 @@ export async function getInitialCollectionProducts(
   const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { images?: string[] | null }[]);
   const mapped = filteredRows
     .map(mapRowToProduct)
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenFromProductListingByImage(p))
     .filter((p) => !isHiddenAcmeComponentProduct(p));
   const products = await attachVariantFromPrices(mapped);
   return {
@@ -917,7 +993,7 @@ export async function getCategoryManufacturerCounts(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("manufacturer, images")
+    .select("manufacturer, images, images_validated, acme_product_type")
     .not("manufacturer", "is", null);
 
   if (category !== "all") {
@@ -948,7 +1024,7 @@ export async function getCategoryCollections(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("collection, images")
+    .select("collection, images, manufacturer, images_validated, acme_product_type")
     .not("collection", "is", null);
 
   if (category !== "all") {
@@ -972,7 +1048,7 @@ export async function getCategoryColors(category: string): Promise<string[]> {
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("color, images")
+    .select("color, images, manufacturer, images_validated, acme_product_type")
     .not("color", "is", null);
 
   if (category !== "all") {
@@ -1013,7 +1089,7 @@ export async function getCategorySizes(category: string): Promise<string[]> {
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("dimensions, images")
+    .select("dimensions, images, manufacturer, images_validated, acme_product_type")
     .not("dimensions", "is", null);
 
   if (category !== "all") {
@@ -1043,7 +1119,7 @@ export async function getCategorySubcategories(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("subcategory, images")
+    .select("subcategory, images, manufacturer, images_validated, acme_product_type")
     .not("subcategory", "is", null);
 
   if (category !== "all") {
@@ -1073,7 +1149,7 @@ export async function getMergedBedroomSubcategories(): Promise<SubcategoryCount[
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("subcategory, images")
+    .select("subcategory, images, manufacturer, images_validated, acme_product_type")
     .in("category", ["bed", "bedroom-furniture"])
     .not("subcategory", "is", null);
 
@@ -1104,7 +1180,7 @@ export async function getManufacturerSubcategories(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("subcategory, images")
+    .select("subcategory, images, manufacturer, images_validated, acme_product_type")
     .eq("manufacturer", manufacturerName)
     .not("subcategory", "is", null);
 
@@ -1133,7 +1209,7 @@ export async function getManufacturerCollections(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("collection, images")
+    .select("collection, images, manufacturer, images_validated, acme_product_type")
     .eq("manufacturer", manufacturerName)
     .not("collection", "is", null);
 
@@ -1157,7 +1233,7 @@ export async function getManufacturerColors(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("color, images")
+    .select("color, images, manufacturer, images_validated, acme_product_type")
     .eq("manufacturer", manufacturerName)
     .not("color", "is", null);
 
@@ -1181,7 +1257,7 @@ export async function getManufacturerSizes(
   const supabase = createAdminClient();
   let query = supabase
     .from("products")
-    .select("dimensions, images")
+    .select("dimensions, images, manufacturer, images_validated, acme_product_type")
     .eq("manufacturer", manufacturerName)
     .not("dimensions", "is", null);
 
@@ -1301,7 +1377,7 @@ export async function getFilteredProducts(
   const filteredRows = filterRowsWithValidLeadImage((data ?? []) as { images?: string[] | null }[]);
   let products = filteredRows
     .map(mapRowToProduct)
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenFromProductListingByImage(p))
     .filter((p) => !isHiddenAcmeComponentProduct(p));
   if (params.sizes && params.sizes.length > 0) {
     const sizeSet = new Set(params.sizes);
@@ -1353,7 +1429,7 @@ export async function getRugsSpotlight(): Promise<SpotlightProduct[]> {
   const rows = (data ?? []) as Array<Record<string, unknown> & { images?: string[] | null }>;
   const candidates = filterRowsWithValidLeadImage(rows)
     .map(mapRowToProduct)
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenFromProductListingByImage(p))
     .filter((p) => !isHiddenAcmeComponentProduct(p));
   const enriched = await attachZinatexFromPrices(candidates);
   return enriched.slice(0, 4).map((p) => ({

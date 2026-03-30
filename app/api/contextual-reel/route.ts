@@ -5,6 +5,7 @@ import {
   applyAcmeComponentListingFilter,
   attachZinatexFromPrices,
   isHiddenAcmeComponentProduct,
+  isHiddenFromProductListingByImage,
   mapRowToProduct,
 } from "@/lib/supabase/products";
 
@@ -80,11 +81,7 @@ function passesBaseFilters(row: ProductRow): boolean {
   ) {
     return false;
   }
-  const images = row.images as string[] | null | undefined;
-  if (!Array.isArray(images) || images.length === 0) return false;
-  const validated = row.images_validated;
-  if (validated === false) return false;
-  return true;
+  return !isHiddenFromProductListingByImage(mapRowToProduct(row));
 }
 
 function applyPhaseFilter(
@@ -228,7 +225,8 @@ export async function GET(request: NextRequest) {
       pinQuery = applyAcmeComponentListingFilter(pinQuery);
       const { data: pinData } = await pinQuery;
       if (pinData) {
-        pinRow = pinData as ProductRow;
+        const pr = pinData as ProductRow;
+        if (passesBaseFilters(pr)) pinRow = pr;
       }
     }
 

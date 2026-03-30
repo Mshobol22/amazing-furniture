@@ -7,7 +7,7 @@ import {
   applyAcmeComponentListingFilter,
   applyAcmePlaceholderImageFilter,
   attachZinatexFromPrices,
-  isHiddenAcmePlaceholderProduct,
+  isHiddenFromProductListingByImage,
   isHiddenAcmeComponentProduct,
 } from "@/lib/supabase/products";
 
@@ -182,9 +182,8 @@ export async function GET(
   );
 
   // Ensure ACME placeholder products are never returned to the UI.
-  products = products.filter((p) =>
-    !isHiddenAcmePlaceholderProduct({ images: p.images }) &&
-    !isHiddenAcmeComponentProduct(p)
+  products = products.filter(
+    (p) => !isHiddenFromProductListingByImage(p) && !isHiddenAcmeComponentProduct(p)
   );
 
   // Rug size filter — applied post-fetch (dimensions is JSONB)

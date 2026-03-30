@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { applyZinatexListingVisibilityFilter } from "@/lib/zinatex-listing-filter";
-import { applyAcmeComponentListingFilter } from "@/lib/supabase/products";
+import {
+  applyAcmeComponentListingFilter,
+  isHiddenFromProductListingByImage,
+} from "@/lib/supabase/products";
 
 export interface ProductFilters {
   manufacturer?: string[];
@@ -153,9 +156,7 @@ export function computeFacetCounts(
 
 // ── buildFilterMeta ────────────────────────────────────────────────────────
 // Strips images and normalises raw DB rows into FilterMetaRow[], removing
-// ACME placeholder products. Call server-side before passing to sidebar.
-
-const ACME_MARKERS = ["coming-soon", "placeholder"];
+// products without a listable hero image (includes ACME bad/broken rules).
 
 export function buildFilterMeta(
   rawRows: any[] // raw Supabase rows before mapping
@@ -169,10 +170,12 @@ export function buildFilterMeta(
       ) {
         return false;
       }
-      const imgs = row.images as string[] | null;
-      const lead = imgs?.[0];
-      if (!lead || typeof lead !== "string") return false;
-      return !ACME_MARKERS.some((m) => lead.toLowerCase().includes(m));
+      return !isHiddenFromProductListingByImage({
+        manufacturer: (row.manufacturer as string | null) ?? null,
+        images: Array.isArray(row.images) ? (row.images as string[]) : [],
+        images_validated: (row.images_validated as boolean | null) ?? null,
+        acme_product_type: (row.acme_product_type as string | null) ?? null,
+      });
     })
     .map((row) => ({
       manufacturer: (row.manufacturer as string | null) ?? null,

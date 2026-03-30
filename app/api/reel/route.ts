@@ -4,6 +4,7 @@ import {
   applyAcmeComponentListingFilter,
   applyZinatexListingVisibilityFilter,
   attachZinatexFromPrices,
+  isHiddenFromProductListingByImage,
   mapRowToProduct,
 } from "@/lib/supabase/products";
 
@@ -91,12 +92,12 @@ export async function GET(request: NextRequest) {
       throw relatedError;
     }
 
-    const collectionMapped = (collectionData ?? []).map((row) =>
-      mapRowToProduct(row as Record<string, unknown>)
-    );
-    const relatedMapped = (relatedData ?? []).map((row) =>
-      mapRowToProduct(row as Record<string, unknown>)
-    );
+    const collectionMapped = (collectionData ?? [])
+      .map((row) => mapRowToProduct(row as Record<string, unknown>))
+      .filter((p) => !isHiddenFromProductListingByImage(p));
+    const relatedMapped = (relatedData ?? [])
+      .map((row) => mapRowToProduct(row as Record<string, unknown>))
+      .filter((p) => !isHiddenFromProductListingByImage(p));
     const [collectionPieces, relatedProducts] = await Promise.all([
       attachZinatexFromPrices(collectionMapped),
       attachZinatexFromPrices(relatedMapped),

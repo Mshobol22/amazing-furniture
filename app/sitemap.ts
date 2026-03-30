@@ -1,11 +1,14 @@
 import { MetadataRoute } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isHiddenFromProductListingByImage } from '@/lib/supabase/products'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createAdminClient()
   const { data: products } = await supabase
     .from('products')
-    .select('slug, created_at')
+    .select(
+      'slug, created_at, manufacturer, images, images_validated, acme_product_type'
+    )
     .eq('in_stock', true)
 
   const baseUrl = 'https://amazinghomefurniturestore.com'
@@ -28,12 +31,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/returns`, changeFrequency: 'monthly', priority: 0.4 },
   ] as MetadataRoute.Sitemap
 
-  const productPages: MetadataRoute.Sitemap = (products ?? []).map((p: { slug: string; created_at: string }) => ({
-    url: `${baseUrl}/products/${p.slug}`,
-    lastModified: new Date(p.created_at),
-    changeFrequency: 'weekly',
-    priority: 0.7,
-  }))
+  const productPages: MetadataRoute.Sitemap = (products ?? [])
+    .filter((p: {
+      slug: string
+      created_at: string
+      manufacturer?: string | null
+      images?: string[] | null
+      images_validated?: boolean | null
+      acme_product_type?: string | null
+    }) =>
+      !isHiddenFromProductListingByImage({
+        manufacturer: p.manufacturer ?? null,
+        images: Array.isArray(p.images) ? p.images : [],
+        images_validated: p.images_validated ?? null,
+        acme_product_type: p.acme_product_type ?? null,
+      })
+    )
+    .map((p: { slug: string; created_at: string }) => ({
+      url: `${baseUrl}/products/${p.slug}`,
+      lastModified: new Date(p.created_at),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    }))
 
   return [...staticPages, ...productPages]
 }

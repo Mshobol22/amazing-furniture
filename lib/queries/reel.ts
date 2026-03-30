@@ -4,7 +4,11 @@
 // request context (no cookie store available).
 import { createClient } from "@supabase/supabase-js";
 import type { Product } from "@/types";
-import { applyAcmeComponentListingFilter } from "@/lib/supabase/products";
+import {
+  applyAcmeComponentListingFilter,
+  isHiddenFromProductListingByImage,
+  mapRowToProduct,
+} from "@/lib/supabase/products";
 
 export interface ReelQueryResult {
   collectionPieces: Product[];
@@ -65,8 +69,13 @@ export async function getReelProducts(
     console.error("getReelProducts related error:", relatedError);
   }
 
+  const mapListed = (rows: unknown[] | null): Product[] =>
+    (rows ?? [])
+      .map((r) => mapRowToProduct(r as Record<string, unknown>))
+      .filter((p) => !isHiddenFromProductListingByImage(p));
+
   return {
-    collectionPieces: (collectionPieces as Product[]) ?? [],
-    relatedProducts: (relatedProducts as Product[]) ?? [],
+    collectionPieces: mapListed(collectionPieces as unknown[] | null),
+    relatedProducts: mapListed(relatedProducts as unknown[] | null),
   };
 }

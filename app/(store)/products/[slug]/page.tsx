@@ -12,6 +12,7 @@ import {
   getAcmeKitSiblingComponents,
   findZinatexCanonicalParentForStyleKey,
   getProducts,
+  isHiddenAcmeBadListingImageProduct,
   isProductCardImageReady,
   isZinatexNumericDesignStyleKey,
   mapRowToProduct,
@@ -118,6 +119,10 @@ export async function generateMetadata({
   }
   const product = resolved.product;
 
+  if (isHiddenAcmeBadListingImageProduct(product)) {
+    return { title: "Product Not Found | Amazing Home Furniture" };
+  }
+
   const enrichedTitle = isNationwideFDProduct(product)
     ? getNationwideFDProductHeading(product)
     : isUnitedFurnitureProduct(product)
@@ -156,6 +161,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
     redirect(`/products/${resolved.redirectToSlug}`);
   }
   const product = resolved.product;
+
+  if (isHiddenAcmeBadListingImageProduct(product)) {
+    notFound();
+  }
 
   // Fetch variants for products that support them (e.g. Zinatex rugs)
   let variants: ProductVariant[] = [];

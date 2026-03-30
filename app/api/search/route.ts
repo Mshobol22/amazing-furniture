@@ -5,7 +5,7 @@ import {
   applyAcmePlaceholderImageFilter,
   applyZinatexListingVisibilityFilter,
   attachZinatexFromPrices,
-  isHiddenAcmePlaceholderProduct,
+  isHiddenFromProductListingByImage,
   isHiddenAcmeComponentProduct,
   mapRowToProduct,
 } from "@/lib/supabase/products";
@@ -105,7 +105,7 @@ async function hydrateProductsByIdOrder(
     .map((id) => byId.get(id))
     .filter((row): row is Record<string, unknown> => row != null)
     .map(mapRowToProduct)
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenFromProductListingByImage(p))
     .filter((p) => !isHiddenAcmeComponentProduct(p));
   return attachZinatexFromPrices(ordered);
 }
@@ -142,7 +142,9 @@ export async function GET(request: NextRequest) {
     if (tsQuery) {
       let ftQuery = supabase
         .from("products")
-        .select("id, name, slug, price, sale_price, images, category, in_stock")
+        .select(
+          "id, name, slug, price, sale_price, images, category, in_stock, manufacturer, images_validated, acme_product_type"
+        )
         .textSearch("search_vector", tsQuery, {
           type: "plain",
           config: "english",
@@ -161,7 +163,9 @@ export async function GET(request: NextRequest) {
     if (detectedCategory && ftResults.length < 5) {
       let categoryQuery = supabase
         .from("products")
-        .select("id, name, slug, price, sale_price, images, category, in_stock")
+        .select(
+          "id, name, slug, price, sale_price, images, category, in_stock, manufacturer, images_validated, acme_product_type"
+        )
         .eq("category", detectedCategory)
         .eq("in_stock", true)
         .limit(limit);
@@ -178,7 +182,9 @@ export async function GET(request: NextRequest) {
     if (ftResults.length < 3) {
       let fuzzyQuery = supabase
         .from("products")
-        .select("id, name, slug, price, sale_price, images, category, in_stock")
+        .select(
+          "id, name, slug, price, sale_price, images, category, in_stock, manufacturer, images_validated, acme_product_type"
+        )
         .ilike("name", `%${query}%`)
         .eq("in_stock", true)
         .limit(limit);
@@ -202,10 +208,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const visible = merged.filter((p) =>
-      !isHiddenAcmePlaceholderProduct({
-        images: (p.images as string[]) ?? [],
-      })
+    const visible = merged.filter(
+      (p) =>
+        !isHiddenFromProductListingByImage({
+          manufacturer: (p.manufacturer as string | null) ?? null,
+          images: (p.images as string[]) ?? [],
+          images_validated: (p.images_validated as boolean | null) ?? null,
+          acme_product_type: (p.acme_product_type as string | null) ?? null,
+        })
     );
 
     const idOrder = visible.slice(0, limit).map((p) => p.id as string);
@@ -216,7 +226,9 @@ export async function GET(request: NextRequest) {
     console.error("Search error:", err);
     let fallbackQuery = supabase
       .from("products")
-      .select("id, name, slug, price, sale_price, images, category")
+      .select(
+        "id, name, slug, price, sale_price, images, category, manufacturer, images_validated, acme_product_type"
+      )
       .ilike("name", `%${query}%`)
       .eq("in_stock", true)
       .limit(limit);
@@ -228,8 +240,11 @@ export async function GET(request: NextRequest) {
     const { data } = await fallbackQuery;
 
     const visible = (data ?? []).filter((p) =>
-      !isHiddenAcmePlaceholderProduct({
+      !isHiddenFromProductListingByImage({
+        manufacturer: (p.manufacturer as string | null) ?? null,
         images: (p.images as string[]) ?? [],
+        images_validated: (p.images_validated as boolean | null) ?? null,
+        acme_product_type: (p.acme_product_type as string | null) ?? null,
       })
     );
 

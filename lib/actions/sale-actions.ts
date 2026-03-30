@@ -4,10 +4,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient, isAdmin } from '@/lib/supabase/server'
 import type { SaleEvent, SaleEventWithProducts } from '@/lib/types/sale'
 import {
+  applyAcmeComponentListingFilter,
   applyAcmePlaceholderImageFilter,
   applyZinatexListingVisibilityFilter,
   attachVariantFromPrices,
-  isHiddenAcmePlaceholderProduct,
+  isHiddenFromProductListingByImage,
   mapRowToProduct,
 } from '@/lib/supabase/products'
 import type { Product } from '@/types'
@@ -143,13 +144,14 @@ export async function getSaleProducts(params: {
   query = query.range(from, to).order('created_at', { ascending: false })
   query = applyAcmePlaceholderImageFilter(query)
   query = applyZinatexListingVisibilityFilter(query)
+  query = applyAcmeComponentListingFilter(query)
 
   const { data, error, count } = await query
   if (error || !data) return { products: [], total: 0 }
 
   const mapped = (data as Record<string, unknown>[])
     .map((row) => mapRowToProduct(row))
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenFromProductListingByImage(p))
   const products = await attachVariantFromPrices(mapped)
 
   return { products, total: count ?? 0 }

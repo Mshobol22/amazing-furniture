@@ -4,6 +4,7 @@ import {
   applyAcmeComponentListingFilter,
   applyZinatexListingVisibilityFilter,
   attachZinatexFromPrices,
+  isHiddenFromProductListingByImage,
   mapRowToProduct,
 } from "@/lib/supabase/products";
 
@@ -110,8 +111,11 @@ export async function GET(request: NextRequest) {
     const { data, error } = await baseQuery;
     if (error) throw error;
 
-    const matchingRows =
-      (data ?? []).filter((row) => Array.isArray(row.images) && row.images.length > 0);
+    const matchingRows = (data ?? []).filter((row) => {
+      if (!Array.isArray(row.images) || row.images.length === 0) return false;
+      const p = mapRowToProduct(row as Record<string, unknown>);
+      return !isHiddenFromProductListingByImage(p);
+    });
 
     const orderedRows = [...matchingRows];
     if (seed == null) {

@@ -8,7 +8,7 @@ import {
   applyAcmePlaceholderImageFilter,
   attachZinatexFromPrices,
   mapRowToProduct,
-  isHiddenAcmePlaceholderProduct,
+  isHiddenFromProductListingByImage,
   isHiddenAcmeComponentProduct,
   getCategorySubcategories,
   getMergedBedroomSubcategories,
@@ -231,7 +231,7 @@ export default async function CollectionPage({
   const { data: rawProducts, count } = await productQuery;
   const mapped = (rawProducts ?? [])
     .map(mapRowToProduct)
-    .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+    .filter((p) => !isHiddenFromProductListingByImage(p))
     .filter((p) => !isHiddenAcmeComponentProduct(p));
   const initialProducts = await attachZinatexFromPrices(mapped);
   const initialTotal = count ?? 0;

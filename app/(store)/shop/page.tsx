@@ -8,7 +8,7 @@ import {
   applyZinatexListingVisibilityFilter,
   attachZinatexFromPrices,
   mapRowToProduct,
-  isHiddenAcmePlaceholderProduct,
+  isHiddenFromProductListingByImage,
   isHiddenAcmeComponentProduct,
 } from "@/lib/supabase/products";
 import {
@@ -54,7 +54,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   let metaQuery = supabase
     .from("products")
     .select(
-      "manufacturer, category, color, material, collection, price, in_stock, on_sale, images, has_variants"
+      "manufacturer, category, color, material, collection, price, in_stock, on_sale, images, has_variants, images_validated, acme_product_type"
     )
     .not("images", "is", null)
     .not("images", "eq", "{}");
@@ -84,7 +84,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const products = await attachZinatexFromPrices(
     (rawProducts ?? [])
       .map(mapRowToProduct)
-      .filter((p) => !isHiddenAcmePlaceholderProduct(p))
+      .filter((p) => !isHiddenFromProductListingByImage(p))
       .filter((p) => !isHiddenAcmeComponentProduct(p))
   );
 
