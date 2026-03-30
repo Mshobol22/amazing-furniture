@@ -7,6 +7,7 @@ import {
   isHiddenAcmeComponentProduct,
   mapRowToProduct,
 } from "@/lib/supabase/products";
+import { applyZinatexListingVisibilityFilter } from "@/lib/zinatex-listing-filter";
 
 /** Min variant prices need service role; hydrate after anon `products` query. */
 async function enrichProductsWithVariantPrices(
@@ -249,6 +250,7 @@ export async function fetchBrandProducts(
 
   query = applyAcmePlaceholderImageFilter(query);
   query = applyAcmeComponentListingFilter(query);
+  query = applyZinatexListingVisibilityFilter(query);
 
   if (params.category) query = query.eq("category", params.category);
   if (params.excludeCategory) query = query.neq("category", params.excludeCategory);
@@ -321,6 +323,7 @@ export async function fetchAllProducts(
 
   query = applyAcmePlaceholderImageFilter(query);
   query = applyAcmeComponentListingFilter(query);
+  query = applyZinatexListingVisibilityFilter(query);
 
   if (params.manufacturer) {
     query = query.eq("manufacturer", params.manufacturer);

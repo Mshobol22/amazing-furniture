@@ -6,6 +6,7 @@ import { applyStorefrontCollectionCategoryFilter } from "@/lib/collections/colle
 import {
   applyAcmeComponentListingFilter,
   applyAcmePlaceholderImageFilter,
+  attachZinatexFromPrices,
   mapRowToProduct,
   isHiddenAcmePlaceholderProduct,
   isHiddenAcmeComponentProduct,
@@ -228,10 +229,11 @@ export default async function CollectionPage({
   productQuery = productQuery.range(offset, offset + LIMIT - 1);
 
   const { data: rawProducts, count } = await productQuery;
-  const initialProducts = (rawProducts ?? [])
+  const mapped = (rawProducts ?? [])
     .map(mapRowToProduct)
     .filter((p) => !isHiddenAcmePlaceholderProduct(p))
     .filter((p) => !isHiddenAcmeComponentProduct(p));
+  const initialProducts = await attachZinatexFromPrices(mapped);
   const initialTotal = count ?? 0;
 
   return (
