@@ -23,12 +23,12 @@ export async function generateMetadata({
       manufacturer.description ?? ""
     } Free shipping on orders over $299.`.trim(),
     alternates: {
-      canonical: `https://amazinghomefurniturestore.com/brands/${manufacturer.slug}`,
+      canonical: `https://www.amazinghomefurniturestore.com/brands/${manufacturer.slug}`,
     },
     openGraph: {
       title: `${manufacturer.name} Furniture | Amazing Home Furniture`,
       description: `Shop ${manufacturer.name} at Amazing Home Furniture. Free shipping on orders over $299.`,
-      url: `https://amazinghomefurniturestore.com/brands/${manufacturer.slug}`,
+      url: `https://www.amazinghomefurniturestore.com/brands/${manufacturer.slug}`,
       type: "website",
     },
   };

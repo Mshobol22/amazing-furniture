@@ -1,11 +1,22 @@
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import BrandPageTemplate from '@/components/brands/BrandPageTemplate'
 import { getManufacturerBySlug, getProductsByManufacturer } from '@/lib/supabase/products'
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Nationwide FD Furniture | Amazing Home Furniture Store',
   description: 'Shop the full Nationwide FD collection — bedroom sets, living room furniture, dining, and more.',
+  alternates: {
+    canonical: 'https://www.amazinghomefurniturestore.com/brands/nationwide-fd',
+  },
+  openGraph: {
+    title: 'Nationwide FD Furniture | Amazing Home Furniture Store',
+    description:
+      'Shop the full Nationwide FD collection — bedroom sets, living room furniture, dining, and more.',
+    url: 'https://www.amazinghomefurniturestore.com/brands/nationwide-fd',
+    type: 'website',
+  },
 }
 
 export default async function NationwideFDPage() {
