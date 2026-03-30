@@ -167,7 +167,11 @@ const useCartStoreBase = create<CartStore>()(
           };
         }),
 
-      clearCart: () => set({ items: [] }),
+      clearCart: () =>
+        set(() => {
+          if (typeof window !== "undefined") clearGuestCart();
+          return { items: [] };
+        }),
 
       setItems: (items: CartItem[]) => set({ items }),
 

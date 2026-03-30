@@ -24,6 +24,7 @@ export default function CartDrawer() {
   const items = useCartStore((state) => state.items);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
+  const clearCart = useCartStore((state) => state.clearCart);
 
   const itemCount = useCartItemCount();
   const subtotal = useCartTotal();
@@ -40,8 +41,8 @@ export default function CartDrawer() {
         side="right"
         className="flex w-[420px] max-w-[100vw] flex-col border-l bg-cream p-0"
       >
-        <SheetHeader className="flex flex-row items-center justify-between border-b px-6 py-4">
-          <div className="flex items-center gap-2">
+        <SheetHeader className="flex flex-row items-center justify-between gap-3 border-b px-6 py-4">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             <SheetTitle className="font-sans text-xl font-semibold text-charcoal">
               Your Cart
             </SheetTitle>
@@ -51,6 +52,17 @@ export default function CartDrawer() {
               </Badge>
             )}
           </div>
+          {items.length > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="shrink-0 text-warm-gray hover:text-charcoal"
+              onClick={() => clearCart()}
+            >
+              Clear cart
+            </Button>
+          )}
         </SheetHeader>
 
         <div className="flex flex-1 flex-col overflow-hidden">

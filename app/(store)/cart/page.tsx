@@ -7,7 +7,7 @@ import {
   useCartStore,
   useCartItemCount,
   useCartTotal,
-  getEffectivePrice,
+  getCartItemPrice,
 } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/format-price";
@@ -22,6 +22,7 @@ export default function CartPage() {
   const items = useCartStore((state) => state.items);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
+  const clearCart = useCartStore((state) => state.clearCart);
 
   const itemCount = useCartItemCount();
   const subtotal = useCartTotal();
@@ -48,7 +49,7 @@ export default function CartPage() {
   return (
     <div className="min-h-screen bg-[#FAF8F5] px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className=" text-3xl font-semibold text-charcoal">
               Shopping Cart
@@ -57,26 +58,43 @@ export default function CartPage() {
               {itemCount} {itemCount === 1 ? "item" : "items"}
             </p>
           </div>
-          <Link
-            href="/collections/all"
-            className="text-walnut hover:underline"
-          >
-            Continue Shopping
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="border-light-sand text-warm-gray hover:text-charcoal"
+              onClick={() => clearCart()}
+            >
+              Clear cart
+            </Button>
+            <Link
+              href="/collections/all"
+              className="text-walnut hover:underline"
+            >
+              Continue Shopping
+            </Link>
+          </div>
         </div>
 
         <div className="grid gap-12 lg:grid-cols-3">
           {/* Left column - cart items */}
           <div className="lg:col-span-2">
             <div className="space-y-6">
-              {items.map((item) => (
+              {items.map((item) => {
+                const rowKey = item.variant_id
+                  ? `${item.product.id}-${item.variant_id}`
+                  : item.product.id;
+                const displayImage =
+                  item.variant_image ?? item.product.images[0];
+                const unitPrice = getCartItemPrice(item);
+                return (
                 <div
-                  key={item.product.id}
+                  key={rowKey}
                   className="flex gap-6 rounded-lg border border-light-sand bg-cream p-6"
                 >
                   <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-gray-50 p-1">
                     <ProductImage
-                      src={item.product.images[0]}
+                      src={displayImage}
                       alt={item.product.name}
                       manufacturer={item.product.manufacturer}
                       fill
@@ -88,11 +106,18 @@ export default function CartPage() {
                     <p className=" text-lg font-medium text-charcoal line-clamp-2">
                       {item.product.name}
                     </p>
+                    {(item.variant_size || item.variant_color) && (
+                      <p className="text-sm text-gray-500">
+                        {item.variant_size}
+                        {item.variant_size && item.variant_color ? " / " : ""}
+                        {item.variant_color}
+                      </p>
+                    )}
                     <p className="text-sm text-warm-gray">
                       {categoryLabel(item.product.category)}
                     </p>
                     <p className="mt-1 text-warm-gray">
-                      {formatPrice(item.product.price)}
+                      {formatPrice(unitPrice)} each
                     </p>
                     <div className="mt-3 flex items-center gap-2">
                       <Button
@@ -102,7 +127,8 @@ export default function CartPage() {
                         onClick={() =>
                           updateQuantity(
                             item.product.id,
-                            Math.max(1, item.quantity - 1)
+                            Math.max(1, item.quantity - 1),
+                            item.variant_id
                           )
                         }
                       >
@@ -116,7 +142,8 @@ export default function CartPage() {
                         onClick={() =>
                           updateQuantity(
                             item.product.id,
-                            item.quantity + 1
+                            item.quantity + 1,
+                            item.variant_id
                           )
                         }
                       >
@@ -126,7 +153,9 @@ export default function CartPage() {
                         variant="ghost"
                         size="sm"
                         className="ml-4 text-warm-gray hover:text-charcoal"
-                        onClick={() => removeItem(item.product.id)}
+                        onClick={() =>
+                          removeItem(item.product.id, item.variant_id)
+                        }
                       >
                         <X className="mr-1 h-4 w-4" />
                         Remove
@@ -134,10 +163,11 @@ export default function CartPage() {
                     </div>
                   </div>
                   <p className="shrink-0 text-lg font-semibold text-charcoal">
-                    {formatPrice(getEffectivePrice(item.product) * item.quantity)}
+                    {formatPrice(unitPrice * item.quantity)}
                   </p>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

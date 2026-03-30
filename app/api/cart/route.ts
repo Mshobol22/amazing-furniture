@@ -73,3 +73,60 @@ export async function GET() {
     );
   }
 }
+
+/**
+ * Replace the signed-in user's server cart with the client payload (deduped, resolved, validated).
+ * Required so removes/qty changes persist across refresh; GET reloads this row on boot.
+ */
+export async function PUT(request: Request) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const validated = validateCartItems(body?.items);
+    if (!validated) {
+      return NextResponse.json({ error: "Invalid cart items" }, { status: 400 });
+    }
+
+    const deduped = dedupeCartLines(validated);
+    if (isAbusiveCartPayload(deduped)) {
+      return NextResponse.json({ error: "Cart too large" }, { status: 400 });
+    }
+
+    const admin = createAdminClient();
+    const { mergedItems, fullItems } = await resolveCartPayloadToStoredAndFull(
+      admin,
+      deduped
+    );
+
+    const { data: existingCart } = await admin
+      .from("carts")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingCart?.id) {
+      await admin.from("carts").update({ items: mergedItems }).eq("id", existingCart.id);
+    } else {
+      await admin.from("carts").insert({
+        user_id: user.id,
+        items: mergedItems,
+      });
+    }
+
+    return NextResponse.json({ items: fullItems });
+  } catch {
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

@@ -199,17 +199,33 @@ export default function CartMergeProvider({
       }
       authSubscription = subscription;
 
-      unsubscribeCart = useCartStore.subscribe((state) => {
+      unsubscribeCart = useCartStore.subscribe(() => {
         if (syncTimer.current) clearTimeout(syncTimer.current);
         syncTimer.current = setTimeout(() => {
-          void supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session?.user) return;
-            if (state.items.length === 0) return;
+          void supabase.auth.getSession().then(async ({ data: { session } }) => {
+            const items = useCartStore.getState().items;
+            const payload = cartItemsToPayload(items);
+
+            if (session?.user) {
+              void fetch("/api/cart", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ items: payload }),
+              });
+              return;
+            }
+
+            if (items.length === 0) {
+              const sid = readSessionId();
+              if (!sid) return;
+              void postGuestCart(sid, []);
+              return;
+            }
             const sid = getOrCreateSessionId();
             if (!sid) return;
-            void postGuestCart(sid, useCartStore.getState().items);
+            void postGuestCart(sid, items);
           });
-        }, 450);
+        }, 400);
       });
     })();
 
