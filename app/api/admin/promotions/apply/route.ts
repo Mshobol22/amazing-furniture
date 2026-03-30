@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, isAdmin } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   BEDROOM_MERGED_SLUG,
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user || user.app_metadata?.role !== "admin") {
+    if (!user || !isAdmin(user)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

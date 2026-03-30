@@ -12,6 +12,8 @@ interface CheckoutBody {
   items: CartItem[];
   shippingAddress: ShippingAddress;
   consent?: boolean;
+  customerEmail?: string;
+  discountCode?: string;
 }
 
 function getEffectivePrice(product: CartItem["product"]): number {
@@ -112,10 +114,74 @@ export async function POST(request: NextRequest) {
     );
     const shippingCost = subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
     const taxAmount = Math.round(subtotal * ILLINOIS_TAX_RATE * 100) / 100;
-    const total = subtotal + shippingCost + taxAmount;
-    const totalCents = Math.round(total * 100);
+    const normalizedCustomerEmail = (
+      body.customerEmail ||
+      body.shippingAddress.email ||
+      user.email ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
 
-    if (!isFinite(subtotal) || subtotal <= 0 || !isFinite(total) || totalCents <= 0) {
+    if (!normalizedCustomerEmail) {
+      return NextResponse.json(
+        { error: "Customer email is required" },
+        { status: 400 }
+      );
+    }
+
+    let discountAmount = 0;
+    let appliedDiscountCode: string | null = null;
+
+    if (body.discountCode && body.discountCode.trim()) {
+      const trimmedCode = body.discountCode.trim().toUpperCase();
+
+      const { data: discountRow, error: discountCodeError } = await supabaseAdmin
+        .from("discount_codes")
+        .select("code, discount_percent")
+        .eq("code", trimmedCode)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (discountCodeError || !discountRow) {
+        return NextResponse.json({ error: "Invalid discount code" }, { status: 400 });
+      }
+
+      const { data: existingRedemption, error: redemptionCheckError } = await supabaseAdmin
+        .from("discount_redemptions")
+        .select("id")
+        .eq("code", trimmedCode)
+        .eq("email", normalizedCustomerEmail)
+        .maybeSingle();
+
+      if (redemptionCheckError) {
+        return NextResponse.json(
+          { error: "Unable to validate discount code" },
+          { status: 500 }
+        );
+      }
+
+      if (existingRedemption) {
+        return NextResponse.json(
+          { error: "This discount code has already been used" },
+          { status: 400 }
+        );
+      }
+
+      discountAmount =
+        Math.round(subtotal * (discountRow.discount_percent / 100) * 100) / 100;
+      appliedDiscountCode = trimmedCode;
+    }
+
+    const finalTotal = Math.max(0.5, subtotal - discountAmount + shippingCost + taxAmount);
+    const totalCents = Math.round(finalTotal * 100);
+
+    if (
+      !isFinite(subtotal) ||
+      subtotal <= 0 ||
+      !isFinite(finalTotal) ||
+      totalCents <= 0
+    ) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
@@ -124,15 +190,17 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: user.id,
         customer_name: body.shippingAddress.name,
-        customer_email: body.shippingAddress.email || user.email,
+        customer_email: normalizedCustomerEmail,
         items: orderItems,
         subtotal,
         shipping: shippingCost,
         tax_amount: taxAmount,
         tax_rate: ILLINOIS_TAX_RATE,
-        total,
+        total: finalTotal,
         status: "pending",
         shipping_address: body.shippingAddress,
+        discount_code: appliedDiscountCode,
+        discount_amount: discountAmount,
       })
       .select("id")
       .single();

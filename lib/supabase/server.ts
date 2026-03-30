@@ -1,9 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { User } from "@supabase/supabase-js";
+import { isAdminUser } from "@/lib/auth/admin-access";
 
 export function isAdmin(user: User | null): boolean {
-  return user?.app_metadata?.role === "admin";
+  return isAdminUser(user);
 }
 
 export async function createClient() {

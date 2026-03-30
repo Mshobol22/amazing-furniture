@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,7 +14,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Lock, CreditCard } from "lucide-react";
+import { Check, Lock } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { useCartStore, useCartItemCount, useCartTotal, getEffectivePrice } from "@/store/cartStore";
 import { Button } from "@/components/ui/button";
@@ -44,9 +43,10 @@ const shippingSchema = z.object({
 });
 
 type ShippingFormData = z.infer<typeof shippingSchema>;
-
-const categoryLabel = (cat: string) =>
-  cat.charAt(0).toUpperCase() + cat.slice(1).replace("-", " ");
+type AppliedDiscount = {
+  code: string;
+  discountPercent: number;
+};
 
 const CARD_ELEMENT_OPTIONS = {
  style: {
@@ -71,13 +71,21 @@ function CheckoutForm() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [consented, setConsented] = useState(false);
+  const [promoExpanded, setPromoExpanded] = useState(false);
+  const [promoCodeInput, setPromoCodeInput] = useState("");
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
 
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
   const subtotal = useCartTotal();
   const shipping = subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
   const tax = Math.round(subtotal * ILLINOIS_TAX_RATE * 100) / 100;
-  const total = subtotal + shipping + tax;
+  const discountAmount = appliedDiscount
+    ? Math.round(subtotal * (appliedDiscount.discountPercent / 100) * 100) / 100
+    : 0;
+  const total = Math.max(0.5, subtotal - discountAmount + shipping + tax);
 
   const stripe = useStripe();
   const elements = useElements();
@@ -137,6 +145,8 @@ function CheckoutForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           consent: true,
+          customerEmail: shippingData.email,
+          discountCode: appliedDiscount?.code,
           items,
           shippingAddress: {
             name: shippingData.fullName,
@@ -172,6 +182,56 @@ function CheckoutForm() {
     } catch (err) {
       setPaymentError("An unexpected error occurred");
       setIsProcessing(false);
+    }
+  };
+
+  const applyPromoCode = async () => {
+    if (!shippingData?.email) {
+      setPromoError("Please complete shipping information first.");
+      return;
+    }
+
+    const normalizedCode = promoCodeInput.trim().toUpperCase();
+    if (!normalizedCode) {
+      setPromoError("Please enter a promo code.");
+      return;
+    }
+
+    setPromoLoading(true);
+    setPromoError(null);
+    try {
+      const response = await fetch("/api/validate-discount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: normalizedCode,
+          email: shippingData.email,
+        }),
+      });
+
+      const data = (await response.json()) as {
+        error?: string;
+        valid?: boolean;
+        code?: string;
+        discountPercent?: number;
+      };
+
+      if (!response.ok || !data.valid || !data.code || !data.discountPercent) {
+        setAppliedDiscount(null);
+        setPromoError(data.error ?? "Unable to apply promo code.");
+        return;
+      }
+
+      setAppliedDiscount({
+        code: data.code,
+        discountPercent: data.discountPercent,
+      });
+      setPromoCodeInput(data.code);
+    } catch {
+      setAppliedDiscount(null);
+      setPromoError("Unable to apply promo code.");
+    } finally {
+      setPromoLoading(false);
     }
   };
 
@@ -387,10 +447,69 @@ function CheckoutForm() {
                   ))}
                 </div>
                 <div className="mt-4 space-y-1 border-t pt-4 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setPromoExpanded((prev) => !prev)}
+                    className="text-left text-[#2D4A3E] underline underline-offset-2 hover:text-[#1E3329]"
+                  >
+                    Have a promo code?
+                  </button>
+                  {promoExpanded ? (
+                    <div className="mt-2 rounded-md border border-[#1C1C1C]/15 bg-white p-3">
+                      <div className="flex gap-2">
+                        <Input
+                          value={promoCodeInput}
+                          onChange={(e) => {
+                            setPromoCodeInput(e.target.value.toUpperCase());
+                            setPromoError(null);
+                          }}
+                          placeholder="Enter code (e.g. WELCOME10)"
+                          className="h-10"
+                        />
+                        <Button
+                          type="button"
+                          onClick={applyPromoCode}
+                          disabled={promoLoading}
+                          className="h-10 bg-[#2D4A3E] px-4 text-[#FAF8F5] hover:bg-[#1E3329]"
+                        >
+                          {promoLoading ? "Applying..." : "Apply"}
+                        </Button>
+                      </div>
+                      {appliedDiscount ? (
+                        <p className="mt-2 text-sm text-green-700">
+                          ✓ {appliedDiscount.code} applied — {appliedDiscount.discountPercent}% off!{" "}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAppliedDiscount(null);
+                              setPromoError(null);
+                              setPromoCodeInput("");
+                            }}
+                            className="ml-1 text-xs underline"
+                          >
+                            Remove
+                          </button>
+                        </p>
+                      ) : null}
+                      {!appliedDiscount && promoError ? (
+                        <p className="mt-2 text-sm text-red-600">{promoError}</p>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <div className="flex justify-between">
                     <span className="text-warm-gray">Subtotal</span>
                     <span>{formatPrice(subtotal)}</span>
                   </div>
+                  {appliedDiscount ? (
+                    <div className="flex justify-between">
+                      <span className="text-green-700">
+                        Discount ({appliedDiscount.code})
+                      </span>
+                      <span className="text-green-700">
+                        -${discountAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  ) : null}
                   <div className="flex justify-between">
                     <span className="text-warm-gray">Shipping</span>
                     <span>
@@ -509,6 +628,12 @@ function CheckoutForm() {
                   </div>
                 ))}
                 <div className="mt-2 space-y-1 border-t pt-2 text-sm">
+                  {appliedDiscount ? (
+                    <div className="flex justify-between text-green-700">
+                      <span>Discount ({appliedDiscount.code})</span>
+                      <span>-{formatPrice(discountAmount)}</span>
+                    </div>
+                  ) : null}
                   <div className="flex justify-between text-warm-gray">
                     <span>Tax (10.25%)</span>
                     <span>${tax.toFixed(2)}</span>

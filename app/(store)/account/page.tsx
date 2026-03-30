@@ -3,6 +3,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isAdminUser } from "@/lib/auth/admin-access";
 import { Button } from "@/components/ui/button";
 import { Package, Heart } from "lucide-react";
 
@@ -48,7 +49,7 @@ export default async function AccountDashboardPage() {
 
   const ordersTotal = orderCount ?? 0;
   const wishesTotal = wishlistCount ?? 0;
-  const isAdmin = user.app_metadata?.role === "admin";
+  const isAdmin = isAdminUser(user);
 
   return (
     <div className="space-y-8">

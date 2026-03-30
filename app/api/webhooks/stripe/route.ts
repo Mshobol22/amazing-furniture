@@ -61,6 +61,37 @@ export async function POST(request: NextRequest) {
 
       const order = data[0];
 
+      if (order.discount_code && order.customer_email) {
+        try {
+          await supabaseAdmin.from("discount_redemptions").insert(
+            {
+              code: order.discount_code,
+              email: String(order.customer_email).trim().toLowerCase(),
+              order_id: order.id,
+            },
+            { onConflict: "code,email", ignoreDuplicates: true }
+          );
+
+          const { data: discountCodeRow } = await supabaseAdmin
+            .from("discount_codes")
+            .select("uses_count")
+            .eq("code", order.discount_code)
+            .maybeSingle();
+
+          const nextUsesCount = Number(discountCodeRow?.uses_count ?? 0) + 1;
+          await supabaseAdmin
+            .from("discount_codes")
+            .update({ uses_count: nextUsesCount })
+            .eq("code", order.discount_code);
+        } catch (discountErr) {
+          console.error(
+            "Webhook: discount redemption update failed",
+            order.id,
+            (discountErr as Error).message
+          );
+        }
+      }
+
       // ── Decrement variant stock — fire-and-forget, never block 200 ────
       try {
         const orderLineItems = Array.isArray(order.items) ? order.items : [];
