@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/sync-zinatex",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/sync-nfd",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/sync-united",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}
