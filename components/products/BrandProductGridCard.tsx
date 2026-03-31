@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
 import { useContextualReelContext } from "@/components/reel/ContextualReelProvider";
@@ -61,11 +62,18 @@ export default function BrandProductGridCard({
   const addItem = useCartStore((state) => state.addItem);
   const { openReel } = useReelContext();
   const { openContextualReel } = useContextualReelContext();
+  const [hideCard, setHideCard] = useState(false);
   const firstImage = product.images?.[0];
   const safeImage =
     typeof firstImage === "string" && firstImage.startsWith("https://")
       ? firstImage
       : null;
+  const isNfd = isNationwideFDProduct(product);
+
+  // NFD cards should not render without a valid lead image.
+  if (isNfd && (hideCard || !safeImage)) {
+    return null;
+  }
 
   return (
     <article className="overflow-hidden rounded-xl border border-[#1C1C1C]/10 bg-white shadow-sm">
@@ -87,6 +95,9 @@ export default function BrandProductGridCard({
             imageClassName="object-contain p-2"
             cardClassName="bg-[#FAF8F5]"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            onImageError={() => {
+              if (isNfd) setHideCard(true);
+            }}
           />
           {product.in_stock === false && (
             <div className="absolute inset-0 z-[5] flex items-center justify-center bg-black/50">

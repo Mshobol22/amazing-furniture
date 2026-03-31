@@ -11,6 +11,7 @@ interface ProductCardImageProps {
   sizes?: string;
   imageClassName?: string;
   cardClassName?: string;
+  onImageError?: () => void;
 }
 
 function ImageComingSoonCard({ className }: { className?: string }) {
@@ -37,6 +38,7 @@ export function ProductCardImage({
   sizes,
   imageClassName,
   cardClassName,
+  onImageError,
 }: ProductCardImageProps) {
   const [failed, setFailed] = useState(false);
   const resolvedSrc = useMemo(() => {
@@ -67,6 +69,7 @@ export function ProductCardImage({
       className={imageClassName}
       sizes={sizes}
       onError={() => {
+        onImageError?.();
         if (usesComingSoonCard) {
           setFailed(true);
           return;

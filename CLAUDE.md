@@ -1,5 +1,5 @@
 # Amazing Home Furniture Store — CLAUDE.md
-> Last updated: March 26, 2026 | Read this fully before touching any code.
+> Last updated: March 31, 2026 | Read this fully before touching any code.
 
 ## Project
 - **Site:** https://www.amazinghomefurniturestore.com
@@ -8,11 +8,12 @@
 - **Deploy:** Vercel (auto-deploy on push to main)
 
 ## Stack
-- Next.js 14 App Router, TypeScript, Tailwind CSS
+- Next.js 15.5.14 App Router, TypeScript, Tailwind CSS
 - Supabase (auth + DB) — Auth is Supabase Auth with Google OAuth. NOT Clerk.
-- Stripe (payments + webhooks), Resend (email), shadcn/ui
+- Stripe (payments + webhooks) — currently in TEST mode, awaiting client live account
+- Resend (transactional email), shadcn/ui
+- csv-parse (inventory sync cron jobs)
 - Deployed on Vercel
-- Product counts: 6,584 total | 5,682 in stock | 902 out of stock
 
 ## Key IDs
 - Supabase project: `exppyvqjqnnowtjgumfc`
@@ -27,112 +28,90 @@
 ## Database — Key Tables
 - `products` — name, slug, price, sale_price, on_sale, images (TEXT[]),
   manufacturer, category, sku, in_stock, description, color, material,
-  collection, dimensions (JSONB), compare_at_price, warranty
+  collection, dimensions (JSONB), compare_at_price, warranty,
+  display_name, finish, catalog_size, product_details,
+  acme_product_type, acme_kit_parent_sku, acme_color_group,
+  page_id, page_features, collection_group, bundle_skus,
+  images_validated
 - `orders` — id, user_id, items (JSONB), subtotal, shipping, total,
   tax_amount, tax_rate, status, stripe_payment_intent_id,
-  customer_name, customer_email, shipping_address (JSONB)
+  customer_name, customer_email, shipping_address (JSONB),
+  discount_code, discount_amount
+- `profiles` — id (auth.uid), full_name, phone, saved_address (JSONB),
+  updated_at (auto-trigger)
 - `manufacturers` — id, name, slug, description, logo_url,
   is_active, sort_order
-- `hero_slides` — id, headline, subheading, image_url, product_name,
-  product_slug, cta_label, cta_href, is_active, sort_order
+- `hero_slides` — id, title, subtitle, image_url, product_id,
+  product_slug, cta_text, is_active, sort_order
 - `carts` — id, user_id, session_id, items (JSONB)
 - `newsletter_subscribers` — id, email, subscribed_at, source, is_active
-- `newsletter_attempts` — rate limiting table
-- `banners` — announcement bar content
-- `sale_events` — id, name, start_date, end_date, is_active
-- `sale_event_products` — sale_event_id, product_id
-- `wishlists` — id, user_id, created_at
-- `wishlist_items` — id, wishlist_id, product_id
-- `product_variants` — id, product_id, variant data (653 variants exist)
-NOTE: `promotions` table does NOT exist — remove any reference to it.
+- `newsletter_attempts` — rate limiting (max 10 per email per 24h)
+- `banners` — announcement bar content (RLS enabled)
+- `wishlists` — id, user_id, product_id, created_at
+- `product_variants` — 653 rows, Zinatex size/color variants
+- `sale_events` — infrastructure exists, 0 active rows
+- `sale_event_products` — infrastructure exists, 0 active rows
+- `discount_codes` — WELCOME10 seeded (10% off, one-time per email)
+- `discount_redemptions` — unique(code, email) enforces server-side one-time use
 
-## Product Name Convention (CRITICAL)
-Product `name` column now stores the manufacturer item code, NOT a
-descriptive name. The original descriptive name is preserved in `description`.
+## Admin RPCs (service_role only — anon/authenticated EXECUTE revoked)
+- `get_manufacturer_counts` — product counts by manufacturer
+- `get_category_counts` — product counts by category
+- `get_categories_by_manufacturer` — filtered category list
+- `get_stock_totals` — in-stock vs OOS totals
 
-- **ACME:** `name` = ACME item number (e.g. `AC03801`, `70325`, `BD01410`)
-- **Nationwide FD:** `name` = NFD item code (e.g. `B107KB`, `D99T`, `U18C`)
-- **United Furniture:** `name` = SKU code (e.g. `U244-C`, `B271-KDMCN`)
-- **Zinatex:** `name` = design name as-is (e.g. `BURSA Rug Design 55331`)
-
-When displaying products, show `name` as the product title. The `description`
-field contains the human-readable item name prepended to the full description.
-NEVER rename products back to descriptive names — this convention is intentional.
-
-## Collection Field — Meaning Per Manufacturer
-The `collection` field means different things per manufacturer:
-- **ACME:** Product series/line name (e.g. "Vendome II", "Adara", "Aberdeen")
-  Used for "Also in this collection" grouping on product pages.
-  KIT products and their components share the same collection value.
-- **United Furniture:** Product series name (e.g. "Closeout", "Tax Sale 2026")
-  Used for "Also in this collection" grouping.
-- **Nationwide FD:** Null for most products — no collection grouping.
-- **Zinatex:** Rug category/style (e.g. "Premium", "5D Shaggy", "Casablanca",
-  "Sultan", "Marble", "Bursa"). Used for the Category filter on the Zinatex
-  brand page ONLY. Filter sidebar on /brands/zinatex filters by `collection`,
-  not `category` (all Zinatex products have category = "rug").
-
-## Zinatex Brand Page — Special Filter Behavior
-- Category filter reads from `products.collection` (not `products.category`)
-- Options loaded dynamically: SELECT DISTINCT collection FROM products
-  WHERE manufacturer = 'Zinatex' ORDER BY collection
-- Filter persists in URL as ?collection=Shaggy
-- All other brand pages filter by `category` as normal
-
-## Manufacturers (in products.manufacturer column)
+## Manufacturers (products.manufacturer column values)
 - `Nationwide FD` | `United Furniture` | `ACME` | `Zinatex`
-- `Artisan` | `Interpraise` — set is_active=false, no products yet
+- `Artisan` | `Interpraise` — is_active = false, hidden from storefront
 
-## Catalog Display Settings
-- Products per page: **15** on all catalog pages (brand, collection, browse-all)
-- Grid: 3 columns on desktop
-- Product card: large aspect-square image, name (SKU code), price, 
-  "Explore brand" + "Explore pieces" buttons side by side below image
-- Price formatting: ALWAYS use minimumFractionDigits: 2 — never show $1,977.8
+## ACME Product Types (acme_product_type column)
+- `kit` — parent set product, shown in storefront
+- `single` — standalone product, shown in storefront
+- `single_additional` — shown in storefront
+- `component` — individual pieces, in_stock = false, hidden from browse/search
+  but have their own PDPs. Show "Part of this set" link back to parent KIT.
+  88% of 2,733 components have acme_kit_parent_sku populated.
 
-## Pricing Rules
-- ACME: west_price × 2.5 + $300 (covers free shipping cost)
-- United Furniture: MAP price as listed
-- Nationwide FD: price as listed
-- Zinatex: MSRP as listed
-- Illinois sales tax: 10.25% applied server-side at checkout
+## Display Name Conventions (per manufacturer)
+- **NFD:** label above H1 = `collection_group` (e.g. B101); H1 = `{sku} — {piece_type}`
+- **ACME:** label = `product.sku`; H1 = `display_name` (text before first ` — ` in description)
+- **United Furniture:** label = `page_id` (e.g. B020); H1 = `description` + joined `bundle_skus`
+- **Zinatex:** label = `product.collection` (design series); H1 = `product.name` as stored
 
-## Image Rules & State (March 2026)
-- **ACME:** Each product has its own SKU-based image URL from acmecorp.com CDN.
-  Format: `https://www.acmecorp.com/media/catalog/product/[x]/[y]/[sku].jpg`
-  ~1,383 products still have placeholder images — ACME CSV re-import needed.
-  Comma-separated image URLs in CSV must be split into individual array elements.
-- **United Furniture:** Piece-specific images promoted to images[1] via DB migration
-  (March 26, 2026). 1,064 products now show individual piece photos. Bundles/sets
-  retain the full collection room scene as primary image.
-  Solo images available in "Images - Solo" column of united datasheet.csv —
-  a full re-import using that column is still pending.
-- **Nationwide FD:** One room scene per collection — no piece-specific URLs available
-  from NFD CDN. Images served through /api/image-proxy (URL-encode spaces in path).
-- **Zinatex:** Images hosted on zinatexrugs.com CDN.
-
-## Image Domains (next.config.mjs remotePatterns)
-- `lh3.googleusercontent.com` (Google avatars)
-- `img.clerk.com` (legacy — keep for safety)
-- `zinatexrugs.com` (Zinatex rug images)
-- `d28fw8vtnbt3jx.cloudfront.net` (United Furniture CDN)
-- `www.acmecorp.com` (ACME product images)
-- Nationwide FD images go through `/api/image-proxy` route
+## Pricing Rules (confirmed March 2026)
+- ACME: `west_price × 2.6`
+- United Furniture: `MSRP` column directly (compare_at_price = MSRP)
+- Nationwide FD: `itemPrice × 2.2`
+- Zinatex: `(MSRP / 4) × 2.2`
+- Illinois sales tax: 10.25% applied server-side at checkout only
 
 ## Auth Rules
 - Supabase Auth only — Google OAuth via PKCE flow
 - Server-side: `supabase.auth.getUser()`
 - Client-side: `supabase.auth.getSession()`
-- Admin check: `isAdmin(user)` function — verify server-side on ALL admin routes
+- Admin check: `isAdmin(user)` — verify server-side on ALL admin routes
 - NEVER use Clerk — it is not installed
 
 ## Stripe
-- Webhook endpoint: `https://www.amazinghomefurniturestore.com/api/webhooks/stripe`
-- Webhook event: `payment_intent.succeeded`
-- CRITICAL: Webhook must use www domain — non-www causes 307 redirect
+- Webhook: `https://www.amazinghomefurniturestore.com/api/webhooks/stripe`
+- CRITICAL: Must use www domain — non-www causes 307 redirect Stripe won't follow
 - Raw body required: use `request.arrayBuffer()` not `request.json()`
-- Order flow: checkout creates pending order → Stripe fires webhook →
-  webhook updates order to paid + sends Resend confirmation email
+- Order flow: checkout creates pending → Stripe webhook → updates to paid + Resend email
+- Discount: WELCOME10 validated server-side at checkout, enforced via discount_redemptions
+- Status: TEST MODE — awaiting client live Stripe account + bank connection
+
+## Inventory Sync Cron Jobs
+- `app/api/cron/sync-zinatex/route.ts` — every 6h, LIVE
+  Source: https://zinatexrugs.com/wp-content/uploads/woo-feed/custom/csv/zinatexproductfeed.csv
+  No auth needed. Updates in_stock, price `(MSRP/4)*2.2`, images[0].
+- `app/api/cron/sync-nfd/route.ts` — daily 3am, SKELETON (awaiting credentials)
+  Needs: NFD_PORTAL_EMAIL, NFD_PORTAL_PASSWORD, NFD_PORTAL_CSV_URL
+- `app/api/cron/sync-united/route.ts` — daily 3am, SKELETON (awaiting credentials)
+  Needs: UNITED_PORTAL_EMAIL, UNITED_PORTAL_PASSWORD
+  Download URL: https://cms.amptab.com/Manufacturer/169382/Shop2DownloadPublication?fileId=1645225683
+- Shared utility: `lib/cron-utils.ts` — validateCronSecret, parseCSVStream, batchUpsertProducts
+- All routes secured with Authorization: Bearer ${CRON_SECRET} header check
+- ACME cron: pending response from manufacturer on API/feed availability
 
 ## Security Rules (Non-Negotiable)
 - All API keys in .env only — never hardcoded
@@ -142,9 +121,19 @@ The `collection` field means different things per manufacturer:
 - All image URLs validated as https:// before storing or rendering
 - Use next/image for ALL images — never raw <img> tags
 - Parameterized queries only — no string concatenation into SQL
-- RLS enabled on all tables
-- banners table: needs RLS enabled (currently missing — known issue)
-- orders table: "service role" policy is overly broad — known security issue
+- RLS enabled on all 13 tables (banners now included)
+- Excess privileges revoked from anon/authenticated on all tables
+- EXECUTE revoked from anon/authenticated on all SECURITY DEFINER functions
+- Newsletter rate limit: 10 inserts per email per 24h (enforced via RLS WITH CHECK)
+
+## Image Domains (next.config.mjs remotePatterns)
+- `lh3.googleusercontent.com` (Google avatars)
+- `img.clerk.com` (legacy — keep for safety)
+- `zinatexrugs.com` (Zinatex rug images)
+- `d28fw8vtnbt3jx.cloudfront.net` (United Furniture CDN)
+- `www.acmecorp.com` (ACME product images)
+- `nationwidefd.com` + subdomains (NFD images, direct next/image — no proxy needed)
+- NFD images that fail: go through `/api/image-proxy` route as fallback only
 
 ## Homepage Section Order (zero gaps between sections)
 1. HeroSlideshow (85vh, real product images, DB-controlled)
@@ -164,6 +153,29 @@ The `collection` field means different things per manufacturer:
 - Financing partners: Synchrony and Koalafi ONLY (not Snap Finance)
 - Free shipping on all orders over $299
 
+## Customer Features (all built and live)
+- Guest cart → authenticated cart merge (useRef guard, fires once on SIGNED_IN)
+- /account — dashboard with welcome card, recently viewed products
+- /account/orders — order history with FedEx-style timeline
+- /account/orders/[id] — order detail page
+- /account/wishlist — wishlist mood board
+- /account/profile — profile editor with saved address (stored in profiles table)
+- /order-confirmation/[orderId] — dedicated bookmarkable confirmation page
+- /discover — TikTok-style vertical product reel (SSR, force-dynamic)
+- Idle discount popup — fires after inactivity, collects email, issues WELCOME10
+
+## Checkout Features
+- 4-step progress bar
+- Sticky order summary sidebar
+- Promo code field (WELCOME10 — 10% off, one-time per email, server-enforced)
+- Tax: 10.25% Illinois, server-side only
+
+## Admin Features (all at /admin/*)
+- Products page: server-side pagination (50/page), ILIKE search, manufacturer/category filters
+- Filter counts via RPCs (not client-side aggregation — avoids Supabase row limit bug)
+- Image validation endpoint (batched 50-100/request to avoid 504 timeout)
+- Banner management
+
 ## CSV Source Files (for re-imports)
 - Nationwide FD: `C:\Users\mshob\OneDrive\csv for AHF\NFD datasheet.xlsx`
 - United Furniture: `C:\Users\mshob\OneDrive\csv for AHF\united datasheet.csv`
@@ -171,25 +183,28 @@ The `collection` field means different things per manufacturer:
 - Zinatex main: `C:\Users\mshob\OneDrive\csv for AHF\zinat datasheet.csv`
 - Zinatex inventory: `C:\Users\mshob\OneDrive\csv for AHF\zinat sku and inventory number.csv`
 
-## Known Bugs — Pending (in priority order)
-1. **Cart merge** — guest cart disappears on sign-in
-2. **ACME placeholder images** — 1,383 products showing placeholder (pending client decision)
-3. **Image proxy** — NFD URL encoding errors still occurring (Prompt 1 addresses this)
-4. **Collection field gaps** — NFD 0/729, UF 1,631/2,192 missing (Prompt 5 addresses this)
-5. **Discover page SSR** — shows "Loading discover..." for search engines
-
-## Completed Changes (March 26, 2026)
-- ✅ Product names → SKU codes for ACME, Nationwide FD, United Furniture
-- ✅ Zinatex descriptions trimmed to first sentence (887 products)
-- ✅ Zinatex collection field populated from CSV (872/887 products matched)
-- ✅ Zinatex brand page filter uses collection field (real rug categories)
-- ✅ United Furniture piece-specific images promoted to position 1 (1,064 products)
-- ✅ Products per page changed to 15 across all catalog pages
-- ✅ Duplicate filter sidebar bug fixed
-- ✅ Product card buttons (Explore brand / Explore pieces) side by side
-- ✅ Sticky sidebar — no more blank whitespace below filter panel
-- ✅ Price formatting fixed (minimumFractionDigits: 2) site-wide
-- ✅ ACME "Also in this collection" section now renders
+## Known Pending Items (in priority order)
+1. **Stripe go-live** — client needs to create live Stripe account, connect bank,
+   provide live publishable key + secret key + webhook signing secret.
+   Then: 3 Vercel env var swaps and re-register webhook in live dashboard.
+2. **NFD + United cron credentials** — get portal logins from client.
+   Add env vars to Vercel, redeploy. No code changes needed.
+3. **ACME images** — ~1,383 products still have placeholder images.
+   fix-acme-images.ts script drafted but not confirmed run.
+4. **Zinatex full variant re-import** — source has 3,515 variants across 517 designs,
+   DB only has ~853. Full re-import script needed.
+5. **United Furniture product names** — all 2,192 products still have raw SKU names.
+   Needs name rewrite treatment (same as NFD/ACME).
+6. **ACME cron** — awaiting manufacturer response on API/FTP feed availability.
+7. **Replace xlsx with exceljs** — xlsx has unpatched high severity npm vulnerability.
+   Only used in local import scripts, not web runtime. Low urgency.
+8. **/discover force-dynamic** — add `export const dynamic = 'force-dynamic'`
+   to suppress Next 15 build warning (non-breaking, cosmetic fix).
+9. **Financing page referral links** — replace generic Synchrony/Koalafi URLs
+   with dealer-specific referral links (already correct on homepage).
+10. **Zinatex OOS strategy** — 561 rugs OOS (63%). Decide: hide, badge, or leave.
+11. **Helcim evaluation** — medium-term: evaluate migration from Stripe for
+    interchange-plus pricing. Enable Stripe ACH as immediate interim option.
 
 ## Conventions
 - Slugs: lowercase, hyphens, append -[manufacturer_code]-[sku]
@@ -198,5 +213,23 @@ The `collection` field means different things per manufacturer:
 - Admin routes: `app/(admin)/admin/[feature]/page.tsx`
 - Store routes: `app/(store)/[feature]/page.tsx`
 - API routes: `app/api/[feature]/route.ts`
-- Do NOT run apply_migration for data updates — use execute_sql or scripts
-- Filter state must use URL search params (not useState) for back-nav persistence
+- Cron routes: `app/api/cron/sync-[manufacturer]/route.ts`
+
+## Critical Learnings (do not repeat these mistakes)
+- **Always query live DB before writing prompts.** Never assume state from prior context.
+- **Supabase JS row limit (~1,000) is a silent failure mode.** Use `.range()` or RPCs for counts.
+- **PostgREST does not support array index notation** (e.g. images[1]) in filters.
+  Filter array contents in JS after query returns.
+- **apply_migration for writes, execute_sql for reads.**
+- **Verify immediately after every write** with a follow-up count query.
+- **Trigger execution order is alphabetical** by name for same-timing triggers.
+- **SECURITY DEFINER functions** must have EXECUTE explicitly revoked from anon/authenticated.
+- **RLS alone is not defense-in-depth.** Explicitly revoke excess table-level grants.
+- **NFD image limitation is a hard manufacturer constraint** — only collection-level
+  room scenes exist in source. No per-SKU photography available.
+- **ACME components must stay hidden from browse/search** — in_stock = false is the
+  only storefront visibility mechanism. No separate is_visible column.
+- **Next.js 15 async params** — all server components using params/searchParams/headers
+  must await them. Already fixed across account/order/sale pages.
+- **Cursor prompt format:** natural language only — no inline code snippets.
+  Prompts must be paste-ready and self-contained.
