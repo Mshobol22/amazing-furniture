@@ -108,6 +108,10 @@ export function mapRowToProduct(row: Record<string, unknown>): Product {
 // homepage carousels until real ACME images are loaded.
 const ACME_PLACEHOLDER_IMAGE_MARKERS = ["coming-soon", "placeholder"];
 
+function isNationwideHost(host: string): boolean {
+  return host === "nationwidefd.com" || host.endsWith(".nationwidefd.com");
+}
+
 export function isHiddenAcmePlaceholderProduct(product: Pick<Product, "images">): boolean {
   const leadImageUrl = product.images?.[0] ?? "";
   const urlLower = typeof leadImageUrl === "string" ? leadImageUrl.toLowerCase() : "";
@@ -150,6 +154,15 @@ export function isHiddenFromProductListingByImage(
   if (!Array.isArray(images) || images.length === 0) return true;
   const lead = images[0];
   if (typeof lead !== "string" || lead.length === 0) return true;
+  if (!lead.startsWith("https://")) return true;
+  if (product.manufacturer === "Nationwide FD") {
+    try {
+      const host = new URL(lead).hostname.toLowerCase();
+      if (!isNationwideHost(host)) return true;
+    } catch {
+      return true;
+    }
+  }
   const urlLower = lead.toLowerCase();
   if (ACME_PLACEHOLDER_IMAGE_MARKERS.some((m) => urlLower.includes(m))) return true;
   return false;
