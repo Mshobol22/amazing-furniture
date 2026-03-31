@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import type { Product } from '@/types'
-import { productLeadImageSrc } from '@/lib/nfd-image-proxy'
 import type { SaleEventWithProducts } from '@/lib/types/sale'
 import { formatPrice } from '@/lib/format-price'
 import { getStorefrontListPrice } from '@/lib/zinatex-product-display'
@@ -61,7 +60,11 @@ export default function SaleProductGrid({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {products.map(product => {
-          const image = productLeadImageSrc(product.manufacturer, product.images?.[0])
+          const firstImage = product.images?.[0]
+          const image =
+            typeof firstImage === 'string' && firstImage.startsWith('https://')
+              ? firstImage
+              : null
           const salePrice = product.sale_price
           const listPrice = getStorefrontListPrice(product)
           const comparePrice = product.compare_price ?? listPrice

@@ -37,7 +37,7 @@ interface DiscoverReelProps {
 const PLACEHOLDER_IMAGE = "/images/placeholder-product.svg";
 
 function shouldUseComingSoonCard(manufacturer: string | null | undefined): boolean {
-  return manufacturer === "ACME" || manufacturer === "Nationwide FD";
+  return manufacturer === "ACME";
 }
 
 export default function DiscoverReel({

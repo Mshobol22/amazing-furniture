@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
-import { productLeadImageSrc } from "@/lib/nfd-image-proxy";
 import { useContextualReelContext } from "@/components/reel/ContextualReelProvider";
 import { useReelContext } from "@/components/reel/ReelProvider";
 import { formatPrice } from "@/lib/format-price";
@@ -62,7 +61,11 @@ export default function BrandProductGridCard({
   const addItem = useCartStore((state) => state.addItem);
   const { openReel } = useReelContext();
   const { openContextualReel } = useContextualReelContext();
-  const safeImage = productLeadImageSrc(product.manufacturer, product.images?.[0]);
+  const firstImage = product.images?.[0];
+  const safeImage =
+    typeof firstImage === "string" && firstImage.startsWith("https://")
+      ? firstImage
+      : null;
 
   return (
     <article className="overflow-hidden rounded-xl border border-[#1C1C1C]/10 bg-white shadow-sm">

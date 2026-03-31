@@ -39,10 +39,15 @@ export function ProductCardImage({
   cardClassName,
 }: ProductCardImageProps) {
   const [failed, setFailed] = useState(false);
-  const resolvedSrc = useMemo(
-    () => proxyImage(src, { manufacturer }),
-    [src, manufacturer]
-  );
+  const resolvedSrc = useMemo(() => {
+    if (manufacturer === "ACME") {
+      return proxyImage(src, { manufacturer });
+    }
+    if (typeof src === "string" && src.startsWith("https://")) {
+      return src;
+    }
+    return FALLBACK_IMAGE;
+  }, [src, manufacturer]);
 
   const usesComingSoonCard = manufacturer === "ACME";
   const missingOrInvalid = typeof src !== "string" || !src.startsWith("https://");
