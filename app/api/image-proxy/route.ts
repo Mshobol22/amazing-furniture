@@ -67,7 +67,7 @@ function isAllowedNationwideFdUrl(url: string): boolean {
     const parsed = new URL(url);
     if (parsed.protocol !== "https:") return false;
     const host = parsed.hostname.toLowerCase();
-    return host === "nationwidefd.com" || host === "www.nationwidefd.com";
+    return host === "nationwidefd.com" || host.endsWith(".nationwidefd.com");
   } catch {
     return false;
   }

@@ -44,8 +44,7 @@ export function ProductCardImage({
     [src, manufacturer]
   );
 
-  const usesComingSoonCard =
-    manufacturer === "ACME" || manufacturer === "Nationwide FD";
+  const usesComingSoonCard = manufacturer === "ACME";
   const missingOrInvalid = typeof src !== "string" || !src.startsWith("https://");
   const shouldShowComingSoonCard =
     usesComingSoonCard &&

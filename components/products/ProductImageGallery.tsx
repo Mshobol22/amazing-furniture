@@ -176,8 +176,7 @@ export default function ProductImageGallery({
 
   const safe = clampIndex(selectedIndex, displayImages.length);
   const activeImage = displayImages[safe];
-  const usesComingSoonCard =
-    manufacturer === "ACME" || manufacturer === "Nationwide FD";
+  const usesComingSoonCard = manufacturer === "ACME";
   const showComingSoonCard =
     usesComingSoonCard &&
     (displayImages.length === 0 ||

@@ -7,16 +7,35 @@ function imageProxySrcFromHref(href: string): string {
   return `/api/image-proxy?url=${encodeURIComponent(safe)}`;
 }
 
+function getHostname(url: string): string | null {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function isNationwideFdHost(host: string): boolean {
+  return host === "nationwidefd.com" || host.endsWith(".nationwidefd.com");
+}
+
+function isNationwideFdImageUrl(url: string): boolean {
+  const host = getHostname(url);
+  if (!host) return false;
+  return isNationwideFdHost(host);
+}
+
 /** Homepage manufacturer cards: proxy NFD backgrounds through same-origin image API. */
 export function proxyIfNfdManufacturer(manufacturer: string, url: string | null): string | null {
   if (!url) return null;
-  if (manufacturer === NFD_MANUFACTURER_NAME) {
+  if (manufacturer === NFD_MANUFACTURER_NAME && isNationwideFdImageUrl(url)) {
     return imageProxySrcFromHref(url);
   }
   return url;
 }
 
 function needsNationwideFdProxy(url: string, manufacturer?: string | null): boolean {
+  if (!isNationwideFdImageUrl(url)) return false;
   return manufacturer === NFD_MANUFACTURER_NAME || url.includes("nationwidefd.com");
 }
 
@@ -50,7 +69,7 @@ export function brandLogoSrc(
   }
 
   if (!trimmed.startsWith("https://")) return null;
-  if (trimmed.includes("nationwidefd.com") || manufacturerName === NFD_MANUFACTURER_NAME) {
+  if (manufacturerName === NFD_MANUFACTURER_NAME && isNationwideFdImageUrl(trimmed)) {
     return imageProxySrcFromHref(trimmed);
   }
   return trimmed;
