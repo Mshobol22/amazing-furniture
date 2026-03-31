@@ -102,7 +102,7 @@ export default async function AccountOrdersPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    const h = headers();
+    const h = await headers();
     const path = h.get("x-pathname") ?? "/account/orders";
     redirect(`/login?redirect=${encodeURIComponent(path)}`);
   }

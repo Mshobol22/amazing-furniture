@@ -45,25 +45,25 @@ type OrderDetail = {
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const { id } = params;
+  const { id } = await params;
   return { title: `Order ${id.slice(-8)}` };
 }
 
 export default async function AccountOrderDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = params;
+  const { id } = await params;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    const h = headers();
+    const h = await headers();
     const path = h.get("x-pathname") ?? `/account/orders/${id}`;
     redirect(`/login?redirect=${encodeURIComponent(path)}`);
   }

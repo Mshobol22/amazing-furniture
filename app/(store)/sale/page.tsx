@@ -12,15 +12,20 @@ export const metadata: Metadata = {
 }
 
 interface Props {
-  searchParams: { event?: string; category?: string; page?: string }
+  searchParams: Promise<{ event?: string; category?: string; page?: string }>
 }
 
 export default async function SalePage({ searchParams }: Props) {
+  const resolvedSearchParams = await searchParams
   const eventSlug =
-    typeof searchParams.event === 'string' ? searchParams.event.slice(0, 80) : undefined
+    typeof resolvedSearchParams.event === 'string'
+      ? resolvedSearchParams.event.slice(0, 80)
+      : undefined
   const category =
-    typeof searchParams.category === 'string' ? searchParams.category.slice(0, 40) : undefined
-  const page = Math.max(1, Number.parseInt(searchParams.page ?? '1', 10) || 1)
+    typeof resolvedSearchParams.category === 'string'
+      ? resolvedSearchParams.category.slice(0, 40)
+      : undefined
+  const page = Math.max(1, Number.parseInt(resolvedSearchParams.page ?? '1', 10) || 1)
 
   // Fetch sale events first so we can resolve slug → id
   const saleEvents = await getActiveSaleEvents()

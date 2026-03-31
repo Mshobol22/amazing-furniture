@@ -47,7 +47,7 @@ export default async function OrderConfirmationPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    const h = headers();
+    const h = await headers();
     const path = h.get("x-pathname") ?? `/order-confirmation/${orderId}`;
     redirect(`/login?redirect=${encodeURIComponent(path)}`);
   }
