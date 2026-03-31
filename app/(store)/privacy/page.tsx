@@ -76,10 +76,10 @@ export default function PrivacyPage() {
             <p>
               For privacy-related questions, contact us at{" "}
               <a
-                href="mailto:support@amazinghomefurniture.com"
+                href="mailto:amazinghome80@gmail.com"
                 className="text-walnut hover:underline"
               >
-                support@amazinghomefurniture.com
+                amazinghome80@gmail.com
               </a>
               .
             </p>

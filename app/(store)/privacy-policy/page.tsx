@@ -27,10 +27,10 @@ export default function PrivacyPolicyPage() {
               transparent about how we use it. Questions about this policy can
               be sent to{" "}
               <a
-                href="mailto:privacy@amazinghomefurniturestore.com"
+                href="mailto:amazinghome80@gmail.com"
                 className="text-walnut underline hover:text-walnut/80"
               >
-                privacy@amazinghomefurniturestore.com
+                amazinghome80@gmail.com
               </a>
               .
             </p>
@@ -206,10 +206,10 @@ export default function PrivacyPolicyPage() {
             <p className="mt-3">
               To exercise any of these rights, email us at{" "}
               <a
-                href="mailto:privacy@amazinghomefurniturestore.com"
+                href="mailto:amazinghome80@gmail.com"
                 className="text-walnut underline hover:text-walnut/80"
               >
-                privacy@amazinghomefurniturestore.com
+                amazinghome80@gmail.com
               </a>{" "}
               with your request and we will respond within 30 days.
             </p>
@@ -252,10 +252,10 @@ export default function PrivacyPolicyPage() {
               <br />
               Email:{" "}
               <a
-                href="mailto:privacy@amazinghomefurniturestore.com"
+                href="mailto:amazinghome80@gmail.com"
                 className="text-walnut underline hover:text-walnut/80"
               >
-                privacy@amazinghomefurniturestore.com
+                amazinghome80@gmail.com
               </a>
             </p>
           </section>

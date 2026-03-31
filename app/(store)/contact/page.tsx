@@ -48,7 +48,7 @@ export default function ContactPage() {
               Amazing Home Furniture
             </h2>
             <p className="text-sm text-warm-gray">
-              support@amazinghomefurniture.com
+              amazinghome80@gmail.com
             </p>
             <p className="mt-1 text-sm text-warm-gray">
               <a href="tel:+17086255757" className="hover:text-charcoal hover:underline">

@@ -127,10 +127,10 @@ export default function TermsPage() {
               If an item arrives damaged or defective, contact us within 48
               hours of delivery at{" "}
               <a
-                href="mailto:support@amazinghomefurniturestore.com"
+                href="mailto:amazinghome80@gmail.com"
                 className="text-walnut underline hover:text-walnut/80"
               >
-                support@amazinghomefurniturestore.com
+                amazinghome80@gmail.com
               </a>{" "}
               with clear photographic evidence, your order number, and a
               description of the issue. Claims submitted after 48 hours cannot
@@ -146,10 +146,10 @@ export default function TermsPage() {
               If your item arrives damaged or defective, please contact us
               within 48 hours of delivery at{" "}
               <a
-                href="mailto:support@amazinghomefurniturestore.com"
+                href="mailto:amazinghome80@gmail.com"
                 className="text-walnut underline hover:text-walnut/80"
               >
-                support@amazinghomefurniturestore.com
+                amazinghome80@gmail.com
               </a>{" "}
               with clear photographic evidence, your order number, and a
               description of the issue. Claims submitted after 48 hours cannot
@@ -255,10 +255,10 @@ export default function TermsPage() {
               <br />
               Email:{" "}
               <a
-                href="mailto:support@amazinghomefurniturestore.com"
+                href="mailto:amazinghome80@gmail.com"
                 className="text-walnut underline hover:text-walnut/80"
               >
-                support@amazinghomefurniturestore.com
+                amazinghome80@gmail.com
               </a>
             </p>
           </section>

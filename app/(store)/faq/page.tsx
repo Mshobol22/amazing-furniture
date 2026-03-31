@@ -42,7 +42,7 @@ const FAQ_ITEMS = [
   {
     value: "cancel",
     q: "Can I cancel my order?",
-    a: "Yes, within 24 hours of placing. Email support@amazinghomefurniture.com",
+    a: "Yes, within 24 hours of placing. Email amazinghome80@gmail.com",
   },
   {
     value: "international",

@@ -53,10 +53,10 @@ export default function TrackOrderPage() {
             <p className="text-sm text-warm-gray">
               Order tracking is coming soon. For immediate help, email{" "}
               <a
-                href="mailto:support@amazinghomefurniture.com"
+                href="mailto:amazinghome80@gmail.com"
                 className="text-walnut hover:underline"
               >
-                support@amazinghomefurniture.com
+                amazinghome80@gmail.com
               </a>{" "}
               with your order number.
             </p>

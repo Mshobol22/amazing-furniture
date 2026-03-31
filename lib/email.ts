@@ -143,7 +143,7 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<void
 
       <p style="margin:0;color:#555;font-size:14px;font-family:Arial,sans-serif;line-height:1.6">
         Questions about your order? Contact us at
-        <a href="mailto:support@amazinghomefurniturestore.com" style="color:#8b6914;text-decoration:none">support@amazinghomefurniturestore.com</a>
+        <a href="mailto:amazinghome80@gmail.com" style="color:#8b6914;text-decoration:none">amazinghome80@gmail.com</a>
       </p>
     </div>
 
