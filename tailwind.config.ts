@@ -61,6 +61,15 @@ const config: Config = {
         cormorant: ["var(--font-cormorant)", "Georgia", "serif"],
         sans: ["var(--font-dm-sans)", "system-ui", "sans-serif"],
       },
+      keyframes: {
+        "sale-nav-pulse": {
+          "0%, 100%": { opacity: "0.12" },
+          "50%": { opacity: "0.22" },
+        },
+      },
+      animation: {
+        "sale-nav-pulse": "sale-nav-pulse 2.8s ease-in-out infinite",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

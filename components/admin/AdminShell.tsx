@@ -25,7 +25,6 @@ import { createClient } from "@/lib/supabase/client";
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Products", icon: Package },
-  { href: "/admin/promotions", label: "Promotions", icon: Tag },
   { href: "/admin/sales", label: "Sales", icon: Tag },
   { href: "/admin/banners", label: "Banners", icon: MessageSquare },
   { href: "/admin/slides", label: "Hero Slides", icon: SlidersHorizontal },

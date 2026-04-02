@@ -35,39 +35,47 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const items = (data ?? []).map(
-    (row: {
-      product_id: string;
-      discount_percentage: number | null;
-      override_sale_price: number | null;
-      products: {
-        id: string;
-        name: string;
-        sku: string | null;
-        price: number | null;
-        sale_price: number | null;
-        on_sale: boolean | null;
-        manufacturer: string | null;
-        category: string | null;
-        images: string[] | null;
-      };
-    }) => ({
-      product_id: row.product_id,
-      discount_percentage: row.discount_percentage,
-      override_sale_price: row.override_sale_price,
-      product: {
-        id: row.products.id,
-        name: row.products.name,
-        sku: row.products.sku,
-        price: row.products.price,
-        sale_price: row.products.sale_price,
-        on_sale: row.products.on_sale,
-        manufacturer: row.products.manufacturer,
-        category: row.products.category,
-        image: row.products.images?.[0] ?? null,
-      },
-    })
-  );
+  type ProductRow = {
+    id: string;
+    name: string;
+    sku: string | null;
+    price: number | null;
+    sale_price: number | null;
+    on_sale: boolean | null;
+    manufacturer: string | null;
+    category: string | null;
+    images: string[] | null;
+  };
+
+  const items = (data ?? [])
+    .map(
+      (row: {
+        product_id: string;
+        discount_percentage: number | null;
+        override_sale_price: number | null;
+        products: ProductRow | ProductRow[];
+      }) => {
+        const product = Array.isArray(row.products) ? row.products[0] : row.products;
+        if (!product) return null;
+        return {
+          product_id: row.product_id,
+          discount_percentage: row.discount_percentage,
+          override_sale_price: row.override_sale_price,
+          product: {
+            id: product.id,
+            name: product.name,
+            sku: product.sku,
+            price: product.price,
+            sale_price: product.sale_price,
+            on_sale: product.on_sale,
+            manufacturer: product.manufacturer,
+            category: product.category,
+            image: product.images?.[0] ?? null,
+          },
+        };
+      }
+    )
+    .filter(Boolean);
 
   return NextResponse.json({ products: items });
 }

@@ -66,6 +66,18 @@ function slugify(text: string) {
     .replace(/^-|-$/g, "");
 }
 
+function normalizeHexForPicker(input: string): string {
+  const t = input?.trim() || "";
+  if (/^#[0-9A-Fa-f]{6}$/i.test(t)) return t;
+  if (/^#[0-9A-Fa-f]{3}$/i.test(t)) {
+    const r = t[1];
+    const g = t[2];
+    const b = t[3];
+    return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
+  }
+  return "#2D4A3E";
+}
+
 const emptyEventForm = {
   name: "",
   sale_type: "other",
@@ -663,6 +675,106 @@ export default function AdminSalesPage() {
                 onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
                 className="col-span-2 rounded border border-gray-300 px-3 py-2 text-sm"
               />
+
+              <div className="col-span-2 rounded-lg border border-[#2D4A3E]/25 bg-[#FAF8F5] p-4">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#2D4A3E]">
+                  Storefront nav button
+                </p>
+                <p className="mb-3 text-xs text-gray-600">
+                  When this event is <strong>active</strong>, the header uses these fields for the wide
+                  sale control (desktop) and the strip under the bar on phones.
+                </p>
+                <div className="mb-4 space-y-1.5">
+                  <label className="text-sm font-medium text-charcoal" htmlFor="discount_label">
+                    Nav button — Line 1
+                  </label>
+                  <input
+                    id="discount_label"
+                    value={form.discount_label}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, discount_label: e.target.value }))
+                    }
+                    placeholder='e.g. "Up to 40% OFF"'
+                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Shown large on the sale nav button.
+                  </p>
+                </div>
+                <div className="mb-4 space-y-1.5">
+                  <label className="text-sm font-medium text-charcoal" htmlFor="banner_headline">
+                    Nav button — Line 2
+                  </label>
+                  <input
+                    id="banner_headline"
+                    value={form.banner_headline}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, banner_headline: e.target.value }))
+                    }
+                    placeholder='e.g. "Summer Sale — Shop Now"'
+                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Shown smaller below line 1. If empty, the event name is used.
+                  </p>
+                </div>
+                <div className="mb-3 space-y-1.5">
+                  <span className="text-sm font-medium text-charcoal">Nav button color</span>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <input
+                      type="color"
+                      aria-label="Nav button color picker"
+                      value={normalizeHexForPicker(form.badge_color)}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, badge_color: e.target.value }))
+                      }
+                      className="h-10 w-14 cursor-pointer rounded border border-gray-300 bg-white p-0.5"
+                    />
+                    <input
+                      type="text"
+                      value={form.badge_color}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, badge_color: e.target.value }))
+                      }
+                      placeholder="#2D4A3E"
+                      className="min-w-[7rem] flex-1 rounded border border-gray-300 px-3 py-2 font-mono text-sm"
+                    />
+                    <div
+                      className="h-10 w-10 shrink-0 rounded border border-gray-200 shadow-inner"
+                      style={{
+                        backgroundColor: normalizeHexForPicker(form.badge_color),
+                      }}
+                      title="Live swatch"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Fallback in the store is forest green (#2D4A3E) if empty or invalid.
+                  </p>
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-medium text-gray-600">Preview</p>
+                  <div
+                    className="relative overflow-hidden rounded-lg px-4 py-2.5 text-center text-white shadow-sm transition-[filter] hover:brightness-110"
+                    style={{
+                      backgroundColor: normalizeHexForPicker(form.badge_color),
+                    }}
+                  >
+                    <span
+                      className="pointer-events-none absolute inset-0 bg-white opacity-[0.14]"
+                      aria-hidden
+                    />
+                    <div className="relative text-sm font-bold leading-tight">
+                      {form.discount_label?.trim() || "Line 1 (discount label)"}
+                    </div>
+                    <div className="relative mt-0.5 text-xs font-medium text-white/90">
+                      {form.banner_headline?.trim() ||
+                        form.name?.trim() ||
+                        "Line 2 (headline or event name)"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <select
                 value={form.sale_type}
                 onChange={(e) => setForm((prev) => ({ ...prev, sale_type: e.target.value }))}
@@ -687,24 +799,6 @@ export default function AdminSalesPage() {
                 placeholder="Badge Text"
                 value={form.badge_text}
                 onChange={(e) => setForm((prev) => ({ ...prev, badge_text: e.target.value }))}
-                className="rounded border border-gray-300 px-3 py-2 text-sm"
-              />
-              <input
-                placeholder="Badge Color"
-                value={form.badge_color}
-                onChange={(e) => setForm((prev) => ({ ...prev, badge_color: e.target.value }))}
-                className="rounded border border-gray-300 px-3 py-2 text-sm"
-              />
-              <input
-                placeholder="Discount Label"
-                value={form.discount_label}
-                onChange={(e) => setForm((prev) => ({ ...prev, discount_label: e.target.value }))}
-                className="col-span-2 rounded border border-gray-300 px-3 py-2 text-sm"
-              />
-              <input
-                placeholder="Banner Headline"
-                value={form.banner_headline}
-                onChange={(e) => setForm((prev) => ({ ...prev, banner_headline: e.target.value }))}
                 className="col-span-2 rounded border border-gray-300 px-3 py-2 text-sm"
               />
               <input

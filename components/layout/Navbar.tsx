@@ -32,6 +32,38 @@ interface SearchResult {
   category: string;
 }
 
+type SaleBannerPayload =
+  | { active: false }
+  | {
+      active: true;
+      name: string;
+      discount_label: string | null;
+      banner_headline: string | null;
+      badge_text: string | null;
+      badge_color: string | null;
+      slug: string;
+    };
+
+const FOREST_GREEN_NAV = "#2D4A3E";
+
+function saleNavLine1(b: Extract<SaleBannerPayload, { active: true }>) {
+  const d = b.discount_label?.trim();
+  if (d) return d;
+  return b.name?.trim() || "Sale";
+}
+
+function saleNavLine2(b: Extract<SaleBannerPayload, { active: true }>) {
+  const h = b.banner_headline?.trim();
+  if (h) return h;
+  return b.name?.trim() || "";
+}
+
+function saleNavBg(b: Extract<SaleBannerPayload, { active: true }>) {
+  const c = b.badge_color?.trim();
+  if (c) return c;
+  return FOREST_GREEN_NAV;
+}
+
 const CATEGORIES: Record<
   string,
   { name: string; slug: string; subcategories: { label: string; href?: string; dividerTop?: boolean }[] }
@@ -144,7 +176,11 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-export default function Navbar() {
+export default function Navbar({
+  onMobileSaleStripChange,
+}: {
+  onMobileSaleStripChange?: (visible: boolean) => void;
+} = {}) {
   const pathname = usePathname();
   const openCart = useCartStore((state) => state.openCart);
   const cartCount = useCartItemCount();
@@ -164,6 +200,12 @@ export default function Navbar() {
   const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [hasActiveSaleProducts, setHasActiveSaleProducts] = useState(false);
+  const [saleBanner, setSaleBanner] = useState<SaleBannerPayload | null>(null);
+  const [isLgViewport, setIsLgViewport] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(min-width: 1024px)").matches
+      : true
+  );
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -182,33 +224,77 @@ export default function Navbar() {
   useEffect(() => {
     let cancelled = false;
 
-    async function checkSaleAvailability() {
+    async function loadSaleSignals() {
       try {
-        const response = await fetch("/api/sale-nav-availability", {
-          method: "GET",
-          cache: "no-store",
-        });
+        const [bannerRes, productsRes] = await Promise.all([
+          fetch("/api/sale-banner", { method: "GET" }),
+          fetch("/api/sale-nav-availability", { method: "GET", cache: "no-store" }),
+        ]);
 
-        if (!response.ok) {
-          if (!cancelled) setHasActiveSaleProducts(false);
+        if (!cancelled) {
+          if (productsRes.ok) {
+            const p: unknown = await productsRes.json();
+            setHasActiveSaleProducts(
+              Boolean((p as { hasActiveSaleProducts?: boolean })?.hasActiveSaleProducts)
+            );
+          } else {
+            setHasActiveSaleProducts(false);
+          }
+        }
+
+        if (!bannerRes.ok) {
+          if (!cancelled) setSaleBanner({ active: false });
           return;
         }
 
-        const data: unknown = await response.json();
+        const bannerJson: unknown = await bannerRes.json();
         if (!cancelled) {
-          setHasActiveSaleProducts(Boolean((data as { hasActiveSaleProducts?: boolean })?.hasActiveSaleProducts));
+          const b = bannerJson as SaleBannerPayload;
+          if (b && typeof b === "object" && "active" in b) {
+            setSaleBanner(b);
+          } else {
+            setSaleBanner({ active: false });
+          }
         }
       } catch {
-        if (!cancelled) setHasActiveSaleProducts(false);
+        if (!cancelled) {
+          setSaleBanner({ active: false });
+          setHasActiveSaleProducts(false);
+        }
       }
     }
 
-    void checkSaleAvailability();
+    void loadSaleSignals();
 
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setIsLgViewport(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  const activeSaleEvent =
+    saleBanner?.active === true ? saleBanner : null;
+  const saleBannerReady = saleBanner !== null;
+  const showCompactSaleLink =
+    saleBannerReady && !activeSaleEvent && hasActiveSaleProducts;
+
+  useEffect(() => {
+    const visible = Boolean(activeSaleEvent && !isLgViewport);
+    onMobileSaleStripChange?.(visible);
+  }, [activeSaleEvent, isLgViewport, onMobileSaleStripChange]);
+
+  useEffect(() => {
+    return () => {
+      onMobileSaleStripChange?.(false);
+    };
+  }, [onMobileSaleStripChange]);
 
   useEffect(() => {
     if (!debouncedQuery.trim() || debouncedQuery.length < 2) {
@@ -328,11 +414,14 @@ export default function Navbar() {
   const logoColor = "text-cream";
   const iconHover = "hover:bg-white/10";
 
+  const hideHeaderOnScroll =
+    hidden && !(activeSaleEvent && !isLgViewport);
+
   return (
     <>
       <header
         className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
-          hidden ? "-translate-y-full" : "translate-y-0"
+          hideHeaderOnScroll ? "-translate-y-full" : "translate-y-0"
         } ${
           navTransparent
             ? "border-b border-[#2D4A3E]/20 bg-[#2D4A3E]/80 backdrop-blur-md"
@@ -340,8 +429,8 @@ export default function Navbar() {
         }`}
       >
         {/* Row 1 */}
-        <div className="flex h-14 w-full items-center justify-between px-4">
-          <div className="flex flex-shrink-0 items-center gap-3">
+        <div className="flex h-14 w-full items-center gap-2 px-4 sm:gap-3">
+          <div className="flex min-w-0 flex-shrink-0 items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
               className={`lg:hidden flex h-10 w-10 items-center justify-center rounded ${iconColor} ${iconHover}`}
@@ -356,11 +445,34 @@ export default function Navbar() {
               Amazing Home
             </Link>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            {hasActiveSaleProducts && (
+          {activeSaleEvent && (
+            <Link
+              href="/sale"
+              className="relative hidden min-h-[2.5rem] min-w-0 flex-1 overflow-hidden rounded-lg px-3 py-1.5 text-center text-white shadow-sm transition-[filter] hover:brightness-110 lg:flex lg:flex-col lg:items-center lg:justify-center lg:px-4 lg:py-2"
+              style={{ backgroundColor: saleNavBg(activeSaleEvent) }}
+            >
+              <span
+                className="pointer-events-none absolute inset-0 animate-sale-nav-pulse bg-white"
+                aria-hidden
+              />
+              <span className="relative z-10 block text-xs font-bold leading-tight sm:text-sm">
+                {saleNavLine1(activeSaleEvent)}
+              </span>
+              {saleNavLine2(activeSaleEvent) ? (
+                <span className="relative z-10 mt-0.5 block text-[10px] font-medium leading-tight text-white/85 sm:text-xs">
+                  {saleNavLine2(activeSaleEvent)}
+                </span>
+              ) : null}
+            </Link>
+          )}
+          {!activeSaleEvent && (
+            <div className="hidden min-w-0 flex-1 lg:block" aria-hidden />
+          )}
+          <div className="ml-auto flex flex-shrink-0 items-center gap-2 sm:gap-3">
+            {showCompactSaleLink && (
               <Link
                 href="/sale"
-                className="hidden sm:flex items-center gap-1.5 text-sm font-semibold tracking-wide text-red-500 hover:text-red-400 transition-colors whitespace-nowrap"
+                className="hidden sm:flex items-center gap-1.5 text-sm font-semibold tracking-wide text-red-500 transition-colors hover:text-red-400 whitespace-nowrap"
               >
                 <Tag className="h-4 w-4" />
                 Sale
@@ -368,7 +480,7 @@ export default function Navbar() {
             )}
             <Link
               href="/financing"
-              className="hidden sm:flex items-center gap-1.5 text-sm font-semibold tracking-wide text-[#FAF8F5] hover:text-white transition-colors whitespace-nowrap"
+              className="hidden sm:flex items-center gap-1.5 text-sm font-semibold tracking-wide text-[#FAF8F5] transition-colors hover:text-white whitespace-nowrap"
             >
               <CreditCard className="h-4 w-4" />
               Financing
@@ -418,6 +530,27 @@ export default function Navbar() {
             </button>
           </div>
         </div>
+
+        {activeSaleEvent && (
+          <Link
+            href="/sale"
+            className="relative flex w-full flex-col items-center justify-center border-t border-white/15 px-3 py-2 text-center text-white lg:hidden"
+            style={{ backgroundColor: saleNavBg(activeSaleEvent) }}
+          >
+            <span
+              className="pointer-events-none absolute inset-0 animate-sale-nav-pulse bg-white"
+              aria-hidden
+            />
+            <span className="relative z-10 text-sm font-bold leading-tight">
+              {saleNavLine1(activeSaleEvent)}
+            </span>
+            {saleNavLine2(activeSaleEvent) ? (
+              <span className="relative z-10 mt-0.5 text-xs font-medium text-white/85">
+                {saleNavLine2(activeSaleEvent)}
+              </span>
+            ) : null}
+          </Link>
+        )}
 
         {/* Search bar */}
         {searchOpen && (
@@ -639,7 +772,7 @@ export default function Navbar() {
               >
                 Financing
               </Link>
-              {hasActiveSaleProducts && (
+              {showCompactSaleLink && (
                 <Link
                   href="/sale"
                   onClick={() => setMobileMenuOpen(false)}

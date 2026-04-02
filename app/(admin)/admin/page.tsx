@@ -132,7 +132,7 @@ export default async function AdminDashboardPage() {
       icon: Tag,
       iconColor: "text-amber-700",
       iconBg: "bg-amber-100",
-      href: "/admin/promotions",
+      href: "/admin/sales",
       change: "Manage sales →",
     },
   ];
@@ -147,7 +147,7 @@ export default async function AdminDashboardPage() {
     {
       label: "Run Sale",
       icon: Tag,
-      href: "/admin/promotions",
+      href: "/admin/sales",
       color: "text-amber-600 bg-amber-50 hover:bg-amber-100",
     },
     {

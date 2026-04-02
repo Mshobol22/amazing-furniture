@@ -17,7 +17,7 @@ const navItems = [
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/collections", label: "Collections", icon: LayoutGrid },
   { href: "/admin/products/images", label: "Image Manager", icon: ImageIcon },
-  { href: "/admin/promotions", label: "Promotions", icon: Tag },
+  { href: "/admin/sales", label: "Sales", icon: Tag },
   { href: "/admin/banners", label: "Banners", icon: MessageSquare },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
 ];
