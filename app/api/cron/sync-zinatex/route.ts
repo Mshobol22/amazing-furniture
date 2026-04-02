@@ -1,3 +1,4 @@
+import { parse } from "csv-parse/sync";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { batchUpsertVariants, validateCronSecret } from "@/lib/cron-utils";
@@ -25,114 +26,40 @@ const SIZE_ORDER: Record<string, number> = {
 
 type ZinatexRow = Record<string, string>;
 
-/**
- * Zinatex WooCommerce CSVs are RFC-4180-ish but use ASCII " for inches inside quoted
- * fields (e.g. 2'6"x11'5" or 6'6"x6'6" Round). Multiline DESCRIPTION cells are normal.
- * A state scan fixes both: treat " after a digit as a literal inch when the next char
- * is x, ), space, or tab; doubled "" is still an escaped quote.
- */
-function parseZinatexCSVRecords(rawText: string): string[][] {
-  const cleaned = rawText
+function parseZinatexCSV(rawText: string): ZinatexRow[] {
+  let text = rawText
     .replace(/^\uFEFF/, "")
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n");
 
-  const records: string[][] = [];
-  let row: string[] = [];
-  let field = "";
-  let i = 0;
-  let inQuotes = false;
-  const len = cleaned.length;
+  text = text.replace(/(\d)"/g, "$1in");
+  text = text.replace(/([a-zA-Z])"/g, "$1in");
 
-  while (i < len) {
-    const c = cleaned[i]!;
+  try {
+    const records = parse(text, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+      bom: true,
+      relax_quotes: true,
+      relax_column_count: true,
+    }) as ZinatexRow[];
 
-    if (!inQuotes) {
-      if (c === '"') {
-        inQuotes = true;
-        i++;
-        continue;
-      }
-      if (c === ",") {
-        row.push(field);
-        field = "";
-        i++;
-        continue;
-      }
-      if (c === "\n") {
-        row.push(field);
-        field = "";
-        if (row.some((x) => x.length > 0)) records.push(row);
-        row = [];
-        i++;
-        continue;
-      }
-      field += c;
-      i++;
-      continue;
+    if (records.length > 0) {
+      console.log(
+        "[sync-zinatex] CSV headers detected:",
+        Object.keys(records[0]!).join(" | ")
+      );
     }
 
-    if (c === '"') {
-      const next = cleaned[i + 1];
-      if (next === '"') {
-        field += '"';
-        i += 2;
-        continue;
-      }
-      const prev = field[field.length - 1] ?? "";
-      if (
-        prev &&
-        /\d/.test(prev) &&
-        (next === "x" || next === ")" || next === " " || next === "\t")
-      ) {
-        field += '"';
-        i++;
-        continue;
-      }
-      inQuotes = false;
-      i++;
-      continue;
-    }
-
-    field += c;
-    i++;
-  }
-
-  if (field.length || row.length) {
-    row.push(field);
-    if (row.some((x) => x.length > 0)) records.push(row);
-  }
-
-  return records;
-}
-
-function parseZinatexCSV(rawText: string): ZinatexRow[] {
-  const records = parseZinatexCSVRecords(rawText);
-  if (records.length < 2) return [];
-
-  const headers = records[0]!.map((h) => h.trim().replace(/^"|"$/g, ""));
-  console.log("[sync-zinatex] CSV headers detected:", headers.join(" | "));
-
-  const rows: ZinatexRow[] = [];
-  let skippedCols = 0;
-  for (let r = 1; r < records.length; r++) {
-    const values = records[r]!;
-    if (values.length !== headers.length) {
-      skippedCols += 1;
-      continue;
-    }
-    const row: ZinatexRow = {};
-    headers.forEach((h, idx) => {
-      row[h] = (values[idx] ?? "").trim().replace(/^"|"$/g, "");
-    });
-    rows.push(row);
-  }
-  if (skippedCols > 0) {
-    console.warn(
-      `[sync-zinatex] skipped ${skippedCols} records with wrong column count (expected ${headers.length})`
+    return records;
+  } catch (err) {
+    console.error(
+      "[sync-zinatex] csv-parse error:",
+      err instanceof Error ? err.message : String(err)
     );
+    return [];
   }
-  return rows;
 }
 
 function getField(row: ZinatexRow, ...keys: string[]): string {
@@ -295,6 +222,39 @@ function buildVariantRow(
     image_url: image,
     sort_order: SIZE_ORDER[sizeFromSku ?? ""] ?? 99,
   };
+}
+
+function prepareVariantRowsForUpsert(
+  variantRows: Partial<ProductVariant>[]
+): Partial<ProductVariant>[] {
+  const validVariantRows = variantRows.filter((row) => {
+    if (!row.sku || typeof row.sku !== "string" || row.sku.trim() === "") {
+      console.warn("[sync-zinatex] skipping variant with empty SKU");
+      return false;
+    }
+    if (!row.product_id) {
+      console.warn("[sync-zinatex] skipping variant with null product_id, sku:", row.sku);
+      return false;
+    }
+    if (typeof row.price !== "number" || !Number.isFinite(row.price)) {
+      console.warn(
+        "[sync-zinatex] skipping variant with invalid price, sku:",
+        row.sku,
+        "price:",
+        row.price
+      );
+      return false;
+    }
+    return true;
+  });
+
+  const seen = new Set<string>();
+  return validVariantRows.filter((row) => {
+    const sku = (row.sku as string).trim();
+    if (seen.has(sku)) return false;
+    seen.add(sku);
+    return true;
+  });
 }
 
 export async function GET(request: Request) {
@@ -573,7 +533,7 @@ export async function GET(request: Request) {
 
               const varResult = await batchUpsertVariants(
                 supabase,
-                variantRows,
+                prepareVariantRowsForUpsert(variantRows),
                 UPSERT_BATCH_SIZE
               );
               errors += varResult.errors;
@@ -661,15 +621,16 @@ export async function GET(request: Request) {
             )
             .filter((row): row is Partial<ProductVariant> => row != null);
 
+          const toUpsert = prepareVariantRowsForUpsert(variantRows);
           const result = await batchUpsertVariants(
             supabase,
-            variantRows,
+            toUpsert,
             UPSERT_BATCH_SIZE
           );
           variantsUpdated += result.updated;
           errors += result.errors;
           console.log(
-            `[VARIANT-UPDATE] ${parentSku} — ${variantRows.length} variants upserted`
+            `[VARIANT-UPDATE] ${parentSku} — ${toUpsert.length} variants upserted`
           );
           continue;
         }
@@ -696,7 +657,7 @@ export async function GET(request: Request) {
 
         const promoteResult = await batchUpsertVariants(
           supabase,
-          promotedVariantRows,
+          prepareVariantRowsForUpsert(promotedVariantRows),
           UPSERT_BATCH_SIZE
         );
         errors += promoteResult.errors;
