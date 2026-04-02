@@ -1,6 +1,5 @@
-import { parse } from "csv-parse";
+import { parse as parseCsvSync } from "csv-parse/sync";
 import { NextResponse } from "next/server";
-import { Readable } from "node:stream";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { batchUpsertVariants, validateCronSecret } from "@/lib/cron-utils";
 import type { ProductVariant } from "@/types";
@@ -55,6 +54,88 @@ function getSizeFromVariationSku(variationSku: string): string | null {
   return normalizeSize(parts[parts.length - 1] ?? null);
 }
 
+/** Reverses preprocess placeholder `5in` → `5"` for SIZE column display only. */
+function restoreInchMarksInSize(value: string | undefined): string {
+  return String(value ?? "").replace(/(\d)in/g, '$1"');
+}
+
+function formatCollectionWords(raw: string): string {
+  const t = raw.trim();
+  if (!t) return "";
+  return t
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+/** Derive design code and collection label from Zinatex Parent SKU patterns. */
+function parseDesignInfo(parentSku: string): { designCode: string; collection: string } {
+  const parts = parentSku.split("-").filter(Boolean);
+  if (parts.length === 0) {
+    return { designCode: parentSku.trim() || "unknown", collection: "Unknown" };
+  }
+
+  const numericIdx = parts.findIndex((p) => /^\d+$/.test(p));
+  if (numericIdx >= 0) {
+    const designCode = parts[numericIdx]!;
+    const prefix = parts.slice(0, numericIdx).join(" ").trim();
+    const collection =
+      !prefix && parts.length === 1
+        ? "Unknown"
+        : formatCollectionWords(prefix.replace(/-/g, " ")) || "Zinatex";
+    return { designCode, collection };
+  }
+
+  if (parts.length >= 2) {
+    const last = parts[parts.length - 1]!;
+    const looksLikeSuffix =
+      /^[A-Za-z]\d{1,3}$/.test(last) || /^[A-Za-z]{1,2}$/.test(last);
+    if (looksLikeSuffix) {
+      const designCode = parts[parts.length - 2]!;
+      const prefix = parts.slice(0, -2).join(" ").trim();
+      const collection =
+        formatCollectionWords(prefix.replace(/-/g, " ")) || designCode;
+      return { designCode, collection };
+    }
+  }
+
+  const designCode = parts[parts.length - 1]!;
+  const prefix = parts.slice(0, -1).join(" ").trim();
+  return {
+    designCode,
+    collection: formatCollectionWords(prefix.replace(/-/g, " ")) || "Unknown",
+  };
+}
+
+function buildSlug(name: string, designCode: string): string {
+  const base = name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `${base}-ztx-${designCode.toLowerCase()}`;
+}
+
+async function resolveUniqueProductSlug(
+  client: ReturnType<typeof createAdminClient>,
+  baseSlug: string
+): Promise<string> {
+  let candidate = baseSlug;
+  let n = 2;
+  for (;;) {
+    const { data } = await client
+      .from("products")
+      .select("id")
+      .eq("slug", candidate)
+      .maybeSingle();
+    if (!data) return candidate;
+    candidate = `${baseSlug}-${n}`;
+    n += 1;
+  }
+}
+
 function buildVariantRow(
   row: ZinatexRow,
   productId: string
@@ -65,8 +146,11 @@ function buildVariantRow(
   const qtyRaw = toNumber(row["QUANTITY ON HAND"]);
   const qty = qtyRaw == null ? 0 : Math.max(0, Math.trunc(qtyRaw));
   const msrp = toNumber(row["RETAIL PRICE / MSRP"]);
-  const size = getSizeFromVariationSku(sku);
-  const normalizedSize = normalizeSize(size);
+  const sizeFromSku = normalizeSize(getSizeFromVariationSku(sku));
+  const sizeFromCsv = restoreInchMarksInSize(row["SIZE"]).trim();
+  const normalizedSize = sizeFromCsv
+    ? normalizeSize(sizeFromCsv)
+    : sizeFromSku;
   const image = asHttpsUrl(row["MAIN IMAGE"]);
   const color = String(row["COLOR"] ?? "").trim() || null;
 
@@ -79,7 +163,7 @@ function buildVariantRow(
     in_stock: qty > 0,
     stock_qty: qty,
     image_url: image,
-    sort_order: SIZE_ORDER[normalizedSize ?? ""] ?? 99,
+    sort_order: SIZE_ORDER[sizeFromSku ?? ""] ?? 99,
   };
 }
 
@@ -96,6 +180,7 @@ export async function GET(request: Request) {
   let promoted = 0;
   let skippedNoMatch = 0;
   let skippedRows = 0;
+  let newProductsCreated = 0;
   let errors = 0;
 
   try {
@@ -114,15 +199,15 @@ export async function GET(request: Request) {
       );
     }
 
+    const rawText = await response.text();
     const contentType = response.headers.get("content-type") ?? "";
     if (
       !contentType.includes("text/") &&
       !contentType.includes("csv") &&
       !contentType.includes("octet-stream")
     ) {
-      const preview = await response.text();
       console.error(
-        `[sync-zinatex] Unexpected content-type: ${contentType}. Body preview: ${preview.slice(0, 300)}`
+        `[sync-zinatex] Unexpected content-type: ${contentType}. Body preview: ${rawText.slice(0, 300)}`
       );
       return NextResponse.json(
         { error: "Unexpected content type", contentType },
@@ -130,34 +215,18 @@ export async function GET(request: Request) {
       );
     }
 
-    if (!response.body) {
-      throw new Error("CSV response body is empty");
-    }
+    const sanitizedText = rawText.replace(/(\d)"/g, "$1in");
 
-    const parser = parse({
+    const rows = parseCsvSync(sanitizedText, {
       columns: true,
       trim: true,
       skip_empty_lines: true,
       relax_column_count: true,
       bom: true,
       relax_quotes: true,
-      skip_records_with_error: true,
-    });
+    }) as ZinatexRow[];
 
-    parser.on("skip", (err) => {
-      skippedRows += 1;
-      const message = err instanceof Error ? err.message : String(err);
-      console.warn("[sync-zinatex] skipped malformed row:", message);
-    });
-
-    const source = Readable.fromWeb(response.body as any);
-    source.pipe(parser);
-
-    const rows: ZinatexRow[] = [];
-    for await (const record of parser) {
-      processed += 1;
-      rows.push(record as ZinatexRow);
-    }
+    processed = rows.length;
 
     const parentGroups = new Map<string, ZinatexRow[]>();
     for (const row of rows) {
@@ -181,8 +250,9 @@ export async function GET(request: Request) {
           .filter(Boolean);
 
         if (variationSkus.length === 0) {
-          skippedNoMatch += 1;
-          console.log(`[SKIP] Parent SKU: ${parentSku} — no variation SKUs in CSV group`);
+          console.log(
+            `[SKIP] Parent SKU: ${parentSku} — no variation SKUs in CSV group`
+          );
           continue;
         }
 
@@ -203,10 +273,108 @@ export async function GET(request: Request) {
         }
 
         if (!parentProduct) {
-          skippedNoMatch += 1;
-          console.log(
-            `[SKIP] Parent SKU: ${parentSku} — no matching product in DB, needs manual import`
-          );
+          try {
+            const firstRow = groupRows[0]!;
+            const csvCollection = String(firstRow["COLLECTION"] ?? "").trim();
+            const { designCode, collection: parsedCollection } =
+              parseDesignInfo(parentSku);
+            const collection = csvCollection || parsedCollection;
+
+            const csvName = String(
+              firstRow["NAME"] ?? firstRow["PRODUCT TITLE"] ?? ""
+            ).trim();
+            let titleCollection = collection;
+            if (!csvName && !csvCollection && titleCollection === designCode) {
+              titleCollection = "Zinatex";
+            }
+            const name =
+              csvName ||
+              `${titleCollection.toUpperCase()} Rug Design ${designCode}`;
+
+            const baseSlug = buildSlug(name, designCode);
+            const slug = await resolveUniqueProductSlug(supabase, baseSlug);
+
+            const msrp = toNumber(firstRow["RETAIL PRICE / MSRP"]);
+            if (msrp == null || msrp === 0) {
+              console.warn(
+                `[sync-zinatex] missing or zero MSRP for new product parent ${parentSku}, using price 0`
+              );
+            }
+            const price =
+              msrp == null ? 0 : round2((msrp / 4) * 2.2);
+
+            const image = asHttpsUrl(firstRow["MAIN IMAGE"]);
+            const hasVariants = groupRows.length > 1;
+            const variationSku = String(
+              firstRow["Variation SKU"] ?? ""
+            ).trim();
+
+            const newProduct = {
+              sku: variationSku,
+              name,
+              slug,
+              manufacturer: "Zinatex",
+              category: "rugs",
+              collection,
+              price,
+              in_stock: groupRows.some(
+                (r) => (toNumber(r["QUANTITY ON HAND"]) ?? 0) > 0
+              ),
+              images: image ? [image] : [],
+              has_variants: hasVariants,
+              variant_type: hasVariants ? ("rug" as const) : null,
+              description: `${name}. Available in multiple sizes and colors.`,
+              tags: [] as string[],
+              rating: 0,
+              review_count: 0,
+            };
+
+            const { data: inserted, error: insertError } = await supabase
+              .from("products")
+              .insert(newProduct)
+              .select("id")
+              .single();
+
+            if (insertError || !inserted?.id) {
+              skippedNoMatch += 1;
+              errors += 1;
+              console.error(
+                `[sync-zinatex] failed to create product for ${parentSku}:`,
+                insertError?.message
+              );
+              continue;
+            }
+
+            newProductsCreated += 1;
+            console.log(
+              `[CREATE] Parent SKU: ${parentSku} — new product ${inserted.id} (${slug})`
+            );
+
+            if (hasVariants) {
+              const variantRows = groupRows
+                .map((row) => buildVariantRow(row, inserted.id))
+                .filter((row): row is Partial<ProductVariant> => row != null);
+
+              const varResult = await batchUpsertVariants(
+                supabase,
+                variantRows,
+                UPSERT_BATCH_SIZE
+              );
+              errors += varResult.errors;
+              if (varResult.errors > 0) {
+                console.error(
+                  `[sync-zinatex] variant upsert had errors for ${parentSku} (${varResult.errors} rows)`
+                );
+              }
+            }
+          } catch (createErr) {
+            skippedNoMatch += 1;
+            errors += 1;
+            console.error(
+              `[sync-zinatex] auto-create failed for ${parentSku}:`,
+              createErr
+            );
+          }
           continue;
         }
 
@@ -302,6 +470,7 @@ export async function GET(request: Request) {
       singles_updated: singlesUpdated,
       variants_updated: variantsUpdated,
       promoted,
+      new_products_created: newProductsCreated,
       skipped_no_match: skippedNoMatch,
       skipped_rows: skippedRows,
       errors,
@@ -321,6 +490,7 @@ export async function GET(request: Request) {
         singles_updated: singlesUpdated,
         variants_updated: variantsUpdated,
         promoted,
+        new_products_created: newProductsCreated,
         skipped_no_match: skippedNoMatch,
         skipped_rows: skippedRows,
         errors: errors + 1,
