@@ -5,6 +5,7 @@ import { getAllSettingsMasked, setSetting } from "@/lib/settings-store";
 const ALLOWED_KEYS = new Set([
   "united_email",
   "united_password",
+  "united_csv_url",
   "nfd_email",
   "nfd_password",
   "nfd_csv_url",

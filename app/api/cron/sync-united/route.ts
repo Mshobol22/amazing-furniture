@@ -40,6 +40,8 @@ export async function GET(request: Request) {
 
   const email = (await getSetting("united_email")) ?? process.env.UNITED_PORTAL_EMAIL;
   const password = (await getSetting("united_password")) ?? process.env.UNITED_PORTAL_PASSWORD;
+  const csvUrl =
+    (await getSetting("united_csv_url")) ?? process.env.UNITED_PORTAL_CSV_URL ?? UNITED_CSV_URL;
 
   if (!email || !password) {
     console.warn("[sync-united] United credentials not configured - skipping");
@@ -82,7 +84,7 @@ export async function GET(request: Request) {
       throw new Error("United login did not return a session cookie");
     }
 
-    const csvRes = await fetch(UNITED_CSV_URL, {
+    const csvRes = await fetch(csvUrl, {
       method: "GET",
       headers: { Cookie: cookie },
       cache: "no-store",

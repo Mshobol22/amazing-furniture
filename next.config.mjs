@@ -51,6 +51,11 @@ const nextConfig = {
         destination: "/collections/bedroom",
         permanent: true,
       },
+      {
+        source: "/admin/promotions",
+        destination: "/admin/sales",
+        permanent: true,
+      },
     ];
   },
 };

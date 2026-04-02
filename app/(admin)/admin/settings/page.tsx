@@ -12,6 +12,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 type AllowedKey =
   | "united_email"
   | "united_password"
+  | "united_csv_url"
   | "nfd_email"
   | "nfd_password"
   | "nfd_csv_url";
@@ -33,6 +34,7 @@ type FieldConfig = {
 const UNITED_FIELDS: FieldConfig[] = [
   { key: "united_email", label: "Email", inputType: "email" },
   { key: "united_password", label: "Password", inputType: "password" },
+  { key: "united_csv_url", label: "CSV Download URL", inputType: "url" },
 ];
 
 const NFD_FIELDS: FieldConfig[] = [
@@ -46,6 +48,7 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Record<AllowedKey, SettingRow | null>>({
     united_email: null,
     united_password: null,
+    united_csv_url: null,
     nfd_email: null,
     nfd_password: null,
     nfd_csv_url: null,
@@ -72,6 +75,7 @@ export default function AdminSettingsPage() {
     const next: Record<AllowedKey, SettingRow | null> = {
       united_email: null,
       united_password: null,
+      united_csv_url: null,
       nfd_email: null,
       nfd_password: null,
       nfd_csv_url: null,

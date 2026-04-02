@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Mail,
   SlidersHorizontal,
+  Settings,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -28,6 +29,7 @@ const navItems = [
   { href: "/admin/sales", label: "Sales", icon: Tag },
   { href: "/admin/banners", label: "Banners", icon: MessageSquare },
   { href: "/admin/slides", label: "Hero Slides", icon: SlidersHorizontal },
+  { href: "/admin/settings", label: "Supplier Credentials", icon: Settings },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { href: "/admin/newsletter", label: "Newsletter", icon: Mail },
 ];
