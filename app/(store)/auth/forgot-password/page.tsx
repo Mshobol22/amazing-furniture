@@ -1,3 +1,7 @@
+/**
+ * resetPasswordForEmail redirectTo (in ForgotPasswordForm) must hit /auth/callback?next=/auth/reset-password
+ * so PKCE code exchange runs before the reset-password page loads.
+ */
 import { Suspense } from "react";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 

@@ -10,6 +10,7 @@ import {
   isPendingOrProcessingStatus,
 } from "@/lib/account/order-status-badge";
 import RecentlyViewedStrip from "@/components/account/RecentlyViewedStrip";
+import ProfileCompleteFlash from "@/components/account/ProfileCompleteFlash";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -198,6 +199,8 @@ export default async function AccountDashboardPage() {
             <Link href="/account/profile">Go to profile</Link>
           </Button>
         </div>
+      ) : completePct === 100 ? (
+        <ProfileCompleteFlash />
       ) : null}
 
       <div className="rounded-xl border border-[#1C1C1C]/10 bg-white shadow-sm">

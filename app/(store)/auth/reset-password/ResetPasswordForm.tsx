@@ -48,22 +48,13 @@ export default function ResetPasswordForm() {
   const supabase = createClient();
 
   useEffect(() => {
-    const supabase = createClient();
-
-    const sync = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSessionReady(!!data.session);
-    };
-
-    void sync();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      void sync();
-    });
-
-    return () => subscription.unsubscribe();
+    const client = createClient();
+    (async () => {
+      const {
+        data: { session },
+      } = await client.auth.getSession();
+      setSessionReady(!!session);
+    })();
   }, []);
 
   useEffect(() => {

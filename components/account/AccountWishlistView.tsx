@@ -1,13 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCartStore } from "@/store/cartStore";
-import type { Product } from "@/types";
-import { mapRowToProduct, attachZinatexFromPrices } from "@/lib/supabase/products";
+import type { WishlistAccountEntry } from "@/types/wishlist-account";
 import { productLeadImageSrc } from "@/lib/nfd-image-proxy";
 import { formatPrice } from "@/lib/format-price";
 import { Button } from "@/components/ui/button";
@@ -29,70 +27,17 @@ function getCategoryBadgeLabel(category: string): string {
   return labels[category] ?? category.replace(/-/g, " ").toUpperCase();
 }
 
-type WishlistEntry = { wishlistId: string; product: Product };
-
-export default function AccountWishlistView() {
+export default function AccountWishlistView({
+  initialEntries,
+}: {
+  initialEntries: WishlistAccountEntry[];
+}) {
   const addItem = useCartStore((s) => s.addItem);
-  const [entries, setEntries] = useState<WishlistEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const { data, error: qErr } = await supabase
-      .from("wishlists")
-      .select("id, products (*)")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (qErr) {
-      setError("Could not load wishlist.");
-      setLoading(false);
-      return;
-    }
-
-    const raw = (data ?? []) as {
-      id: string;
-      products: Record<string, unknown> | Record<string, unknown>[] | null;
-    }[];
-
-    const mapped: WishlistEntry[] = [];
-    for (const row of raw) {
-      const p = row.products;
-      const prod = Array.isArray(p) ? p[0] : p;
-      if (!prod || typeof prod !== "object") continue;
-      try {
-        const product = mapRowToProduct(prod as Record<string, unknown>);
-        mapped.push({ wishlistId: row.id, product });
-      } catch {
-        continue;
-      }
-    }
-
-    const enriched = await attachZinatexFromPrices(mapped.map((m) => m.product));
-    const byId = new Map(enriched.map((p) => [p.id, p]));
-    setEntries(
-      mapped
-        .map((m) => {
-          const p = byId.get(m.product.id) ?? m.product;
-          return { wishlistId: m.wishlistId, product: p };
-        })
-        .filter((e) => Boolean(e.product?.id))
-    );
-    setLoading(false);
-  }, []);
+  const [entries, setEntries] = useState<WishlistAccountEntry[]>(initialEntries);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    setEntries(initialEntries);
+  }, [initialEntries]);
 
   const remove = async (wishlistId: string) => {
     const supabase = createClient();
@@ -109,20 +54,6 @@ export default function AccountWishlistView() {
       setEntries((prev) => prev.filter((e) => e.wishlistId !== wishlistId));
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#2D4A3E] border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-800">{error}</div>
-    );
-  }
 
   if (entries.length === 0) {
     return (

@@ -4,12 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  const nextPath = safeAuthRedirectPath(searchParams.get("next"));
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get("code");
+  const next = safeAuthRedirectPath(requestUrl.searchParams.get("next"));
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/auth/login?error=auth`);
+    return NextResponse.redirect(new URL("/auth/login?error=auth", requestUrl.origin));
   }
 
   const supabase = await createClient();
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    return NextResponse.redirect(`${origin}/auth/login?error=auth`);
+    return NextResponse.redirect(new URL("/auth/login?error=auth", requestUrl.origin));
   }
 
   const {
@@ -33,5 +33,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}${nextPath}`);
+  return NextResponse.redirect(new URL(next, requestUrl.origin));
 }

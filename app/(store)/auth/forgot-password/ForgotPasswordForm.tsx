@@ -49,7 +49,8 @@ export default function ForgotPasswordForm() {
     setError(null);
     setIsLoading(true);
     try {
-      const redirectTo = "https://www.amazinghomefurniturestore.com/auth/reset-password";
+      const redirectTo =
+        "https://www.amazinghomefurniturestore.com/auth/callback?next=/auth/reset-password";
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(data.email, {
         redirectTo,
       });
