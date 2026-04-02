@@ -1,7 +1,7 @@
 import { parse } from "csv-parse";
 import { Readable } from "node:stream";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Product } from "@/types";
+import type { Product, ProductVariant } from "@/types";
 
 export function validateCronSecret(request: Request): boolean {
   const expected = process.env.CRON_SECRET;
@@ -53,6 +53,37 @@ export async function batchUpsertProducts(
     if (error) {
       errors += batch.length;
       console.error("[cron] upsert batch error:", error.message, {
+        batchStart: i,
+        batchSize: batch.length,
+      });
+      continue;
+    }
+
+    updated += batch.length;
+  }
+
+  return { updated, errors };
+}
+
+export async function batchUpsertVariants(
+  supabase: SupabaseClient,
+  rows: Partial<ProductVariant>[],
+  batchSize: number
+): Promise<{ updated: number; errors: number }> {
+  let updated = 0;
+  let errors = 0;
+
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+    if (batch.length === 0) continue;
+
+    const { error } = await supabase
+      .from("product_variants")
+      .upsert(batch, { onConflict: "sku" });
+
+    if (error) {
+      errors += batch.length;
+      console.error("[cron] variant upsert batch error:", error.message, {
         batchStart: i,
         batchSize: batch.length,
       });

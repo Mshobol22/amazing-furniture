@@ -5,6 +5,7 @@ import {
   parseCSVStream,
   validateCronSecret,
 } from "@/lib/cron-utils";
+import { getSetting } from "@/lib/settings-store";
 import type { Product } from "@/types";
 
 export const runtime = "nodejs";
@@ -37,8 +38,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const email = process.env.UNITED_PORTAL_EMAIL;
-  const password = process.env.UNITED_PORTAL_PASSWORD;
+  const email = (await getSetting("united_email")) ?? process.env.UNITED_PORTAL_EMAIL;
+  const password = (await getSetting("united_password")) ?? process.env.UNITED_PORTAL_PASSWORD;
 
   if (!email || !password) {
     console.warn("[sync-united] United credentials not configured - skipping");

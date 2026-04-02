@@ -5,6 +5,7 @@ import {
   parseCSVStream,
   validateCronSecret,
 } from "@/lib/cron-utils";
+import { getSetting } from "@/lib/settings-store";
 import type { Product } from "@/types";
 
 export const runtime = "nodejs";
@@ -39,9 +40,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const email = process.env.NFD_PORTAL_EMAIL;
-  const password = process.env.NFD_PORTAL_PASSWORD;
-  const csvUrl = process.env.NFD_PORTAL_CSV_URL;
+  const email = (await getSetting("nfd_email")) ?? process.env.NFD_PORTAL_EMAIL;
+  const password = (await getSetting("nfd_password")) ?? process.env.NFD_PORTAL_PASSWORD;
+  const csvUrl = (await getSetting("nfd_csv_url")) ?? process.env.NFD_PORTAL_CSV_URL;
 
   if (!email || !password || !csvUrl) {
     console.warn("[sync-nfd] NFD credentials not configured - skipping");
