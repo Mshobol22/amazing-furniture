@@ -100,11 +100,34 @@ export async function GET(request: Request) {
   let errors = 0;
 
   try {
-    const response = await fetch(ZINATEX_CSV_URL, { method: "GET", cache: "no-store" });
+    const response = await fetch(ZINATEX_CSV_URL, {
+      method: "GET",
+      cache: "no-store",
+      signal: AbortSignal.timeout(30000),
+    });
     if (!response.ok) {
+      console.error(
+        `[sync-zinatex] CSV fetch failed: ${response.status} ${response.statusText}`
+      );
       return NextResponse.json(
-        { error: `Failed to fetch Zinatex CSV: ${response.status}` },
-        { status: 500 }
+        { error: "CSV unavailable", status: response.status },
+        { status: 200 }
+      );
+    }
+
+    const contentType = response.headers.get("content-type") ?? "";
+    if (
+      !contentType.includes("text/") &&
+      !contentType.includes("csv") &&
+      !contentType.includes("octet-stream")
+    ) {
+      const preview = await response.text();
+      console.error(
+        `[sync-zinatex] Unexpected content-type: ${contentType}. Body preview: ${preview.slice(0, 300)}`
+      );
+      return NextResponse.json(
+        { error: "Unexpected content type", contentType },
+        { status: 200 }
       );
     }
 
@@ -263,11 +286,14 @@ export async function GET(request: Request) {
     };
     console.log("[sync-zinatex] summary:", summary);
     return NextResponse.json(summary);
-  } catch (err) {
-    console.error("[sync-zinatex] fatal error:", err);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : "";
+    console.error("[sync-zinatex] fatal error:", message, stack);
     return NextResponse.json(
       {
         error: "Zinatex sync failed",
+        message,
         processed,
         singles_updated: singlesUpdated,
         variants_updated: variantsUpdated,
@@ -276,7 +302,7 @@ export async function GET(request: Request) {
         errors: errors + 1,
         duration_ms: Date.now() - startedAt,
       },
-      { status: 500 }
+      { status: 200 }
     );
   }
 }

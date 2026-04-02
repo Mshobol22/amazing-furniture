@@ -169,14 +169,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
   // Fetch variants for products that support them (e.g. Zinatex rugs)
   let variants: ProductVariant[] = [];
   if (product.has_variants) {
-    const supabase = createAdminClient();
-    const { data } = await supabase
-      .from("product_variants")
-      .select("*")
-      .eq("product_id", product.id)
-      .order("sort_order", { ascending: true })
-      .order("color", { ascending: true });
-    variants = (data ?? []) as ProductVariant[];
+    try {
+      const supabase = createAdminClient();
+      const { data } = await supabase
+        .from("product_variants")
+        .select("*")
+        .eq("product_id", product.id)
+        .order("sort_order", { ascending: true })
+        .order("color", { ascending: true });
+      variants = (data ?? []) as ProductVariant[];
+    } catch (e) {
+      console.error("[product-page] variants fetch failed:", e);
+    }
   }
 
   if (
@@ -184,19 +188,28 @@ export default async function ProductPage({ params }: ProductPageProps) {
     product.has_variants &&
     variants.length === 0
   ) {
-    const zKey = extractZinatexSlugSuffix(product.slug);
-    if (zKey && isZinatexNumericDesignStyleKey(zKey)) {
-      const canon = await findZinatexCanonicalParentForStyleKey(
-        zKey,
-        product.id
-      );
-      if (canon) {
-        redirect(`/products/${canon.slug}`);
+    try {
+      const zKey = extractZinatexSlugSuffix(product.slug);
+      if (zKey && isZinatexNumericDesignStyleKey(zKey)) {
+        const canon = await findZinatexCanonicalParentForStyleKey(
+          zKey,
+          product.id
+        );
+        if (canon) {
+          redirect(`/products/${canon.slug}`);
+        }
       }
+    } catch (e) {
+      console.error("[product-page] zinatex canonical redirect check failed:", e);
     }
   }
 
-  const categoryProducts = await getProducts(product.category);
+  let categoryProducts: Product[] = [];
+  try {
+    categoryProducts = await getProducts(product.category);
+  } catch (e) {
+    console.error("[product-page] category products fetch failed:", e);
+  }
   const relatedCandidates = categoryProducts.filter(
     (p) => p.id !== product.id && isProductCardImageReady(p)
   );
@@ -209,27 +222,39 @@ export default async function ProductPage({ params }: ProductPageProps) {
   if (isAcmeKitProduct(product)) {
     const parentSku = String(product.sku ?? product.name ?? "").trim();
     if (parentSku) {
-      acmeKitSetPieces = await getAcmeKitComponentProducts(parentSku);
+      try {
+        acmeKitSetPieces = await getAcmeKitComponentProducts(parentSku);
+      } catch (e) {
+        console.error("[product-page] acme kit set pieces failed:", e);
+      }
     }
   }
 
   if (hasAcmeColorGroup(product)) {
-    acmeColorVariants = await getAcmeColorGroupVariantProducts(
-      String(product.acme_color_group ?? "").trim()
-    );
+    try {
+      acmeColorVariants = await getAcmeColorGroupVariantProducts(
+        String(product.acme_color_group ?? "").trim()
+      );
+    } catch (e) {
+      console.error("[product-page] acme color variants failed:", e);
+    }
   }
 
   const acmeShowCompleteCollection =
     isAcmeKitProduct(product) || hasAcmeColorGroup(product);
   if (acmeShowCompleteCollection) {
-    let sibs = await getAcmeKitCollectionSiblings(product);
-    const cg = String(product.acme_color_group ?? "").trim();
-    if (cg) {
-      sibs = sibs.filter(
-        (p) => String(p.acme_color_group ?? "").trim() !== cg
-      );
+    try {
+      let sibs = await getAcmeKitCollectionSiblings(product);
+      const cg = String(product.acme_color_group ?? "").trim();
+      if (cg) {
+        sibs = sibs.filter(
+          (p) => String(p.acme_color_group ?? "").trim() !== cg
+        );
+      }
+      acmeCollectionSiblings = sibs;
+    } catch (e) {
+      console.error("[product-page] acme collection siblings failed:", e);
     }
-    acmeCollectionSiblings = sibs;
   }
 
   let acmeComponentParentKit: Product | null = null;
@@ -237,8 +262,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
   if (isAcmeComponentProduct(product)) {
     const parentSku = String(product.acme_kit_parent_sku ?? "").trim();
     if (parentSku) {
-      acmeComponentParentKit = await getAcmeKitParentProductBySku(parentSku);
-      acmeComponentSiblingPieces = await getAcmeKitSiblingComponents(product);
+      try {
+        acmeComponentParentKit = await getAcmeKitParentProductBySku(parentSku);
+        acmeComponentSiblingPieces = await getAcmeKitSiblingComponents(product);
+      } catch (e) {
+        console.error("[product-page] acme component parent/siblings failed:", e);
+      }
     }
   }
 
@@ -254,55 +283,90 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   let collectionWishlistedIds: string[] = [];
   let siblingCollectionProducts: Product[] = [];
+  let unitedFurnitureSiblings: Product[] = [];
 
   const hasCollectionGroup = !!product.collection_group;
   const hasCollection = !!product.collection;
   const collectionValue = product.collection ?? null;
 
-  if (hasCollectionGroup || hasCollection) {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    let siblingQuery = supabase
-      .from("products")
-      .select("*")
-      .neq("id", product.id)
-      .limit(6);
-
-    if (hasCollectionGroup) {
-      siblingQuery = siblingQuery
-        .eq("collection_group", product.collection_group!)
-        .or("images_validated.eq.true,and(images_validated.is.null,images.not.is.null)");
-    } else {
-      siblingQuery = siblingQuery
-        .ilike("collection", collectionValue!)
-        .not("images", "is", null);
-    }
-
-    siblingQuery = applyAcmeComponentListingFilter(siblingQuery);
-
-    const { data: siblingRows } = await siblingQuery;
-    const siblingMapped = (siblingRows ?? []).map((r) =>
-      mapRowToProduct(r as Record<string, unknown>)
-    );
-    siblingCollectionProducts = await attachVariantFromPrices(siblingMapped);
-
-    if (user) {
-      const siblingIds = siblingCollectionProducts.map((p) => p.id);
-      const collectionIds = [product.id, ...siblingIds];
-      const { data: wishlistedRows } = await supabase
-        .from("wishlists")
-        .select("product_id")
-        .eq("user_id", user.id)
-        .in("product_id", collectionIds);
-
-      collectionWishlistedIds = (wishlistedRows ?? []).map(
-        (row) => row.product_id as string
-      );
+  if (isUnitedFurnitureProduct(product) && product.page_id) {
+    try {
+      const admin = createAdminClient();
+      let ufQuery = admin
+        .from("products")
+        .select("*")
+        .eq("manufacturer", "United Furniture")
+        .eq("page_id", product.page_id)
+        .neq("id", product.id)
+        .limit(6);
+      ufQuery = applyAcmeComponentListingFilter(ufQuery);
+      const { data: ufRows, error: ufErr } = await ufQuery;
+      if (ufErr) {
+        console.error("[product-page] UF siblings query error:", ufErr.message);
+      } else {
+        const mapped = (ufRows ?? []).map((r) =>
+          mapRowToProduct(r as Record<string, unknown>)
+        );
+        unitedFurnitureSiblings = await attachVariantFromPrices(mapped);
+      }
+    } catch (e) {
+      console.error("[product-page] united furniture siblings fetch failed:", e);
     }
   }
+
+  if (hasCollectionGroup || hasCollection) {
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      let siblingQuery = supabase
+        .from("products")
+        .select("*")
+        .neq("id", product.id)
+        .limit(6);
+
+      if (hasCollectionGroup) {
+        siblingQuery = siblingQuery
+          .eq("collection_group", product.collection_group!)
+          .or("images_validated.eq.true,and(images_validated.is.null,images.not.is.null)");
+      } else {
+        siblingQuery = siblingQuery
+          .ilike("collection", collectionValue!)
+          .not("images", "is", null);
+      }
+
+      siblingQuery = applyAcmeComponentListingFilter(siblingQuery);
+
+      const { data: siblingRows } = await siblingQuery;
+      const siblingMapped = (siblingRows ?? []).map((r) =>
+        mapRowToProduct(r as Record<string, unknown>)
+      );
+      siblingCollectionProducts = await attachVariantFromPrices(siblingMapped);
+
+      if (user) {
+        const siblingIds = siblingCollectionProducts.map((p) => p.id);
+        const collectionIds = [product.id, ...siblingIds];
+        const { data: wishlistedRows } = await supabase
+          .from("wishlists")
+          .select("product_id")
+          .eq("user_id", user.id)
+          .in("product_id", collectionIds);
+
+        collectionWishlistedIds = (wishlistedRows ?? []).map(
+          (row) => row.product_id as string
+        );
+      }
+    } catch (e) {
+      console.error("[product-page] collection siblings fetch failed:", e);
+    }
+  }
+
+  const siblingsForDisplay =
+    unitedFurnitureSiblings.length > 0
+      ? unitedFurnitureSiblings
+      : siblingCollectionProducts;
 
   const categoryLabel =
     product.category.charAt(0).toUpperCase() +
@@ -594,14 +658,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </>
         )}
 
-        {(hasCollectionGroup || hasCollection) &&
-        siblingCollectionProducts.length > 0 ? (
+        {siblingsForDisplay.length > 0 ? (
           <section className="mb-10">
             <h2 className="mb-4 font-cormorant text-xl font-semibold text-[#1C1C1C] md:text-2xl">
               Also in this collection
             </h2>
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {siblingCollectionProducts
+              {siblingsForDisplay
                 .filter((sibling) => isProductCardImageReady(sibling))
                 .map((sibling) => {
                   const imageSrc = sibling.images?.[0] as string;

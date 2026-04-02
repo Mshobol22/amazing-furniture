@@ -787,10 +787,10 @@ export default function CheckoutPage() {
           </p>
           <div className="flex w-full flex-col gap-3">
             <Button asChild className="w-full bg-[#2D4A3E] text-[#FAF8F5] hover:bg-[#6d5210]">
-              <Link href="/login?redirect=/checkout">Sign In</Link>
+              <Link href="/auth/login?redirect=/checkout">Sign In</Link>
             </Button>
             <Button asChild variant="outline" className="w-full border-[#1C1C1C]">
-              <Link href="/signup?redirect=/checkout">Create Account</Link>
+              <Link href="/auth/signup?redirect=/checkout">Create Account</Link>
             </Button>
           </div>
           <Link
