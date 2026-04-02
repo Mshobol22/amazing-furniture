@@ -1,10 +1,8 @@
+import { parse } from "csv-parse";
 import { NextResponse } from "next/server";
+import { Readable } from "node:stream";
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  batchUpsertVariants,
-  parseCSVStream,
-  validateCronSecret,
-} from "@/lib/cron-utils";
+import { batchUpsertVariants, validateCronSecret } from "@/lib/cron-utils";
 import type { ProductVariant } from "@/types";
 
 export const runtime = "nodejs";
@@ -97,6 +95,7 @@ export async function GET(request: Request) {
   let variantsUpdated = 0;
   let promoted = 0;
   let skippedNoMatch = 0;
+  let skippedRows = 0;
   let errors = 0;
 
   try {
@@ -131,11 +130,34 @@ export async function GET(request: Request) {
       );
     }
 
-    const rows: ZinatexRow[] = [];
-    await parseCSVStream(response, async (row) => {
-      processed += 1;
-      rows.push(row);
+    if (!response.body) {
+      throw new Error("CSV response body is empty");
+    }
+
+    const parser = parse({
+      columns: true,
+      trim: true,
+      skip_empty_lines: true,
+      relax_column_count: true,
+      bom: true,
+      relax_quotes: true,
+      skip_records_with_error: true,
     });
+
+    parser.on("skip", (err) => {
+      skippedRows += 1;
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn("[sync-zinatex] skipped malformed row:", message);
+    });
+
+    const source = Readable.fromWeb(response.body as any);
+    source.pipe(parser);
+
+    const rows: ZinatexRow[] = [];
+    for await (const record of parser) {
+      processed += 1;
+      rows.push(record as ZinatexRow);
+    }
 
     const parentGroups = new Map<string, ZinatexRow[]>();
     for (const row of rows) {
@@ -281,6 +303,7 @@ export async function GET(request: Request) {
       variants_updated: variantsUpdated,
       promoted,
       skipped_no_match: skippedNoMatch,
+      skipped_rows: skippedRows,
       errors,
       duration_ms: Date.now() - startedAt,
     };
@@ -299,6 +322,7 @@ export async function GET(request: Request) {
         variants_updated: variantsUpdated,
         promoted,
         skipped_no_match: skippedNoMatch,
+        skipped_rows: skippedRows,
         errors: errors + 1,
         duration_ms: Date.now() - startedAt,
       },
