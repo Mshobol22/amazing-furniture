@@ -1,4 +1,3 @@
-import { parse as parseCsvSync } from "csv-parse/sync";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { batchUpsertVariants, validateCronSecret } from "@/lib/cron-utils";
@@ -7,8 +6,11 @@ import type { ProductVariant } from "@/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ZINATEX_CSV_URL =
+const ZINATEX_SPECS_URL =
   "https://zinatexrugs.com/wp-content/uploads/woo-feed/custom/csv/zinatexproductfeed.csv";
+const ZINATEX_INVENTORY_URL =
+  "https://zinatexrugs.com/wp-content/uploads/woo-feed/custom/csv/zinatexproductfeed2-2.csv";
+
 const UPSERT_BATCH_SIZE = 100;
 const SIZE_ORDER: Record<string, number> = {
   "2x4": 1,
@@ -23,17 +25,52 @@ const SIZE_ORDER: Record<string, number> = {
 
 type ZinatexRow = Record<string, string>;
 
+function parseZinatexCSV(rawText: string): ZinatexRow[] {
+  const cleaned = rawText
+    .replace(/^\uFEFF/, "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n");
+
+  const lines = cleaned.split("\n").filter((l) => l.trim());
+  if (lines.length < 2) return [];
+
+  const headers = lines[0]!.split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
+  console.log("[sync-zinatex] CSV headers detected:", headers.join(" | "));
+
+  const rows: ZinatexRow[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i]!.split(",");
+    if (values.length < Math.max(headers.length - 3, 2)) continue;
+
+    for (let col = 0; col < headers.length - 1; col++) {
+      const h = headers[col] ?? "";
+      if (/^size$/i.test(h) && values[col] && values[col]!.trim().length < 3) {
+        values[col] = values[col]! + "," + (values[col + 1] ?? "");
+        values.splice(col + 1, 1);
+      }
+    }
+
+    const row: ZinatexRow = {};
+    headers.forEach((h, idx) => {
+      row[h] = (values[idx] ?? "").trim().replace(/^"|"$/g, "");
+    });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function getField(row: ZinatexRow, ...keys: string[]): string {
+  for (const key of keys) {
+    if (row[key] !== undefined && row[key] !== "") return row[key]!.trim();
+  }
+  return "";
+}
+
 function asHttpsUrl(value: string | undefined): string | null {
   if (!value) return null;
   const trimmed = value.trim();
   if (!trimmed.startsWith("https://")) return null;
   return trimmed;
-}
-
-function toNumber(value: string | undefined): number | null {
-  if (!value) return null;
-  const n = Number(value.replace(/[$,]/g, "").trim());
-  return Number.isFinite(n) ? n : null;
 }
 
 function round2(value: number): number {
@@ -55,7 +92,7 @@ function getSizeFromVariationSku(variationSku: string): string | null {
 }
 
 /** Reverses preprocess placeholder `5in` → `5"` for SIZE column display only. */
-function restoreInchMarksInSize(value: string | undefined): string {
+function restoreInchMarksInSize(value: string): string {
   return String(value ?? "").replace(/(\d)in/g, '$1"');
 }
 
@@ -138,30 +175,47 @@ async function resolveUniqueProductSlug(
 
 function buildVariantRow(
   row: ZinatexRow,
-  productId: string
+  productId: string,
+  resolveStockQty: (variationSku: string, specsRow: ZinatexRow) => number,
+  resolveInStock: (variationSku: string, specsRow: ZinatexRow) => boolean
 ): Partial<ProductVariant> | null {
-  const sku = String(row["Variation SKU"] ?? "").trim();
+  const sku = getField(
+    row,
+    "Variation SKU",
+    "VARIATION SKU",
+    "variation_sku",
+    "SKU"
+  );
   if (!sku) return null;
 
-  const qtyRaw = toNumber(row["QUANTITY ON HAND"]);
-  const qty = qtyRaw == null ? 0 : Math.max(0, Math.trunc(qtyRaw));
-  const msrp = toNumber(row["RETAIL PRICE / MSRP"]);
+  const stockQty = resolveStockQty(sku, row);
+  const msrpRaw = getField(
+    row,
+    "RETAIL PRICE / MSRP",
+    "MSRP",
+    "Price",
+    "PRICE",
+    "price"
+  );
+  const msrp = parseFloat(msrpRaw.replace(/[^0-9.]/g, "")) || 0;
+  const price = round2((msrp / 4) * 2.2);
+
   const sizeFromSku = normalizeSize(getSizeFromVariationSku(sku));
-  const sizeFromCsv = restoreInchMarksInSize(row["SIZE"]).trim();
-  const normalizedSize = sizeFromCsv
-    ? normalizeSize(sizeFromCsv)
-    : sizeFromSku;
-  const image = asHttpsUrl(row["MAIN IMAGE"]);
-  const color = String(row["COLOR"] ?? "").trim() || null;
+  const sizeFromCsv = restoreInchMarksInSize(
+    getField(row, "SIZE", "Size", "size")
+  ).trim();
+  const normalizedSize = sizeFromCsv ? normalizeSize(sizeFromCsv) : sizeFromSku;
+  const image = asHttpsUrl(getField(row, "MAIN IMAGE", "Image", "IMAGE", "image_url"));
+  const color = getField(row, "COLOR", "Color", "color") || null;
 
   return {
     product_id: productId,
     sku,
     size: normalizedSize,
     color,
-    price: msrp == null ? 0 : round2((msrp / 4) * 2.2),
-    in_stock: qty > 0,
-    stock_qty: qty,
+    price,
+    in_stock: resolveInStock(sku, row),
+    stock_qty: stockQty,
     image_url: image,
     sort_order: SIZE_ORDER[sizeFromSku ?? ""] ?? 99,
   };
@@ -173,80 +227,129 @@ export async function GET(request: Request) {
   }
 
   const supabase = createAdminClient();
-  const startedAt = Date.now();
-  let processed = 0;
+  const start = Date.now();
+  let specRows: ZinatexRow[] = [];
+  const inventoryMap = new Map<string, number>();
   let singlesUpdated = 0;
   let variantsUpdated = 0;
   let promoted = 0;
   let skippedNoMatch = 0;
-  let skippedRows = 0;
   let newProductsCreated = 0;
   let errors = 0;
 
+  function resolveInStock(variationSku: string, specsRow: ZinatexRow): boolean {
+    if (inventoryMap.has(variationSku)) {
+      return inventoryMap.get(variationSku)! > 0;
+    }
+    const fallbackQty =
+      parseInt(
+        (
+          specsRow["QUANTITY ON HAND"] ||
+          specsRow["Quantity"] ||
+          getField(specsRow, "QTY", "qty", "Stock", "STOCK") ||
+          "0"
+        ).replace(/[^0-9]/g, ""),
+        10
+      ) || 0;
+    return fallbackQty > 0;
+  }
+
+  function resolveStockQty(variationSku: string, specsRow: ZinatexRow): number {
+    if (inventoryMap.has(variationSku)) return inventoryMap.get(variationSku)!;
+    return (
+      parseInt(
+        (
+          specsRow["QUANTITY ON HAND"] ||
+          specsRow["Quantity"] ||
+          getField(specsRow, "QTY", "qty", "Stock", "STOCK") ||
+          "0"
+        ).replace(/[^0-9]/g, ""),
+        10
+      ) || 0
+    );
+  }
+
   try {
-    const response = await fetch(ZINATEX_CSV_URL, {
-      method: "GET",
-      cache: "no-store",
-      signal: AbortSignal.timeout(30000),
-    });
-    if (!response.ok) {
-      console.error(
-        `[sync-zinatex] CSV fetch failed: ${response.status} ${response.statusText}`
-      );
-      return NextResponse.json(
-        { error: "CSV unavailable", status: response.status },
-        { status: 200 }
+    const [specsRes, inventoryRes] = await Promise.all([
+      fetch(ZINATEX_SPECS_URL, {
+        method: "GET",
+        cache: "no-store",
+        signal: AbortSignal.timeout(30000),
+      }),
+      fetch(ZINATEX_INVENTORY_URL, {
+        method: "GET",
+        cache: "no-store",
+        signal: AbortSignal.timeout(30000),
+      }),
+    ]);
+
+    if (!specsRes.ok) {
+      console.error(`[sync-zinatex] specs CSV failed: ${specsRes.status}`);
+      return Response.json({ error: "Specs CSV unavailable" }, { status: 200 });
+    }
+
+    if (!inventoryRes.ok) {
+      console.warn(
+        `[sync-zinatex] inventory CSV failed: ${inventoryRes.status} — continuing with specs only`
       );
     }
 
-    const rawText = await response.text();
-    const contentType = response.headers.get("content-type") ?? "";
-    if (
-      !contentType.includes("text/") &&
-      !contentType.includes("csv") &&
-      !contentType.includes("octet-stream")
-    ) {
-      console.error(
-        `[sync-zinatex] Unexpected content-type: ${contentType}. Body preview: ${rawText.slice(0, 300)}`
-      );
-      return NextResponse.json(
-        { error: "Unexpected content type", contentType },
-        { status: 200 }
-      );
-    }
+    const specsText = await specsRes.text();
+    const inventoryText = inventoryRes.ok ? await inventoryRes.text() : "";
 
-    const sanitizedText = rawText.replace(/(\d)"/g, "$1in");
+    if (inventoryText) {
+      const inventoryRows = parseZinatexCSV(inventoryText);
+      console.log(`[sync-zinatex] inventory CSV: ${inventoryRows.length} rows`);
 
-    const rows = parseCsvSync(sanitizedText, {
-      columns: true,
-      trim: true,
-      skip_empty_lines: true,
-      relax_column_count: true,
-      bom: true,
-      relax_quotes: true,
-    }) as ZinatexRow[];
+      for (const row of inventoryRows) {
+        const sku = (
+          row["Variation SKU"] ||
+          row["SKU"] ||
+          row["sku"] ||
+          row["VARIATION SKU"] ||
+          row["Sku"] ||
+          ""
+        ).trim();
 
-    processed = rows.length;
+        const qtyRaw = (
+          row["QUANTITY ON HAND"] ||
+          row["Quantity"] ||
+          row["quantity"] ||
+          row["QTY"] ||
+          row["qty"] ||
+          row["Stock"] ||
+          row["STOCK"] ||
+          row["Inventory"] ||
+          row["INVENTORY"] ||
+          "0"
+        ).trim();
 
-    const parentGroups = new Map<string, ZinatexRow[]>();
-    for (const row of rows) {
-      try {
-        const parentSku = String(row["Parent SKU"] ?? "").trim();
-        const variationSku = String(row["Variation SKU"] ?? "").trim();
-        const key = parentSku || variationSku;
-        if (!key) continue;
-        if (!parentGroups.has(key)) parentGroups.set(key, []);
-        parentGroups.get(key)!.push(row);
-      } catch (err) {
-        errors += 1;
-        console.error("[sync-zinatex] grouping error:", err);
+        const qty = parseInt(qtyRaw.replace(/[^0-9]/g, ""), 10) || 0;
+        if (sku) inventoryMap.set(sku, qty);
       }
+
+      console.log(`[sync-zinatex] inventory map: ${inventoryMap.size} SKUs loaded`);
     }
 
-    for (const [parentSku, groupRows] of parentGroups) {
+    specRows = parseZinatexCSV(specsText);
+    console.log(`[sync-zinatex] specs CSV: ${specRows.length} rows`);
+
+    const groups = new Map<string, ZinatexRow[]>();
+    for (const row of specRows) {
+      const parentSku = getField(row, "Parent SKU", "PARENT SKU", "parent_sku");
+      if (!parentSku) continue;
+      if (!groups.has(parentSku)) groups.set(parentSku, []);
+      groups.get(parentSku)!.push(row);
+    }
+
+    console.log(`[sync-zinatex] ${groups.size} product groups to process`);
+
+    for (const [parentSku, groupRows] of groups) {
       try {
         const variationSkus = groupRows
-          .map((r) => String(r["Variation SKU"] ?? "").trim())
+          .map((r) =>
+            getField(r, "Variation SKU", "VARIATION SKU", "variation_sku", "SKU")
+          )
           .filter(Boolean);
 
         if (variationSkus.length === 0) {
@@ -266,23 +369,36 @@ export async function GET(request: Request) {
 
         if (parentLookupError) {
           errors += 1;
-          console.error("[sync-zinatex] parent lookup error:", parentLookupError.message, {
-            parentSku,
-          });
+          console.error(
+            "[sync-zinatex] parent lookup error:",
+            parentLookupError.message,
+            { parentSku }
+          );
           continue;
         }
 
         if (!parentProduct) {
           try {
             const firstRow = groupRows[0]!;
-            const csvCollection = String(firstRow["COLLECTION"] ?? "").trim();
+            const csvCollection = getField(
+              firstRow,
+              "COLLECTION",
+              "Collection",
+              "collection"
+            );
             const { designCode, collection: parsedCollection } =
               parseDesignInfo(parentSku);
             const collection = csvCollection || parsedCollection;
 
-            const csvName = String(
-              firstRow["NAME"] ?? firstRow["PRODUCT TITLE"] ?? ""
-            ).trim();
+            const csvName = getField(
+              firstRow,
+              "NAME",
+              "Name",
+              "PRODUCT TITLE",
+              "Product Title",
+              "Title",
+              "TITLE"
+            );
             let titleCollection = collection;
             if (!csvName && !csvCollection && titleCollection === designCode) {
               titleCollection = "Zinatex";
@@ -294,20 +410,33 @@ export async function GET(request: Request) {
             const baseSlug = buildSlug(name, designCode);
             const slug = await resolveUniqueProductSlug(supabase, baseSlug);
 
-            const msrp = toNumber(firstRow["RETAIL PRICE / MSRP"]);
-            if (msrp == null || msrp === 0) {
+            const msrpRaw = getField(
+              firstRow,
+              "RETAIL PRICE / MSRP",
+              "MSRP",
+              "Price",
+              "PRICE",
+              "price"
+            );
+            const msrp = parseFloat(msrpRaw.replace(/[^0-9.]/g, "")) || 0;
+            if (msrp === 0) {
               console.warn(
                 `[sync-zinatex] missing or zero MSRP for new product parent ${parentSku}, using price 0`
               );
             }
-            const price =
-              msrp == null ? 0 : round2((msrp / 4) * 2.2);
+            const price = round2((msrp / 4) * 2.2);
 
-            const image = asHttpsUrl(firstRow["MAIN IMAGE"]);
+            const image = asHttpsUrl(
+              getField(firstRow, "MAIN IMAGE", "Image", "IMAGE", "image_url")
+            );
             const hasVariants = groupRows.length > 1;
-            const variationSku = String(
-              firstRow["Variation SKU"] ?? ""
-            ).trim();
+            const variationSku = getField(
+              firstRow,
+              "Variation SKU",
+              "VARIATION SKU",
+              "variation_sku",
+              "SKU"
+            );
 
             const newProduct = {
               sku: variationSku,
@@ -317,8 +446,17 @@ export async function GET(request: Request) {
               category: "rugs",
               collection,
               price,
-              in_stock: groupRows.some(
-                (r) => (toNumber(r["QUANTITY ON HAND"]) ?? 0) > 0
+              in_stock: groupRows.some((r) =>
+                resolveInStock(
+                  getField(
+                    r,
+                    "Variation SKU",
+                    "VARIATION SKU",
+                    "variation_sku",
+                    "SKU"
+                  ),
+                  r
+                )
               ),
               images: image ? [image] : [],
               has_variants: hasVariants,
@@ -352,7 +490,9 @@ export async function GET(request: Request) {
 
             if (hasVariants) {
               const variantRows = groupRows
-                .map((row) => buildVariantRow(row, inserted.id))
+                .map((row) =>
+                  buildVariantRow(row, inserted.id, resolveStockQty, resolveInStock)
+                )
                 .filter((row): row is Partial<ProductVariant> => row != null);
 
               const varResult = await batchUpsertVariants(
@@ -379,10 +519,27 @@ export async function GET(request: Request) {
         }
 
         if (groupRows.length === 1) {
-          const row = groupRows[0];
-          const qty = toNumber(row["QUANTITY ON HAND"]);
-          const msrp = toNumber(row["RETAIL PRICE / MSRP"]);
-          const image = asHttpsUrl(row["MAIN IMAGE"]);
+          const row = groupRows[0]!;
+          const vSku = getField(
+            row,
+            "Variation SKU",
+            "VARIATION SKU",
+            "variation_sku",
+            "SKU"
+          );
+          const msrpRaw = getField(
+            row,
+            "RETAIL PRICE / MSRP",
+            "MSRP",
+            "Price",
+            "PRICE",
+            "price"
+          );
+          const msrpParsed = parseFloat(msrpRaw.replace(/[^0-9.]/g, ""));
+          const msrp = Number.isFinite(msrpParsed) ? msrpParsed : null;
+          const image = asHttpsUrl(
+            getField(row, "MAIN IMAGE", "Image", "IMAGE", "image_url")
+          );
 
           const patch: {
             in_stock?: boolean;
@@ -390,7 +547,7 @@ export async function GET(request: Request) {
             images?: string[];
           } = {};
 
-          if (qty != null) patch.in_stock = qty > 0;
+          patch.in_stock = resolveInStock(vSku, row);
           if (msrp != null) patch.price = round2((msrp / 4) * 2.2);
           if (image) {
             const currentImages = Array.isArray(parentProduct.images)
@@ -408,9 +565,11 @@ export async function GET(request: Request) {
               .eq("id", parentProduct.id);
             if (updateError) {
               errors += 1;
-              console.error("[sync-zinatex] single update error:", updateError.message, {
-                sku: parentProduct.sku,
-              });
+              console.error(
+                "[sync-zinatex] single update error:",
+                updateError.message,
+                { sku: parentProduct.sku }
+              );
             } else {
               singlesUpdated += 1;
               console.log(`[SINGLE] ${parentProduct.sku} — updated in_stock + price`);
@@ -421,10 +580,16 @@ export async function GET(request: Request) {
 
         if (parentProduct.has_variants) {
           const variantRows = groupRows
-            .map((row) => buildVariantRow(row, parentProduct.id))
+            .map((row) =>
+              buildVariantRow(row, parentProduct.id, resolveStockQty, resolveInStock)
+            )
             .filter((row): row is Partial<ProductVariant> => row != null);
 
-          const result = await batchUpsertVariants(supabase, variantRows, UPSERT_BATCH_SIZE);
+          const result = await batchUpsertVariants(
+            supabase,
+            variantRows,
+            UPSERT_BATCH_SIZE
+          );
           variantsUpdated += result.updated;
           errors += result.errors;
           console.log(
@@ -439,14 +604,18 @@ export async function GET(request: Request) {
           .eq("id", parentProduct.id);
         if (promoteError) {
           errors += 1;
-          console.error("[sync-zinatex] promotion product update error:", promoteError.message, {
-            sku: parentProduct.sku,
-          });
+          console.error(
+            "[sync-zinatex] promotion product update error:",
+            promoteError.message,
+            { sku: parentProduct.sku }
+          );
           continue;
         }
 
         const promotedVariantRows = groupRows
-          .map((row) => buildVariantRow(row, parentProduct.id))
+          .map((row) =>
+            buildVariantRow(row, parentProduct.id, resolveStockQty, resolveInStock)
+          )
           .filter((row): row is Partial<ProductVariant> => row != null);
 
         const promoteResult = await batchUpsertVariants(
@@ -461,40 +630,44 @@ export async function GET(request: Request) {
         );
       } catch (err) {
         errors += 1;
-        console.error("[sync-zinatex] parent group processing error:", err, { parentSku });
+        console.error("[sync-zinatex] parent group processing error:", err, {
+          parentSku,
+        });
       }
     }
 
     const summary = {
-      processed,
+      specs_rows: specRows.length,
+      inventory_skus: inventoryMap.size,
+      groups_processed: groups.size,
       singles_updated: singlesUpdated,
       variants_updated: variantsUpdated,
       promoted,
       new_products_created: newProductsCreated,
       skipped_no_match: skippedNoMatch,
-      skipped_rows: skippedRows,
       errors,
-      duration_ms: Date.now() - startedAt,
+      duration_ms: Date.now() - start,
     };
     console.log("[sync-zinatex] summary:", summary);
-    return NextResponse.json(summary);
+    return Response.json(summary);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const stack = error instanceof Error ? error.stack : "";
     console.error("[sync-zinatex] fatal error:", message, stack);
-    return NextResponse.json(
+    return Response.json(
       {
         error: "Zinatex sync failed",
         message,
-        processed,
+        specs_rows: specRows.length,
+        inventory_skus: inventoryMap.size,
+        groups_processed: 0,
         singles_updated: singlesUpdated,
         variants_updated: variantsUpdated,
         promoted,
         new_products_created: newProductsCreated,
         skipped_no_match: skippedNoMatch,
-        skipped_rows: skippedRows,
         errors: errors + 1,
-        duration_ms: Date.now() - startedAt,
+        duration_ms: Date.now() - start,
       },
       { status: 200 }
     );
