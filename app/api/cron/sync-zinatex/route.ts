@@ -1,4 +1,3 @@
-import { parse } from "csv-parse/sync";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { batchUpsertVariants, validateCronSecret } from "@/lib/cron-utils";
@@ -12,7 +11,7 @@ const ZINATEX_SPECS_URL =
 const ZINATEX_INVENTORY_URL =
   "https://zinatexrugs.com/wp-content/uploads/woo-feed/custom/csv/zinatexproductfeed2-2.csv";
 
-const UPSERT_BATCH_SIZE = 100;
+const UPSERT_BATCH_SIZE = 25;
 const SIZE_ORDER: Record<string, number> = {
   "2x4": 1,
   "2x8": 2,
@@ -26,39 +25,109 @@ const SIZE_ORDER: Record<string, number> = {
 
 type ZinatexRow = Record<string, string>;
 
+function parseCSVLine(line: string): string[] {
+  const fields: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i <= line.length; i++) {
+    const char = line[i];
+
+    if (char === undefined) {
+      fields.push(current.trim());
+    } else if (char === '"') {
+      if (!inQuotes && current === "") {
+        inQuotes = true;
+      } else if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else if (
+        inQuotes &&
+        (line[i + 1] === "," ||
+          line[i + 1] === undefined ||
+          line[i + 1] === "\r" ||
+          (line[i + 1] === "\n" &&
+            !/\d/.test(current[current.length - 1] ?? "")))
+      ) {
+        inQuotes = false;
+      } else {
+        current += '"';
+      }
+    } else if (char === "," && !inQuotes) {
+      fields.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  return fields;
+}
+
+/** Split into CSV records; newlines inside quoted fields (e.g. DESCRIPTION) do not end a record. */
+function splitZinatexCSVRecords(cleaned: string): string[] {
+  const records: string[] = [];
+  let start = 0;
+  let inQuotes = false;
+  const len = cleaned.length;
+
+  for (let i = 0; i < len; i++) {
+    const c = cleaned[i]!;
+
+    if (c === '"') {
+      if (!inQuotes) {
+        inQuotes = true;
+      } else if (cleaned[i + 1] === '"') {
+        i++;
+      } else if (
+        cleaned[i + 1] === "," ||
+        cleaned[i + 1] === "\n" ||
+        cleaned[i + 1] === "\r" ||
+        cleaned[i + 1] === undefined
+      ) {
+        inQuotes = false;
+      }
+      continue;
+    }
+
+    if (!inQuotes && c === "\n") {
+      const segment = cleaned.slice(start, i);
+      if (segment.trim().length > 0) records.push(segment);
+      start = i + 1;
+    }
+  }
+
+  const tail = cleaned.slice(start);
+  if (tail.trim().length > 0) records.push(tail);
+
+  return records;
+}
+
 function parseZinatexCSV(rawText: string): ZinatexRow[] {
-  let text = rawText
+  const cleaned = rawText
     .replace(/^\uFEFF/, "")
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n");
 
-  text = text.replace(/(\d)"/g, "$1in");
+  const lines = splitZinatexCSVRecords(cleaned);
+  if (lines.length < 2) return [];
 
-  try {
-    const records = parse(text, {
-      columns: true,
-      skip_empty_lines: true,
-      trim: true,
-      bom: true,
-      relax_quotes: true,
-      relax_column_count: true,
-    }) as ZinatexRow[];
+  const headers = parseCSVLine(lines[0]!);
+  console.log("[sync-zinatex] CSV headers detected:", headers.join(" | "));
 
-    if (records.length > 0) {
-      console.log(
-        "[sync-zinatex] CSV headers detected:",
-        Object.keys(records[0]!).join(" | ")
-      );
-    }
+  const rows: ZinatexRow[] = [];
 
-    return records;
-  } catch (err) {
-    console.error(
-      "[sync-zinatex] csv-parse error:",
-      err instanceof Error ? err.message : String(err)
-    );
-    return [];
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseCSVLine(lines[i]!);
+    if (values.length < Math.max(headers.length - 3, 2)) continue;
+    const row: ZinatexRow = {};
+    headers.forEach((h, idx) => {
+      row[h] = values[idx] ?? "";
+    });
+    rows.push(row);
   }
+
+  return rows;
 }
 
 function getField(row: ZinatexRow, ...keys: string[]): string {

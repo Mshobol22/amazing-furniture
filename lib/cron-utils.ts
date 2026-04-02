@@ -82,18 +82,24 @@ export async function batchUpsertVariants(
       .upsert(batch, { onConflict: "sku" });
 
     if (error) {
+      if (errors === 0) {
+        const pe = error as PostgrestError;
+        console.error(
+          "[cron] first variant upsert failure:",
+          pe.message,
+          "|",
+          pe.details,
+          "|",
+          pe.hint,
+          "| first_sku:",
+          batch[0]?.sku,
+          "| product_id:",
+          batch[0]?.product_id,
+          "| price:",
+          batch[0]?.price
+        );
+      }
       errors += batch.length;
-      const pe = error as PostgrestError;
-      console.error(
-        "[cron] variant upsert batch failed:",
-        pe.message,
-        pe.details,
-        pe.hint,
-        "first_sku:",
-        batch[0]?.sku,
-        "row_count:",
-        batch.length
-      );
       continue;
     }
 
