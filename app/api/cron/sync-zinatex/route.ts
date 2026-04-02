@@ -25,36 +25,112 @@ const SIZE_ORDER: Record<string, number> = {
 
 type ZinatexRow = Record<string, string>;
 
-function parseZinatexCSV(rawText: string): ZinatexRow[] {
+/**
+ * Zinatex WooCommerce CSVs are RFC-4180-ish but use ASCII " for inches inside quoted
+ * fields (e.g. 2'6"x11'5" or 6'6"x6'6" Round). Multiline DESCRIPTION cells are normal.
+ * A state scan fixes both: treat " after a digit as a literal inch when the next char
+ * is x, ), space, or tab; doubled "" is still an escaped quote.
+ */
+function parseZinatexCSVRecords(rawText: string): string[][] {
   const cleaned = rawText
     .replace(/^\uFEFF/, "")
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n");
 
-  const lines = cleaned.split("\n").filter((l) => l.trim());
-  if (lines.length < 2) return [];
+  const records: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let i = 0;
+  let inQuotes = false;
+  const len = cleaned.length;
 
-  const headers = lines[0]!.split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
+  while (i < len) {
+    const c = cleaned[i]!;
+
+    if (!inQuotes) {
+      if (c === '"') {
+        inQuotes = true;
+        i++;
+        continue;
+      }
+      if (c === ",") {
+        row.push(field);
+        field = "";
+        i++;
+        continue;
+      }
+      if (c === "\n") {
+        row.push(field);
+        field = "";
+        if (row.some((x) => x.length > 0)) records.push(row);
+        row = [];
+        i++;
+        continue;
+      }
+      field += c;
+      i++;
+      continue;
+    }
+
+    if (c === '"') {
+      const next = cleaned[i + 1];
+      if (next === '"') {
+        field += '"';
+        i += 2;
+        continue;
+      }
+      const prev = field[field.length - 1] ?? "";
+      if (
+        prev &&
+        /\d/.test(prev) &&
+        (next === "x" || next === ")" || next === " " || next === "\t")
+      ) {
+        field += '"';
+        i++;
+        continue;
+      }
+      inQuotes = false;
+      i++;
+      continue;
+    }
+
+    field += c;
+    i++;
+  }
+
+  if (field.length || row.length) {
+    row.push(field);
+    if (row.some((x) => x.length > 0)) records.push(row);
+  }
+
+  return records;
+}
+
+function parseZinatexCSV(rawText: string): ZinatexRow[] {
+  const records = parseZinatexCSVRecords(rawText);
+  if (records.length < 2) return [];
+
+  const headers = records[0]!.map((h) => h.trim().replace(/^"|"$/g, ""));
   console.log("[sync-zinatex] CSV headers detected:", headers.join(" | "));
 
   const rows: ZinatexRow[] = [];
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i]!.split(",");
-    if (values.length < Math.max(headers.length - 3, 2)) continue;
-
-    for (let col = 0; col < headers.length - 1; col++) {
-      const h = headers[col] ?? "";
-      if (/^size$/i.test(h) && values[col] && values[col]!.trim().length < 3) {
-        values[col] = values[col]! + "," + (values[col + 1] ?? "");
-        values.splice(col + 1, 1);
-      }
+  let skippedCols = 0;
+  for (let r = 1; r < records.length; r++) {
+    const values = records[r]!;
+    if (values.length !== headers.length) {
+      skippedCols += 1;
+      continue;
     }
-
     const row: ZinatexRow = {};
     headers.forEach((h, idx) => {
       row[h] = (values[idx] ?? "").trim().replace(/^"|"$/g, "");
     });
     rows.push(row);
+  }
+  if (skippedCols > 0) {
+    console.warn(
+      `[sync-zinatex] skipped ${skippedCols} records with wrong column count (expected ${headers.length})`
+    );
   }
   return rows;
 }

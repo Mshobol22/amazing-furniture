@@ -65,6 +65,18 @@ export async function batchUpsertProducts(
   return { updated, errors };
 }
 
+function dedupeVariantsBySku(
+  rows: Partial<ProductVariant>[]
+): Partial<ProductVariant>[] {
+  const map = new Map<string, Partial<ProductVariant>>();
+  for (const row of rows) {
+    const sku = row.sku?.trim();
+    if (!sku) continue;
+    map.set(sku, row);
+  }
+  return [...map.values()];
+}
+
 export async function batchUpsertVariants(
   supabase: SupabaseClient,
   rows: Partial<ProductVariant>[],
@@ -74,7 +86,7 @@ export async function batchUpsertVariants(
   let errors = 0;
 
   for (let i = 0; i < rows.length; i += batchSize) {
-    const batch = rows.slice(i, i + batchSize);
+    const batch = dedupeVariantsBySku(rows.slice(i, i + batchSize));
     if (batch.length === 0) continue;
 
     const { error } = await supabase
