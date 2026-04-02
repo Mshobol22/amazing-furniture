@@ -33,7 +33,6 @@ function parseZinatexCSV(rawText: string): ZinatexRow[] {
     .replace(/\r/g, "\n");
 
   text = text.replace(/(\d)"/g, "$1in");
-  text = text.replace(/([a-zA-Z])"/g, "$1in");
 
   try {
     const records = parse(text, {
