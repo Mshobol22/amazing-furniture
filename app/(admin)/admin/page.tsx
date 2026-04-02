@@ -6,7 +6,6 @@ import {
   XCircle,
   Tag,
   Plus,
-  Megaphone,
   ShoppingBag,
   LayoutGrid,
   ImageIcon,
@@ -149,12 +148,6 @@ export default async function AdminDashboardPage() {
       icon: Tag,
       href: "/admin/sales",
       color: "text-amber-600 bg-amber-50 hover:bg-amber-100",
-    },
-    {
-      label: "Post Banner",
-      icon: Megaphone,
-      href: "/admin/banners",
-      color: "text-purple-600 bg-purple-50 hover:bg-purple-100",
     },
     {
       label: "View Orders",

@@ -67,10 +67,10 @@ export default function SaleProductGrid({
               : null
           const salePrice = product.sale_price
           const listPrice = getStorefrontListPrice(product)
-          const comparePrice = product.compare_price ?? listPrice
+          const regularPrice = product.price
           const savings =
-            salePrice && comparePrice > salePrice
-              ? Math.round(comparePrice - salePrice)
+            salePrice != null && regularPrice > salePrice
+              ? Math.round((regularPrice - salePrice) * 100) / 100
               : null
 
           return (
@@ -106,7 +106,7 @@ export default function SaleProductGrid({
                         {formatPrice(salePrice)}
                       </span>
                       <span className="text-sm text-[#6B6560] line-through">
-                        {formatPrice(comparePrice)}
+                        {formatPrice(regularPrice)}
                       </span>
                     </>
                   ) : (

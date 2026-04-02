@@ -56,6 +56,11 @@ const nextConfig = {
         destination: "/admin/sales",
         permanent: true,
       },
+      {
+        source: "/admin/banners",
+        destination: "/admin/sales",
+        permanent: true,
+      },
     ];
   },
 };

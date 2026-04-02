@@ -9,7 +9,6 @@ import {
   Package,
   Tag,
   ShoppingBag,
-  MessageSquare,
 } from "lucide-react";
 
 const navItems = [
@@ -18,7 +17,6 @@ const navItems = [
   { href: "/admin/collections", label: "Collections", icon: LayoutGrid },
   { href: "/admin/products/images", label: "Image Manager", icon: ImageIcon },
   { href: "/admin/sales", label: "Sales", icon: Tag },
-  { href: "/admin/banners", label: "Banners", icon: MessageSquare },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
 ];
 

@@ -36,27 +36,38 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (pathname === "/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/login";
+    return NextResponse.redirect(url);
+  }
+  if (pathname === "/signup") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/signup";
+    return NextResponse.redirect(url);
+  }
+
   if (pathname.startsWith("/account") && !user) {
     return NextResponse.redirect(
       new URL(
-        `/login?redirect=${encodeURIComponent(pathWithSearch)}`,
+        `/auth/login?redirect=${encodeURIComponent(pathWithSearch)}`,
         request.url
       )
     );
   }
 
   if (pathname === "/checkout" && !user) {
-    return NextResponse.redirect(new URL("/login?redirect=/checkout", request.url));
+    return NextResponse.redirect(new URL("/auth/login?redirect=/checkout", request.url));
   }
 
-  if ((pathname === "/login" || pathname === "/signup") && user) {
+  if ((pathname === "/auth/login" || pathname === "/auth/signup") && user) {
     const redirectTo = request.nextUrl.searchParams.get("redirect") || "/account";
     return NextResponse.redirect(new URL(redirectTo, request.url));
   }
 
   if (pathname.startsWith("/admin")) {
     if (!user) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      return NextResponse.redirect(new URL("/auth/login", request.url));
     }
     const isAdmin = isAdminUser(user);
     if (!isAdmin) {

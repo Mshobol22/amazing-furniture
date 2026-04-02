@@ -82,6 +82,13 @@ export default function ProductCard({
     void openReel(product.collection_group, product.category);
   };
 
+  const listPrice = product.price;
+  const salePrice = product.sale_price;
+  const discountPct =
+    product.on_sale && salePrice != null && listPrice > 0
+      ? Math.round(((listPrice - salePrice) / listPrice) * 100)
+      : 0;
+
   return (
     <article
       className={cn(
@@ -106,7 +113,7 @@ export default function ProductCard({
             }`}
             style={{ backgroundColor: "#DC2626" }}
           >
-            SALE
+            {discountPct > 0 ? `${discountPct}% OFF` : "SALE"}
           </span>
         )}
         <button
@@ -181,7 +188,7 @@ export default function ProductCard({
                 {formatPrice(product.sale_price)}
               </span>
               <span className="ml-2 text-sm font-normal text-[#1C1C1C]/45 line-through tabular-nums">
-                {formatPrice(getStorefrontListPrice(product))}
+                {formatPrice(product.price)}
               </span>
             </>
           ) : getVariantCardFromPrice(product) != null ? (

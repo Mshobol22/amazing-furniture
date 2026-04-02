@@ -460,9 +460,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
                       className="rounded px-2 py-0.5 text-sm font-semibold text-white"
                       style={{ backgroundColor: "#DC2626" }}
                     >
-                      {Math.round(
-                        (1 - product.sale_price / product.price) * 100
-                      )}
+                      {product.price > 0
+                        ? Math.round(
+                            ((product.price - product.sale_price) /
+                              product.price) *
+                              100
+                          )
+                        : 0}
                       % OFF
                     </span>
                   </>

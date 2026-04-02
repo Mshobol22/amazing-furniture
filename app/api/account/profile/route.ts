@@ -5,6 +5,7 @@ type ProfilePayload = {
   fullName?: string;
   email?: string;
   addressLine1?: string;
+  addressLine2?: string;
   city?: string;
   state?: string;
   zip?: string;
@@ -30,7 +31,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("full_name, email, address_line1, city, state, zip, country")
+    .select("full_name, email, phone, auth_provider, address_line1, address_line2, city, state, zip, country")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -57,6 +58,7 @@ export async function PUT(request: Request) {
     full_name: clean(body.fullName, 120),
     email: clean(body.email, 160),
     address_line1: clean(body.addressLine1, 200),
+    address_line2: clean(body.addressLine2, 200),
     city: clean(body.city, 120),
     state: clean(body.state, 120),
     zip: clean(body.zip, 30),

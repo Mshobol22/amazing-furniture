@@ -8,26 +8,16 @@ export const metadata: Metadata = {
   title: "My Account",
 };
 
-function accountNavUserFromAuth(user: {
+function displayNameFromUser(user: {
   user_metadata?: Record<string, unknown>;
   email?: string | null;
 }) {
-  const displayName =
+  return (
     (user.user_metadata?.full_name as string | undefined) ??
     (user.user_metadata?.name as string | undefined) ??
     user.email?.split("@")[0] ??
-    "Member";
-  const initials = displayName
-    .split(/\s+/)
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-  return {
-    displayName,
-    initials,
-    avatarUrl: user.user_metadata?.avatar_url as string | undefined,
-  };
+    "Member"
+  );
 }
 
 export default async function AccountLayout({
@@ -43,14 +33,17 @@ export default async function AccountLayout({
   if (!user) {
     const h = await headers();
     const path = h.get("x-pathname") ?? "/account";
-    redirect(`/login?redirect=${encodeURIComponent(path)}`);
+    redirect(`/auth/login?redirect=${encodeURIComponent(path)}`);
   }
 
-  const navUser = accountNavUserFromAuth(user);
+  const navUser = {
+    displayName: displayNameFromUser(user),
+    email: user.email ?? "",
+  };
 
   return (
     <div className="min-h-[60vh] bg-[#FAF8F5]">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 pb-24 sm:px-6 lg:px-8 lg:pb-8">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
           <AccountNav user={navUser} />
           <div className="min-w-0 flex-1">{children}</div>

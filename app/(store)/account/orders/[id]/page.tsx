@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { headers } from "next/headers";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format-price";
 import { productLeadImageSrc } from "@/lib/nfd-image-proxy";
+import { OrderStatusBadge } from "@/lib/account/order-status-badge";
 import type { Product } from "@/types";
 
 type OrderItemJson = {
@@ -40,6 +40,11 @@ type OrderDetail = {
   tax_rate: number | null;
   total: number;
   shipping_address: ShippingAddress | null;
+  discount_code?: string | null;
+  discount_amount?: number | null;
+  tracking_number?: string | null;
+  carrier?: string | null;
+  status: string;
 };
 
 export async function generateMetadata({
@@ -48,7 +53,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  return { title: `Order ${id.slice(-8)}` };
+  return { title: `Order ${id.slice(0, 8)}` };
 }
 
 export default async function AccountOrderDetailPage({
@@ -63,27 +68,24 @@ export default async function AccountOrderDetailPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    const h = await headers();
-    const path = h.get("x-pathname") ?? `/account/orders/${id}`;
-    redirect(`/login?redirect=${encodeURIComponent(path)}`);
+    redirect(`/auth/login?redirect=${encodeURIComponent(`/account/orders/${id}`)}`);
   }
 
   const { data: orderRaw, error } = await supabase
     .from("orders")
     .select(
-      "id, user_id, created_at, items, subtotal, shipping, tax_amount, tax_rate, total, shipping_address"
+      "id, user_id, created_at, items, subtotal, shipping, tax_amount, tax_rate, total, shipping_address, discount_code, discount_amount, tracking_number, carrier, status"
     )
     .eq("id", id)
     .maybeSingle();
 
-  if (error || !orderRaw) notFound();
-  const order = orderRaw as OrderDetail;
-  if (order.user_id !== user.id) notFound();
+  if (error || !orderRaw || (orderRaw as OrderDetail).user_id !== user.id) {
+    redirect("/account/orders");
+  }
 
+  const order = orderRaw as OrderDetail;
   const items = Array.isArray(order.items) ? order.items : [];
-  const productIds = Array.from(
-    new Set(items.map((i) => i.product_id).filter(Boolean))
-  );
+  const productIds = Array.from(new Set(items.map((i) => i.product_id).filter(Boolean)));
 
   const { data: products } =
     productIds.length > 0
@@ -98,13 +100,16 @@ export default async function AccountOrderDetailPage({
       : "10.25";
 
   const addr = order.shipping_address;
+  const discountAmt = Number(order.discount_amount) || 0;
+  const tracking = order.tracking_number?.trim();
+  const carrier = order.carrier?.trim();
 
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-sans text-xl font-semibold text-charcoal sm:text-2xl">
-            Order #{id.slice(-8)}
+            Order #{order.id.slice(0, 8).toUpperCase()}
           </h1>
           <p className="mt-1 text-sm text-warm-gray">
             Placed{" "}
@@ -114,6 +119,9 @@ export default async function AccountOrderDetailPage({
               year: "numeric",
             })}
           </p>
+          <div className="mt-3">
+            <OrderStatusBadge status={order.status} />
+          </div>
         </div>
         <Link
           href="/account/orders"
@@ -123,34 +131,71 @@ export default async function AccountOrderDetailPage({
         </Link>
       </div>
 
+      {tracking ? (
+        <div className="rounded-xl border border-[#1C1C1C]/10 bg-white p-4 text-sm text-charcoal shadow-sm">
+          <p className="font-medium">Shipping update</p>
+          <p className="mt-1 text-warm-gray">
+            Your order shipped{carrier ? ` via ${carrier}` : ""} — Tracking:{" "}
+            <span className="font-mono text-charcoal">{tracking}</span>
+          </p>
+        </div>
+      ) : null}
+
       <div className="rounded-xl border border-[#1C1C1C]/10 bg-white shadow-sm">
         <div className="border-b border-light-sand px-6 py-4">
           <h2 className="font-sans text-lg font-semibold text-charcoal">Items</h2>
         </div>
-        <ul className="divide-y divide-light-sand">
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-light-sand text-xs uppercase tracking-wide text-warm-gray">
+                <th className="px-6 py-3 font-medium">Product</th>
+                <th className="px-6 py-3 font-medium">SKU</th>
+                <th className="px-6 py-3 font-medium">Qty</th>
+                <th className="px-6 py-3 font-medium">Unit price</th>
+                <th className="px-6 py-3 font-medium text-right">Line total</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-light-sand">
+              {items.map((line, idx) => {
+                const product = productMap.get(line.product_id);
+                const sku = line.variant_sku ?? product?.sku ?? "—";
+                const lineTotal = line.price * line.quantity;
+                return (
+                  <tr key={`${line.product_id}-${line.variant_id ?? "base"}-${idx}`}>
+                    <td className="px-6 py-4 font-medium text-charcoal">{line.name}</td>
+                    <td className="px-6 py-4 font-mono text-warm-gray">{sku}</td>
+                    <td className="px-6 py-4 tabular-nums">{line.quantity}</td>
+                    <td className="px-6 py-4 tabular-nums text-charcoal">
+                      {formatPrice(line.price)}
+                    </td>
+                    <td className="px-6 py-4 text-right font-semibold tabular-nums text-charcoal">
+                      {formatPrice(lineTotal)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <ul className="divide-y divide-light-sand md:hidden">
           {items.map((line, idx) => {
             const product = productMap.get(line.product_id);
             const src = product
               ? productLeadImageSrc(product.manufacturer, product.images?.[0])
               : null;
-            const sku =
-              line.variant_sku ??
-              product?.sku ??
-              "—";
+            const sku = line.variant_sku ?? product?.sku ?? "—";
             const lineTotal = line.price * line.quantity;
             return (
-              <li
-                key={`${line.product_id}-${line.variant_id ?? "base"}-${idx}`}
-                className="flex gap-4 px-6 py-5"
-              >
-                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-[#FAF8F5]">
+              <li key={`${line.product_id}-${line.variant_id ?? "base"}-${idx}`} className="flex gap-4 px-6 py-5">
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-[#FAF8F5]">
                   {src ? (
                     <Image
                       src={src}
                       alt={line.name}
                       fill
                       className="object-contain p-1"
-                      sizes="96px"
+                      sizes="80px"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-xs text-warm-gray">
@@ -161,16 +206,11 @@ export default async function AccountOrderDetailPage({
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-charcoal">{line.name}</p>
                   <p className="mt-1 text-sm text-warm-gray">SKU: {sku}</p>
-                  {(line.variant_size || line.variant_color) && (
-                    <p className="text-sm text-warm-gray">
-                      {[line.variant_size, line.variant_color].filter(Boolean).join(" · ")}
-                    </p>
-                  )}
                   <p className="mt-2 text-sm text-warm-gray">
                     Qty {line.quantity} × {formatPrice(line.price)}
                   </p>
                 </div>
-                <p className="shrink-0 font-sans font-semibold tabular-nums text-charcoal">
+                <p className="shrink-0 font-semibold tabular-nums text-charcoal">
                   {formatPrice(lineTotal)}
                 </p>
               </li>
@@ -181,7 +221,7 @@ export default async function AccountOrderDetailPage({
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-[#1C1C1C]/10 bg-white p-6 shadow-sm">
-          <h2 className="font-sans text-lg font-semibold text-charcoal">Summary</h2>
+          <h2 className="font-sans text-lg font-semibold text-charcoal">Order summary</h2>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-warm-gray">Subtotal</dt>
@@ -207,6 +247,16 @@ export default async function AccountOrderDetailPage({
                 {formatPrice(Number(order.tax_amount) || 0)}
               </dd>
             </div>
+            {discountAmt > 0 ? (
+              <div className="flex justify-between gap-4">
+                <dt className="text-warm-gray">
+                  Discount{order.discount_code ? ` (${order.discount_code})` : ""}
+                </dt>
+                <dd className="font-medium tabular-nums text-green-700">
+                  −{formatPrice(discountAmt)}
+                </dd>
+              </div>
+            ) : null}
             <div className="flex justify-between gap-4 border-t border-light-sand pt-3 text-base">
               <dt className="font-semibold text-charcoal">Total</dt>
               <dd className="font-semibold tabular-nums text-charcoal">
@@ -214,6 +264,9 @@ export default async function AccountOrderDetailPage({
               </dd>
             </div>
           </dl>
+          <p className="mt-6 text-sm text-warm-gray">
+            Payment method: <span className="font-medium text-charcoal">Paid via Stripe</span>
+          </p>
         </div>
 
         <div className="rounded-xl border border-[#1C1C1C]/10 bg-white p-6 shadow-sm">
@@ -222,9 +275,7 @@ export default async function AccountOrderDetailPage({
             <address className="mt-4 not-italic text-sm leading-relaxed text-warm-gray">
               {addr.name && <p className="font-medium text-charcoal">{addr.name}</p>}
               {addr.address && <p>{addr.address}</p>}
-              <p>
-                {[addr.city, addr.state, addr.zip].filter(Boolean).join(", ")}
-              </p>
+              <p>{[addr.city, addr.state, addr.zip].filter(Boolean).join(", ")}</p>
               {addr.country && <p>{addr.country}</p>}
               {addr.email && <p className="mt-2">{addr.email}</p>}
             </address>

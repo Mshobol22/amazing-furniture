@@ -118,7 +118,7 @@ export default function WishlistAccountGrid({ products }: { products: Product[] 
                   <>
                     <span className="text-red-600">{formatPrice(product.sale_price)}</span>
                     <span className="ml-2 text-sm font-normal text-[#1C1C1C]/45 line-through">
-                      {formatPrice(getStorefrontListPrice(product))}
+                      {formatPrice(product.price)}
                     </span>
                   </>
                 ) : (

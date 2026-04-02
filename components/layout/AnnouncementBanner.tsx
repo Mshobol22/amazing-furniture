@@ -25,7 +25,7 @@ export default function AnnouncementBanner() {
     if (isDismissed) return
 
     // Fetch active banner
-    fetch('/api/admin/banners')
+    fetch('/api/banners')
       .then((r) => r.json())
       .then((data: Banner[]) => {
         const active = data.find((b) => b.is_active)

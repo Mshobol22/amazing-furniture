@@ -44,9 +44,10 @@ export default function SaleSection({ products }: SaleSectionProps) {
           {products.map((product) => {
             const img = getValidImage(product.images);
             const list = getStorefrontListPrice(product);
+            const regular = product.price;
             const savings =
-              product.sale_price != null
-                ? Math.round(list - product.sale_price)
+              product.sale_price != null && regular > 0
+                ? Math.round((regular - product.sale_price) * 100) / 100
                 : 0;
 
             return (
@@ -81,7 +82,9 @@ export default function SaleSection({ products }: SaleSectionProps) {
                     {product.name}
                   </p>
                   <p className="text-xs text-gray-400 line-through">
-                    {formatPrice(list)}
+                    {formatPrice(
+                      product.sale_price != null ? product.price : list
+                    )}
                   </p>
                   <p className="text-lg font-bold text-[#2D4A3E]">
                     {product.sale_price != null ? formatPrice(product.sale_price) : null}

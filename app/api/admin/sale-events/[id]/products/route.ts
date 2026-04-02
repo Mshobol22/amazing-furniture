@@ -92,7 +92,6 @@ export async function POST(
   const body = await request.json();
   const productId = String(body.product_id ?? "").trim();
   const discountPercentage = Number(body.discount_percentage);
-  const overrideSalePrice = Number(body.override_sale_price);
 
   if (!productId) {
     return NextResponse.json({ error: "product_id is required" }, { status: 400 });
@@ -101,14 +100,30 @@ export async function POST(
   if (
     !Number.isFinite(discountPercentage) ||
     discountPercentage < 0 ||
-    discountPercentage > 100 ||
-    !Number.isFinite(overrideSalePrice) ||
-    overrideSalePrice < 0
+    discountPercentage > 100
   ) {
-    return NextResponse.json({ error: "Invalid pricing data" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid discount percentage" }, { status: 400 });
   }
 
   const admin = createAdminClient();
+
+  const { data: productRow, error: productFetchError } = await admin
+    .from("products")
+    .select("price")
+    .eq("id", productId)
+    .single();
+
+  if (productFetchError || !productRow) {
+    return NextResponse.json({ error: "Product not found" }, { status: 404 });
+  }
+
+  const basePrice = Number(productRow.price);
+  if (!Number.isFinite(basePrice) || basePrice < 0) {
+    return NextResponse.json({ error: "Invalid product price" }, { status: 400 });
+  }
+
+  const salePrice = Math.round(basePrice * (1 - discountPercentage / 100) * 100) / 100;
+
   const { error: junctionError } = await admin
     .from("sale_event_products")
     .upsert(
@@ -116,7 +131,7 @@ export async function POST(
         sale_event_id: id,
         product_id: productId,
         discount_percentage: discountPercentage,
-        override_sale_price: Math.round(overrideSalePrice * 100) / 100,
+        override_sale_price: salePrice,
       },
       { onConflict: "sale_event_id,product_id" }
     );
@@ -129,7 +144,7 @@ export async function POST(
     .from("products")
     .update({
       on_sale: true,
-      sale_price: Math.round(overrideSalePrice * 100) / 100,
+      sale_price: salePrice,
     })
     .eq("id", productId);
 

@@ -507,7 +507,7 @@ export default function Navbar({
               )}
             </Link>
             <Link
-              href={user ? "/account" : "/login"}
+              href={user ? "/account" : "/auth/login"}
               className={`relative flex p-1.5 items-center justify-center rounded sm:p-2 ${iconColor} ${iconHover}`}
               aria-label="Account"
             >

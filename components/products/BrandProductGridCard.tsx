@@ -69,6 +69,12 @@ export default function BrandProductGridCard({
       ? firstImage
       : null;
   const isNfd = isNationwideFDProduct(product);
+  const listPrice = product.price;
+  const salePrice = product.sale_price;
+  const discountPct =
+    product.on_sale && salePrice != null && listPrice > 0
+      ? Math.round(((listPrice - salePrice) / listPrice) * 100)
+      : 0;
 
   // NFD cards should not render without a valid lead image.
   if (isNfd && (hideCard || !safeImage)) {
@@ -106,9 +112,13 @@ export default function BrandProductGridCard({
               </span>
             </div>
           )}
-          {product.on_sale && (
-            <span className="absolute left-2 top-2 rounded bg-red-600 px-2 py-1 text-xs font-semibold text-white">
-              SALE
+          {product.on_sale && product.sale_price != null && (
+            <span
+              className={`absolute left-2 z-10 rounded bg-red-600 px-2 py-1 text-xs font-semibold text-white ${
+                product.is_collection_hero || product.collection_group ? "top-8" : "top-2"
+              }`}
+            >
+              {discountPct > 0 ? `${discountPct}% OFF` : "SALE"}
             </span>
           )}
         </div>
@@ -151,7 +161,7 @@ export default function BrandProductGridCard({
                 {formatPrice(product.sale_price)}
               </span>
               <span className="ml-2 text-sm font-normal text-[#1C1C1C]/45 line-through tabular-nums">
-                {formatPrice(getStorefrontListPrice(product))}
+                {formatPrice(product.price)}
               </span>
             </>
           ) : getVariantCardFromPrice(product) != null ? (

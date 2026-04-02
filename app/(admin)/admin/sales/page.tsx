@@ -80,17 +80,12 @@ function normalizeHexForPicker(input: string): string {
 
 const emptyEventForm = {
   name: "",
-  sale_type: "other",
-  badge_text: "",
   badge_color: "#2D4A3E",
   banner_headline: "",
-  banner_subtext: "",
   discount_label: "",
   start_date: "",
   end_date: "",
   is_active: false,
-  sort_order: 0,
-  description: "",
 };
 
 export default function AdminSalesPage() {
@@ -121,12 +116,6 @@ export default function AdminSalesPage() {
     () => events.find((event) => event.id === activeEventId) ?? null,
     [events, activeEventId]
   );
-
-  const saleTypeValues = useMemo(() => {
-    const values = new Set(events.map((event) => event.sale_type).filter(Boolean));
-    if (!values.size) values.add("other");
-    return Array.from(values);
-  }, [events]);
 
   const fetchEvents = useCallback(async () => {
     setLoadingEvents(true);
@@ -231,33 +220,41 @@ export default function AdminSalesPage() {
     setEditingEvent(event);
     setForm({
       name: event.name,
-      sale_type: event.sale_type || "other",
-      badge_text: event.badge_text ?? "",
       badge_color: event.badge_color || "#2D4A3E",
       banner_headline: event.banner_headline ?? "",
-      banner_subtext: event.banner_subtext ?? "",
       discount_label: event.discount_label ?? "",
       start_date: event.start_date ? event.start_date.slice(0, 10) : "",
       end_date: event.end_date ? event.end_date.slice(0, 10) : "",
       is_active: event.is_active,
-      sort_order: event.sort_order ?? 0,
-      description: event.description ?? "",
     });
     setShowModal(true);
   }
 
   async function saveEvent() {
+    if (!form.name.trim()) {
+      window.alert("Event name is required.");
+      return;
+    }
+    if (!form.discount_label?.trim()) {
+      window.alert("Nav button — Line 1 is required.");
+      return;
+    }
     setSavingEvent(true);
+    const badgeColor = form.badge_color?.trim() || "#2D4A3E";
     const payload = {
-      ...form,
+      name: form.name.trim(),
       slug: slugify(form.name),
-      description: form.description || null,
-      badge_text: form.badge_text || null,
-      banner_headline: form.banner_headline || null,
-      banner_subtext: form.banner_subtext || null,
-      discount_label: form.discount_label || null,
+      sale_type: editingEvent?.sale_type ?? "other",
+      badge_text: editingEvent?.badge_text ?? null,
+      banner_headline: form.banner_headline?.trim() || null,
+      banner_subtext: editingEvent?.banner_subtext ?? null,
+      discount_label: form.discount_label.trim(),
+      badge_color: badgeColor,
+      description: editingEvent?.description ?? null,
       start_date: form.start_date || null,
       end_date: form.end_date || null,
+      is_active: form.is_active,
+      sort_order: editingEvent?.sort_order ?? 0,
     };
     const url = editingEvent ? `/api/admin/sale-events/${editingEvent.id}` : "/api/admin/sale-events";
     const method = editingEvent ? "PUT" : "POST";
@@ -302,9 +299,6 @@ export default function AdminSalesPage() {
       window.alert("Discount must be between 0 and 100.");
       return;
     }
-    const basePrice = Number(product.price ?? 0);
-    const salePrice = Math.round(basePrice * (1 - discount / 100) * 100) / 100;
-
     setUpdatingProductId(product.id);
     const res = await fetch(`/api/admin/sale-events/${activeEvent.id}/products`, {
       method: "POST",
@@ -312,7 +306,6 @@ export default function AdminSalesPage() {
       body: JSON.stringify({
         product_id: product.id,
         discount_percentage: discount,
-        override_sale_price: salePrice,
       }),
     });
     if (res.ok) {
@@ -368,7 +361,6 @@ export default function AdminSalesPage() {
               <thead>
                 <tr className="border-b bg-gray-50 text-left text-xs font-semibold uppercase text-gray-500">
                   <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Type</th>
                   <th className="px-4 py-3">Date Range</th>
                   <th className="px-4 py-3">Active</th>
                   <th className="px-4 py-3 text-right">Actions</th>
@@ -384,11 +376,6 @@ export default function AdminSalesPage() {
                     }`}
                   >
                     <td className="px-4 py-3 font-medium">{event.name}</td>
-                    <td className="px-4 py-3">
-                      <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold">
-                        {event.sale_type}
-                      </span>
-                    </td>
                     <td className="px-4 py-3 text-gray-600">
                       {formatDateRange(event.start_date, event.end_date)}
                     </td>
@@ -620,7 +607,10 @@ export default function AdminSalesPage() {
                   eventProducts.map((item) => {
                     const basePrice = Number(item.product.price ?? 0);
                     const discount = Number(item.discount_percentage ?? 0);
-                    const computedSalePrice = basePrice * (1 - discount / 100);
+                    const storedSale =
+                      item.override_sale_price != null
+                        ? Number(item.override_sale_price)
+                        : Number(item.product.sale_price ?? 0);
                     return (
                       <tr key={item.product_id} className="border-b last:border-b-0">
                         <td className="px-3 py-2">
@@ -641,7 +631,7 @@ export default function AdminSalesPage() {
                         <td className="px-3 py-2">{item.product.name}</td>
                         <td className="px-3 py-2">{formatPrice(basePrice)}</td>
                         <td className="px-3 py-2">{discount}%</td>
-                        <td className="px-3 py-2">{formatPrice(computedSalePrice)}</td>
+                        <td className="px-3 py-2">{formatPrice(storedSale)}</td>
                         <td className="px-3 py-2">
                           <button
                             onClick={() => void removeFromSale(item.product_id)}
@@ -664,184 +654,166 @@ export default function AdminSalesPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowModal(false)} />
-          <div className="relative w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold">
+          <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-xl">
+            <h3 className="shrink-0 border-b border-gray-100 px-6 py-4 text-lg font-semibold">
               {editingEvent ? "Edit Event" : "Create New Event"}
             </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                placeholder="Name"
-                value={form.name}
-                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                className="col-span-2 rounded border border-gray-300 px-3 py-2 text-sm"
-              />
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-1.5">
+                  <label className="text-sm font-medium text-charcoal" htmlFor="event_name">
+                    Event Name <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="event_name"
+                    required
+                    value={form.name}
+                    onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
 
-              <div className="col-span-2 rounded-lg border border-[#2D4A3E]/25 bg-[#FAF8F5] p-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#2D4A3E]">
-                  Storefront nav button
-                </p>
-                <p className="mb-3 text-xs text-gray-600">
-                  When this event is <strong>active</strong>, the header uses these fields for the wide
-                  sale control (desktop) and the strip under the bar on phones.
-                </p>
-                <div className="mb-4 space-y-1.5">
-                  <label className="text-sm font-medium text-charcoal" htmlFor="discount_label">
-                    Nav button — Line 1
-                  </label>
-                  <input
-                    id="discount_label"
-                    value={form.discount_label}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, discount_label: e.target.value }))
-                    }
-                    placeholder='e.g. "Up to 40% OFF"'
-                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-                  />
-                  <p className="text-xs text-gray-500">
-                    Shown large on the sale nav button.
+                <div className="col-span-2 rounded-lg border border-[#2D4A3E]/25 bg-[#FAF8F5] p-4">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#2D4A3E]">
+                    Storefront nav button
                   </p>
-                </div>
-                <div className="mb-4 space-y-1.5">
-                  <label className="text-sm font-medium text-charcoal" htmlFor="banner_headline">
-                    Nav button — Line 2
-                  </label>
-                  <input
-                    id="banner_headline"
-                    value={form.banner_headline}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, banner_headline: e.target.value }))
-                    }
-                    placeholder='e.g. "Summer Sale — Shop Now"'
-                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-                  />
-                  <p className="text-xs text-gray-500">
-                    Shown smaller below line 1. If empty, the event name is used.
-                  </p>
-                </div>
-                <div className="mb-3 space-y-1.5">
-                  <span className="text-sm font-medium text-charcoal">Nav button color</span>
-                  <div className="flex flex-wrap items-center gap-3">
+                  <div className="mb-4 space-y-1.5">
+                    <label className="text-sm font-medium text-charcoal" htmlFor="discount_label">
+                      Nav Button — Line 1 <span className="text-red-600">*</span>
+                    </label>
                     <input
-                      type="color"
-                      aria-label="Nav button color picker"
-                      value={normalizeHexForPicker(form.badge_color)}
+                      id="discount_label"
+                      required
+                      value={form.discount_label}
                       onChange={(e) =>
-                        setForm((prev) => ({ ...prev, badge_color: e.target.value }))
+                        setForm((prev) => ({ ...prev, discount_label: e.target.value }))
                       }
-                      className="h-10 w-14 cursor-pointer rounded border border-gray-300 bg-white p-0.5"
+                      placeholder='e.g. "Up to 40% OFF"'
+                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
                     />
+                    <p className="text-xs text-gray-500">
+                      Shown large on the nav button. E.g. &quot;Up to 40% OFF&quot;
+                    </p>
+                  </div>
+                  <div className="mb-4 space-y-1.5">
+                    <label className="text-sm font-medium text-charcoal" htmlFor="banner_headline">
+                      Nav Button — Line 2
+                    </label>
                     <input
-                      type="text"
-                      value={form.badge_color}
+                      id="banner_headline"
+                      value={form.banner_headline}
                       onChange={(e) =>
-                        setForm((prev) => ({ ...prev, badge_color: e.target.value }))
+                        setForm((prev) => ({ ...prev, banner_headline: e.target.value }))
                       }
-                      placeholder="#2D4A3E"
-                      className="min-w-[7rem] flex-1 rounded border border-gray-300 px-3 py-2 font-mono text-sm"
+                      placeholder='e.g. "Summer Sale — Shop Now"'
+                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
                     />
+                    <p className="text-xs text-gray-500">
+                      Shown smaller below Line 1. E.g. &quot;Summer Sale — Shop Now&quot;
+                    </p>
+                  </div>
+                  <div className="mb-3 space-y-1.5">
+                    <span className="text-sm font-medium text-charcoal">Nav Button Color</span>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <input
+                        type="color"
+                        aria-label="Nav button color picker"
+                        value={normalizeHexForPicker(form.badge_color)}
+                        onChange={(e) =>
+                          setForm((prev) => ({ ...prev, badge_color: e.target.value }))
+                        }
+                        className="h-10 w-14 cursor-pointer rounded border border-gray-300 bg-white p-0.5"
+                      />
+                      <input
+                        type="text"
+                        aria-label="Nav button color hex"
+                        value={form.badge_color}
+                        onChange={(e) =>
+                          setForm((prev) => ({ ...prev, badge_color: e.target.value }))
+                        }
+                        placeholder="#2D4A3E"
+                        className="min-w-[7rem] flex-1 rounded border border-gray-300 px-3 py-2 font-mono text-sm"
+                      />
+                      <div
+                        className="h-10 w-10 shrink-0 rounded border border-gray-200 shadow-inner"
+                        style={{
+                          backgroundColor: normalizeHexForPicker(form.badge_color),
+                        }}
+                        title="Live swatch"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Fallback in the store is Forest Green (#2D4A3E) if empty
+                    </p>
+                  </div>
+                  <div>
+                    <p className="mb-2 text-xs font-medium text-gray-600">Live preview</p>
                     <div
-                      className="h-10 w-10 shrink-0 rounded border border-gray-200 shadow-inner"
+                      className="relative overflow-hidden rounded-lg px-4 py-2.5 text-center text-white shadow-sm transition-[filter] hover:brightness-110"
                       style={{
                         backgroundColor: normalizeHexForPicker(form.badge_color),
                       }}
-                      title="Live swatch"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Fallback in the store is forest green (#2D4A3E) if empty or invalid.
-                  </p>
-                </div>
-                <div>
-                  <p className="mb-2 text-xs font-medium text-gray-600">Preview</p>
-                  <div
-                    className="relative overflow-hidden rounded-lg px-4 py-2.5 text-center text-white shadow-sm transition-[filter] hover:brightness-110"
-                    style={{
-                      backgroundColor: normalizeHexForPicker(form.badge_color),
-                    }}
-                  >
-                    <span
-                      className="pointer-events-none absolute inset-0 bg-white opacity-[0.14]"
-                      aria-hidden
-                    />
-                    <div className="relative text-sm font-bold leading-tight">
-                      {form.discount_label?.trim() || "Line 1 (discount label)"}
-                    </div>
-                    <div className="relative mt-0.5 text-xs font-medium text-white/90">
-                      {form.banner_headline?.trim() ||
-                        form.name?.trim() ||
-                        "Line 2 (headline or event name)"}
+                    >
+                      <span
+                        className="pointer-events-none absolute inset-0 bg-white opacity-[0.14]"
+                        aria-hidden
+                      />
+                      <div className="relative text-sm font-bold leading-tight">
+                        {form.discount_label?.trim() || "Line 1 (discount label)"}
+                      </div>
+                      <div className="relative mt-0.5 text-xs font-medium text-white/90">
+                        {form.banner_headline?.trim() ||
+                          form.name?.trim() ||
+                          "Line 2 (headline or event name)"}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <select
-                value={form.sale_type}
-                onChange={(e) => setForm((prev) => ({ ...prev, sale_type: e.target.value }))}
-                className="rounded border border-gray-300 px-3 py-2 text-sm"
-              >
-                {saleTypeValues.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                placeholder="Sort Order"
-                value={form.sort_order}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, sort_order: Number(e.target.value) || 0 }))
-                }
-                className="rounded border border-gray-300 px-3 py-2 text-sm"
-              />
-              <input
-                placeholder="Badge Text"
-                value={form.badge_text}
-                onChange={(e) => setForm((prev) => ({ ...prev, badge_text: e.target.value }))}
-                className="col-span-2 rounded border border-gray-300 px-3 py-2 text-sm"
-              />
-              <input
-                placeholder="Banner Subtext"
-                value={form.banner_subtext}
-                onChange={(e) => setForm((prev) => ({ ...prev, banner_subtext: e.target.value }))}
-                className="col-span-2 rounded border border-gray-300 px-3 py-2 text-sm"
-              />
-              <input
-                type="date"
-                value={form.start_date}
-                onChange={(e) => setForm((prev) => ({ ...prev, start_date: e.target.value }))}
-                className="rounded border border-gray-300 px-3 py-2 text-sm"
-              />
-              <input
-                type="date"
-                value={form.end_date}
-                onChange={(e) => setForm((prev) => ({ ...prev, end_date: e.target.value }))}
-                className="rounded border border-gray-300 px-3 py-2 text-sm"
-              />
-              <input
-                placeholder="Description"
-                value={form.description}
-                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                className="col-span-2 rounded border border-gray-300 px-3 py-2 text-sm"
-              />
-              <label className="col-span-2 flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.is_active}
-                  onChange={(e) => setForm((prev) => ({ ...prev, is_active: e.target.checked }))}
-                />
-                Is active
-              </label>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-charcoal" htmlFor="start_date">
+                    Start Date
+                  </label>
+                  <input
+                    id="start_date"
+                    type="date"
+                    value={form.start_date}
+                    onChange={(e) => setForm((prev) => ({ ...prev, start_date: e.target.value }))}
+                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-charcoal" htmlFor="end_date">
+                    End Date
+                  </label>
+                  <input
+                    id="end_date"
+                    type="date"
+                    value={form.end_date}
+                    onChange={(e) => setForm((prev) => ({ ...prev, end_date: e.target.value }))}
+                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+                <label className="col-span-2 flex cursor-pointer items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.is_active}
+                    onChange={(e) => setForm((prev) => ({ ...prev, is_active: e.target.checked }))}
+                  />
+                  Is Active <span className="text-red-600">*</span>
+                </label>
+              </div>
             </div>
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="flex shrink-0 justify-end gap-2 border-t border-gray-100 bg-white px-6 py-4">
               <button
+                type="button"
                 onClick={() => setShowModal(false)}
                 className="rounded border border-gray-300 px-4 py-2 text-sm"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={() => void saveEvent()}
                 disabled={savingEvent}
                 className="rounded bg-[#2D4A3E] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
