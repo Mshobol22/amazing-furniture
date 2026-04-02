@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -39,7 +39,7 @@ export default function SignupForm() {
     ? `/auth/login?redirect=${encodeURIComponent(redirectQuery)}`
     : "/auth/login";
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ReactNode | null>(null);
   const [successEmail, setSuccessEmail] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [resendStatus, setResendStatus] = useState<string | null>(null);
@@ -64,7 +64,7 @@ export default function SignupForm() {
     setIsLoading(true);
     try {
       const phoneTrimmed = data.phone?.trim() || "";
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
@@ -79,6 +79,34 @@ export default function SignupForm() {
         setIsLoading(false);
         return;
       }
+
+      const duplicateEmailMessage = (
+        <>
+          An account already exists with this email address. Please{" "}
+          <Link href={loginHref} className="font-medium text-walnut underline hover:no-underline">
+            sign in instead
+          </Link>
+          .
+        </>
+      );
+
+      // Supabase silently "succeeds" for duplicate emails but returns a user with an empty identities array
+      if (
+        signUpData.user &&
+        signUpData.user.identities &&
+        signUpData.user.identities.length === 0
+      ) {
+        setError(duplicateEmailMessage);
+        setIsLoading(false);
+        return;
+      }
+
+      if (signUpData.user === null) {
+        setError(duplicateEmailMessage);
+        setIsLoading(false);
+        return;
+      }
+
       setSuccessEmail(data.email);
     } catch {
       setError("An unexpected error occurred");
